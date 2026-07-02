@@ -12,6 +12,19 @@ Cursor Agent'ın context penceresi sınırlıdır. Fabrika **minimum kanıt, mak
 6. **Intent Gate** — soru = DIAGNOSTIC (dosya değiştirme yok); uygulama = IMPLEMENTATION. Kural: `.cursor/rules/20-agent-intent-gate.mdc`.
 7. **Project Intent Gate** — domain-specific plan/scaffold öncesi workspace rolü doğrula. Kural: `.cursor/rules/21-project-intent-gate.mdc` · `docs/PROJECT_INTENT_GATE.md` · `validate-project-intent.py`.
 
+## Session Close / After Action Review
+
+When the user invokes `/cevap` or asks to evaluate a Cursor execution summary, read only the minimal AAR context:
+
+1. `docs/CEVAP_REPORT_CONTRACT.md`
+2. `.cursor/commands/cevap.md`
+3. `.cursor/skills/after-action-review/SKILL.md`
+4. `docs/PROJECT_INTENT_GATE.md` if intent/domain ambiguity exists
+5. `YAPILACAKLAR.md` for active phase/status
+6. Relevant validation output from the user's summary
+
+Do not load full manifests or unrelated domain standards unless the execution summary requires them.
+
 ## Kısmi okuma yasağı (CL4R1T4S disiplini)
 
 Dosyanın **%20'sini okuyup karar verme** — özellikle `.kt`, `build.gradle.kts`, manifest, navigation graph.

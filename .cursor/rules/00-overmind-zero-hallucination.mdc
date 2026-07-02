@@ -12,7 +12,7 @@ Bu kural **her oturumda otomatik** uygulanır. Geliştirici uyarı yazmasa bile 
 1. **`YAPILACAKLAR.md` oku** — yoksa, boşsa veya `uninitialized` ise **önce** `/baslat` veya `init-new-app.sh` / `init-yapilacaklar.sh` akışını uygula.
 2. **`docs/00-INDEX.md`** + aktif faz satırlarını oku.
 3. **Context OS:** `./scripts/factory/assemble-context.sh` → `.factory/context/SESSION_CONTEXT.md` (varsa `LAST_DECISION.md`).
-4. **Intent Gate:** Soru/inceleme = DIAGNOSTIC (dosya değiştirme yok). Uygulama = IMPLEMENTATION. Kural: `20-agent-intent-gate.mdc`.
+4. **Intent Gate:** Soru/inceleme = DIAGNOSTIC (dosya değiştirme yok). Uygulama = IMPLEMENTATION. Sıra: `21-project-intent-gate.mdc` → `20-agent-intent-gate.mdc`.
 5. **Halüsinasyon sıfır:** Var olmayan dosya, sınıf, API, script veya governance kaydı **uydurma**. Okumadan referans verme.
 6. **Araç zorunluluğu:** Dosya içeriği, grep, glob, terminal — tahmin değil kanıt.
 7. **Tek faz kuralı:** Aynı anda yalnızca **bir** faz `işleniyor` olabilir.
@@ -66,6 +66,22 @@ Her görev satırında: **Ajan** · **L1 üst denetim** · **Kabul kriteri**
 - Zincir: `governance/executive/HIERARCHICAL_AUDIT_CHAIN.md`
 - Faz tamamlanması ≠ proje tamamlandı; F8'de CAO + CEO + approval gate zorunlu.
 
+## Project Intent and After Action Ordering
+
+Before domain-specific genesis/scaffold/implementation, apply:
+
+1. `21-project-intent-gate.mdc` — workspace role/domain lock
+2. `20-agent-intent-gate.mdc` — message-level DIAGNOSTIC vs IMPLEMENTATION mode
+3. `00-overmind-zero-hallucination.mdc` — YAPILACAKLAR, evidence-first execution, no hallucination
+
+After an implementation or diagnostic execution summary, `/cevap` may be used as a DIAGNOSTIC/AAR command. `/cevap` must follow:
+
+- `docs/CEVAP_REPORT_CONTRACT.md`
+- `.cursor/skills/after-action-review/SKILL.md`
+- `.cursor/rules/22-quality-after-action-contract.mdc` (when invoked)
+
+`/cevap` does not modify files, advance phases, run remediation, scaffold projects, or commit changes.
+
 ## Yasaklar
 
 - YAPILACAKLAR olmadan kod üretmek
@@ -79,5 +95,6 @@ Her görev satırında: **Ajan** · **L1 üst denetim** · **Kabul kriteri**
 - `/devam-et` — aktif fazdan devam
 - `/denetle` — hiyerarşik denetim
 - `/faz-durumu` — özet
+- `/cevap` — After Action Review (DIAGNOSTIC; dosya değiştirmez)
 - Skill: `.cursor/skills/yapilacaklar-planner/`, `yapilacaklar-executor/`, `zero-hallucination/`, `hierarchical-audit/`
 - Reasoning (v2): `19-claude-reasoning.mdc` · `docs/CLAUDE_REASONING.md`

@@ -1,0 +1,71 @@
+---
+description: Quality After Action Contract — optional /cevap review format
+alwaysApply: false
+---
+
+# QUALITY AFTER ACTION CONTRACT
+
+Bu rule, `/cevap` command veya after-action-review skill çağrıldığında geçerlidir.
+
+## Amaç
+
+Cursor işlem özetleri için domain-neutral After Action Review contract uygulanır.
+
+## Kullanılacak Kaynaklar
+
+- `docs/CEVAP_REPORT_CONTRACT.md`
+- `.cursor/commands/cevap.md`
+- `.cursor/skills/after-action-review/SKILL.md`
+- `scripts/governance/validate-project-intent.py`
+- `scripts/governance/validate-yapilacaklar.py`
+
+## Zorunlu Kontroller
+
+`/cevap` review sırasında şu kontroller yapılmalıdır:
+
+1. Project intent uyumu
+2. Domain/platform uyumu
+3. YAPILACAKLAR aktif faz uyumu
+4. Kullanıcı onayı gereken boundary
+5. Security/privacy riski
+6. Architecture boundary riski
+7. Design/accessibility etkisi
+8. Validation evidence
+9. Rollback/reversibility
+10. Eksik bilgi
+11. Sonraki hiyerarşik adım
+12. Cursor'a verilecek sonraki prompt
+
+## Karar Semantiği
+
+- PASS
+- CONDITIONAL PASS
+- NEEDS FIX
+- BLOCKED
+
+Karar anlamları için `docs/CEVAP_REPORT_CONTRACT.md` dosyasını kullan.
+
+## Yasaklar
+
+Bu rule tetiklendiğinde:
+
+- Dosya değiştirme
+- Remediation uygulama
+- Scaffold oluşturma
+- Commit atma
+- Faz geçişi yapma
+- Kullanıcı onayı olmadan sonraki promptu uygulama
+
+## Core vs Leo Layer
+
+**APP-FABRIKA core:**
+
+- AAR formatı
+- Governance checklist
+- Domain-neutral sonraki prompt şablonu
+
+**Leo layer:**
+
+- Multi-model reasoning
+- Web/Laravel/SEO/CRO/Premium UI intelligence
+- Domain-specific prompt zenginleştirme
