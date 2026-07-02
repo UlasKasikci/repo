@@ -1,0 +1,26 @@
+---
+description: Project Intent Gate — workspace role lock before domain-specific genesis
+alwaysApply: true
+---
+
+# PROJECT INTENT GATE
+
+- Eski konuşma bağlamı aktif proje niyeti değildir.
+- Workspace intent açıkça kilitlenmeden domain-specific scaffold/genesis yapılamaz.
+- Kullanıcı `workspace_role`, `platform` ve gerekiyorsa `project_name` / `package_name` değerlerini **explicit onaylamalıdır**.
+- `.factory/project-intent.json` yoksa yalnızca diagnostic/audit/dry-run yapılabilir.
+- `factory-template` modunda `init-new-app`, Android scaffold, product `/baslat`, package write **yasaktır**.
+- `web-app` veya `laravel-mysql-fullstack` seçildiyse Android scaffold **önerilemez**.
+- `android-app` seçildiyse `package_name` ayrıca doğrulanmalıdır.
+- `test-sandbox` kalıcı scaffold için yeterli değildir; explicit promotion gerekir.
+- Belirsizlik varsa **DIAGNOSTIC** modda kal; `/prompt-genesis` ile intent kilitle.
+- **Rule ordering:** `21-project-intent-gate` → `20-agent-intent-gate` → `00-overmind-zero-hallucination`
+
+## Doğrulama
+
+```bash
+python3 scripts/governance/validate-project-intent.py --mode diagnostic
+python3 scripts/governance/validate-project-intent.py --mode genesis --require-role android-app
+```
+
+Belge: `docs/PROJECT_INTENT_GATE.md` · Örnek: `.factory/project-intent.example.json`

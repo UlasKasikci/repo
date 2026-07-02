@@ -16,6 +16,9 @@ if [[ -z "$APP_NAME" || -z "$PACKAGE_NAME" ]]; then
   exit 1
 fi
 
+python3 "$ROOT/scripts/governance/validate-project-intent.py" \
+  --mode genesis --require-role android-app || exit 2
+
 SLUG="$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd 'a-z0-9-')"
 DATE="$(date +%Y-%m-%d)"
 

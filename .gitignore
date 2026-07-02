@@ -52,6 +52,7 @@ factory/runtime/
 docs/AUDIT_REPORT.md
 
 .factory/project.json
+.factory/project-intent.json
 .factory/bootstrap_manifest.json
 .factory/sync.json
 

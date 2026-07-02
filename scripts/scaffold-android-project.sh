@@ -12,6 +12,9 @@ if [[ -z "$APP_NAME" || -z "$PACKAGE" ]]; then
   exit 1
 fi
 
+python3 "$ROOT/scripts/governance/validate-project-intent.py" \
+  --mode scaffold --platform android --require-role android-app || exit 2
+
 APP_CLASS="$(echo "$APP_NAME" | sed 's/[^a-zA-Z0-9]//g')"
 PKG_PATH="${PACKAGE//.//}"
 TEMPLATE="$ROOT/templates/android/project"

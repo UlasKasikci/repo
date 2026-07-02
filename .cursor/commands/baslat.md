@@ -1,5 +1,22 @@
 # /baslat — Projeyi Hiyerarşik Faz Planıyla Başlat
 
+## Project Intent Gate (ön koşul — android-app only)
+
+Product `/baslat` yalnızca uygun project intent lock varken çalışır.
+
+| Durum | Sonuç |
+|-------|--------|
+| `.factory/project-intent.json` yok | **BLOCKED** — önce `/prompt-genesis` |
+| `workspace_role=factory-template` | **BLOCKED** — factory-template modunda product `/baslat` yasak |
+| `workspace_role=test-sandbox` | **BLOCKED** — kalıcı genesis için explicit promotion gerekir |
+| `android-app` / `web-app` / `laravel-mysql-fullstack` / `existing-project-import` | `python3 scripts/governance/validate-project-intent.py --mode genesis` geçmeli |
+
+**Android-first sınırı:** `web-app` veya `laravel-mysql-fullstack` intent ile `/baslat` yalnızca plan/diagnostic üretir; Android scaffold veya F3 Android implementation **başlatılmaz**. Tam F0–F8 Android planı yalnızca `workspace_role=android-app` için geçerlidir.
+
+Belge: `docs/PROJECT_INTENT_GATE.md` · Kural: `21-project-intent-gate.mdc`
+
+---
+
 Geliştiricinin verdiği promptu **kod yazmadan önce** işle. Halüsinasyon sıfır; uydurma yasak.
 
 ## Girdi

@@ -20,6 +20,7 @@
 
 | # | Görev | Ajan | L1 | Kabul | Durum |
 |---|-------|------|----|-------|-------|
+| F0.0 | Project intent: `python3 scripts/governance/validate-project-intent.py --mode genesis` | Overmind | CEO | workspace_role/platform explicit user confirmation ile kilitli; domain-specific işlem doğru intent ile uyumlu | bekliyor |
 | F0.1 | `./scripts/first-setup.sh` + `./scripts/check-mcp.sh` | MCP | Baş Mimar | P0 MCP yeşil | bekliyor |
 | F0.2 | `./scripts/governance/init-governance.sh` | CEO | CAO | sprint lock + approval queue | bekliyor |
 | F0.3 | `docs/00-INDEX.md` proje adıyla uyumlu | Overmind | CEO | INDEX güncel | bekliyor |

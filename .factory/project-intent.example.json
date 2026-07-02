@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "workspace_role": "factory-template",
+  "platform": "none",
+  "stack": "none",
+  "project_name": null,
+  "package_name": null,
+  "confirmed_by": "user",
+  "confirmed_at": "2026-07-02T00:00:00Z",
+  "source": "explicit-user-confirmation",
+  "notes": "Old conversation context must not be treated as active project intent."
+}

@@ -10,6 +10,7 @@ Cursor Agent'ın context penceresi sınırlıdır. Fabrika **minimum kanıt, mak
 4. **Build kanıtı log dosyasından** — `.cursor/snapshots/build/LATEST.gradle.log`.
 5. **v2 reasoning (zorunlu tetikleyicide)** — `<thinking>` + `<architecture_check>` + `<negative_constraints>`; max 150–200 kelime/blok. Rehber: `docs/CLAUDE_REASONING.md`.
 6. **Intent Gate** — soru = DIAGNOSTIC (dosya değiştirme yok); uygulama = IMPLEMENTATION. Kural: `.cursor/rules/20-agent-intent-gate.mdc`.
+7. **Project Intent Gate** — domain-specific plan/scaffold öncesi workspace rolü doğrula. Kural: `.cursor/rules/21-project-intent-gate.mdc` · `docs/PROJECT_INTENT_GATE.md` · `validate-project-intent.py`.
 
 ## Kısmi okuma yasağı (CL4R1T4S disiplini)
 
