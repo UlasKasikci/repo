@@ -39,11 +39,23 @@ Bu dosya fabrika reposunun merkezi hafızasıdır. Uygulama projelerinde `init-n
 | [TODO](./TODO.md) | Fabrika geliştirme görevleri |
 | [AGENTS](../AGENTS.md) | 16 ajan + Executive katman |
 
+## Governance / Safety Gates
+
+| Belge | Açıklama |
+|-------|----------|
+| [PROJECT_INTENT_GATE.md](./PROJECT_INTENT_GATE.md) | Workspace role / project intent gate |
+| [CEVAP_REPORT_CONTRACT.md](./CEVAP_REPORT_CONTRACT.md) | After Action Review contract for `/cevap` |
+| [prompt-genesis](../.cursor/commands/prompt-genesis.md) | Intent selection command |
+| [cevap](../.cursor/commands/cevap.md) | Turkish AAR command |
+| [after-action](../.cursor/commands/after-action.md) | English AAR alias |
+| [21-project-intent-gate](../.cursor/rules/21-project-intent-gate.mdc) | Cursor rule — workspace intent |
+| [22-quality-after-action-contract](../.cursor/rules/22-quality-after-action-contract.mdc) | Optional AAR rule (`alwaysApply: false`) |
+
 ## Kullanım Modları
 
 | Mod | Komut |
 |-----|-------|
-| GitHub Template | `Use this template` → `init-new-app.sh` |
+| GitHub Template | `Use this template` → `/prompt-genesis` → `init-new-app.sh` |
 | Mevcut projeye aktar | `sync-standards.sh /hedef/proje` |
 | Submodule | `.factory/` altına ekle → `sync-standards.sh` |
 
@@ -77,6 +89,7 @@ Tam eşleme: `governance/executive/HIERARCHICAL_AUDIT_CHAIN.md`
 ```bash
 ./scripts/first-setup.sh
 ./scripts/check-mcp.sh
+# Cursor → /prompt-genesis → android-app intent kilidi
 ./scripts/init-new-app.sh "App" "com.sirket.app"   # governance + YAPILACAKLAR otomatik
 ```
 

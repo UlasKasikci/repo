@@ -50,10 +50,31 @@ Her Android projesine aktarılabilir fabrika paketi (Executive OS + 16 ajan) · 
 
 ---
 
+## Project Intent and After Action Awareness
+
+Agents must **not** treat previous conversation context as active project intent.
+
+Before domain-specific genesis/scaffold/implementation:
+
+1. Apply `21-project-intent-gate.mdc` — workspace role/domain lock.
+2. Apply `20-agent-intent-gate.mdc` — DIAGNOSTIC vs IMPLEMENTATION mode.
+3. Apply `00-overmind-zero-hallucination.mdc` — YAPILACAKLAR, evidence-first, no hallucination.
+
+After execution summaries:
+
+- Use `/cevap` or `/after-action` as **DIAGNOSTIC/AAR** only.
+- Do **not** modify files during AAR.
+- Follow [`docs/CEVAP_REPORT_CONTRACT.md`](docs/CEVAP_REPORT_CONTRACT.md).
+
+Belge: [`docs/PROJECT_INTENT_GATE.md`](docs/PROJECT_INTENT_GATE.md) · Komutlar: [`prompt-genesis`](.cursor/commands/prompt-genesis.md), [`cevap`](.cursor/commands/cevap.md), [`after-action`](.cursor/commands/after-action.md)
+
+---
+
 ## Bootstrap
 
 ```bash
 ./scripts/first-setup.sh
+# Cursor → /prompt-genesis → android-app intent lock
 ./scripts/init-new-app.sh "MyApp" "com.company.myapp"   # + init-governance + YAPILACAKLAR
 ./scripts/ceo/run_ceo_cycle.sh
 python3 scripts/governance/validate-audit-chain.py
@@ -78,12 +99,12 @@ python3 scripts/governance/validate-yapilacaklar.py
 
 | Tür | İçerik |
 |-----|--------|
-| Rules | `00-overmind-zero-hallucination.mdc` + `01`–`17` + `18-state-recovery` + `19-claude-reasoning` + `20-aistudio-import` |
-| Skills | `zero-hallucination`, `yapilacaklar-planner`, `yapilacaklar-executor`, `hierarchical-audit` |
+| Rules | `00-overmind-zero-hallucination.mdc` + `01`–`17` + `18-state-recovery` + `19-claude-reasoning` + `20-agent-intent-gate` + `21-project-intent-gate` + `22-quality-after-action-contract` |
+| Skills | `zero-hallucination`, `yapilacaklar-planner`, `yapilacaklar-executor`, `hierarchical-audit`, `after-action-review` |
 | Knowledge OS | `docs/KNOWLEDGE_OS.md` · `.factory/context/` · `knowledge/` |
 | Learning Factory | `docs/LEARNING_FACTORY.md` · `intelligence-engine.py` |
 | V3 Evidence | `docs/V3_EVIDENCE.md` · `knowledge/evidence/` |
-| Commands | `baslat`, `devam-et`, `denetle`, `faz-durumu`, `yeni-proje` |
+| Commands | `prompt-genesis`, `baslat`, `devam-et`, `denetle`, `faz-durumu`, `yeni-proje`, `cevap`, `after-action` |
 | Subagents | `phase-verifier`, `plan-expander`, `phase-auditor`, `hallucination-guard` |
 
 ## Governance (canonical)

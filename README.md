@@ -139,11 +139,14 @@ Bu repo **Android** için Software Venture Operating System'tir. Gelecekte planl
 
 ### Hızlı başlangıç
 
+> **Önce:** [Safe Start — Project Intent First](#safe-start-project-intent-first) · [`docs/PROJECT_INTENT_GATE.md`](docs/PROJECT_INTENT_GATE.md)
+
 **Yeni Android uygulaması**
 
 ```bash
 ./scripts/first-setup.sh
-./scripts/init-new-app.sh "My App" "com.company.myapp"
+# Cursor → /prompt-genesis → android-app intent kilidi
+# Sonra → /yeni-proje veya init-new-app.sh
 # Cursor → /baslat
 ```
 
@@ -188,8 +191,33 @@ cd /path/to/existing-project && ./scripts/governance/init-governance.sh
 | [Doğrulama & Kalite](#doğrulama--kalite-kapısı) |
 | [Kullanım Senaryoları](#kullanım-senaryoları) |
 | [Belge Dizini](#belge-dizini) |
+| [Safe Start — Project Intent](#safe-start-project-intent-first) |
 
-> **İlk kez mi bakıyorsun?** Bu repo bir APK değil. Cursor'da `/baslat` ile faz planı açılır; onaydan sonra kod üretilir. Kurulum: [Bootstrap](docs/BOOTSTRAP.md).
+> **İlk kez mi bakıyorsun?** Bu repo bir APK değil. Önce `/prompt-genesis` ile workspace rolünü kilitle; sonra `/baslat` ile faz planı açılır. Kurulum: [Bootstrap](docs/BOOTSTRAP.md).
+
+<a id="safe-start-project-intent-first"></a>
+
+### Safe Start: Project Intent First
+
+APP-FABRIKA, açık bir project intent kilidi olana kadar **factory/template workspace**'tir. Eski konuşma bağlamı project intent değildir.
+
+Uygulama oluşturmadan veya product genesis çalıştırmadan önce:
+
+1. Workspace'i Cursor'da açın.
+2. `/prompt-genesis` çalıştırın.
+3. `workspace_role` seçin: `factory-template` · `android-app` · `web-app` · `laravel-mysql-fullstack` · `existing-project-import` · `test-sandbox`
+4. Android için `project_name` ve `package_name` onaylayın.
+5. Seçilen intent'e göre `/yeni-proje`, `init-new-app.sh` veya `/baslat` kullanın.
+6. İşlem sonrası özet değerlendirmesi: `/cevap` veya `/after-action`
+
+Geçerli `.factory/project-intent.json` olmadan destructive genesis/scaffold komutları **bloklanır**.
+
+| Belge | Açıklama |
+|-------|----------|
+| [PROJECT_INTENT_GATE.md](docs/PROJECT_INTENT_GATE.md) | Workspace rolü ve intent kilidi |
+| [CEVAP_REPORT_CONTRACT.md](docs/CEVAP_REPORT_CONTRACT.md) | After Action Review contract |
+| [prompt-genesis](.cursor/commands/prompt-genesis.md) | Intent seçim komutu |
+| [cevap](.cursor/commands/cevap.md) · [after-action](.cursor/commands/after-action.md) | AAR komutları |
 
 <p align="center"><a href="#english">↓ English section</a></p>
 
@@ -240,11 +268,14 @@ This repo is the **Android** Software Venture OS. Planned factory variants:
 
 ### Quick start
 
+> **First:** [Safe Start — Project Intent First](#safe-start-project-intent-first-en) · [`docs/PROJECT_INTENT_GATE.md`](docs/PROJECT_INTENT_GATE.md)
+
 **New Android app**
 
 ```bash
 ./scripts/first-setup.sh
-./scripts/init-new-app.sh "My App" "com.company.myapp"
+# Cursor → /prompt-genesis → lock android-app intent
+# Then → /yeni-proje or init-new-app.sh
 # Cursor → /baslat
 ```
 
@@ -289,8 +320,33 @@ cd /path/to/existing-project && ./scripts/governance/init-governance.sh
 | [Validation & Quality Gate](#validation--quality-gate-en) |
 | [Usage Scenarios](#usage-scenarios-en) |
 | [Documentation Index](#documentation-index-en) |
+| [Safe Start — Project Intent](#safe-start-project-intent-first-en) |
 
-> **First time here?** This repo is not an APK. Run `/baslat` in Cursor to open the phase plan; code is generated only after approval. Setup: [Bootstrap](docs/BOOTSTRAP.md).
+> **First time here?** This repo is not an APK. Lock workspace role with `/prompt-genesis` first; then `/baslat` opens the phase plan. Setup: [Bootstrap](docs/BOOTSTRAP.md).
+
+<a id="safe-start-project-intent-first-en"></a>
+
+### Safe Start: Project Intent First
+
+APP-FABRIKA is a **factory/template workspace** until a project intent is explicitly locked. Old conversation context is not project intent.
+
+Before creating an app or running product genesis:
+
+1. Open the workspace in Cursor.
+2. Run `/prompt-genesis`.
+3. Select `workspace_role`: `factory-template` · `android-app` · `web-app` · `laravel-mysql-fullstack` · `existing-project-import` · `test-sandbox`
+4. For Android apps, confirm `project_name` and `package_name`.
+5. Then use `/yeni-proje`, `init-new-app.sh`, or `/baslat` according to the selected intent.
+6. After execution summaries, review with `/cevap` or `/after-action`.
+
+Without a valid `.factory/project-intent.json`, destructive genesis/scaffold commands are **blocked**.
+
+| Doc | Purpose |
+|-----|---------|
+| [PROJECT_INTENT_GATE.md](docs/PROJECT_INTENT_GATE.md) | Workspace role and intent lock |
+| [CEVAP_REPORT_CONTRACT.md](docs/CEVAP_REPORT_CONTRACT.md) | After Action Review contract |
+| [prompt-genesis](.cursor/commands/prompt-genesis.md) | Intent selection command |
+| [cevap](.cursor/commands/cevap.md) · [after-action](.cursor/commands/after-action.md) | AAR review commands |
 
 <p align="center"><a href="#turkce">↑ Türkçe bölüm</a></p>
 
@@ -680,13 +736,23 @@ Detay: [`docs/MCP_SETUP.md`](docs/MCP_SETUP.md)
 
 ---
 
-### Adım 4 — Uygulama projesi oluştur (`init-new-app.sh`)
+### Adım 4 — Project Intent kilidi ve uygulama projesi
+
+**Önce** workspace intent kilitleyin; `init-new-app.sh` yalnızca `android-app` intent sonrası çalışır.
+
+1. Cursor'da `/prompt-genesis` çalıştırın.
+2. `workspace_role = android-app` seçin; `project_name` ve `package_name` onaylayın.
+3. `/yeni-proje` veya terminalde:
 
 ```bash
 ./scripts/init-new-app.sh "UygulamaAdi" "com.sirket.uygulama"
 ```
 
-**Bu komut sırasında otomatik oluşur:**
+4. Ardından [Adım 5](#adım-5--cursorda-plan-başlat-baslat) ile `/baslat` — ürün promptunu ve `YAPILACAKLAR` planını zenginleştirin.
+
+> `factory-template` modunda `init-new-app.sh` çalıştırmayın. Eski konuşma bağlamından project intent çıkarmayın.
+
+**`init-new-app.sh` sırasında otomatik oluşur:**
 
 | Çıktı | Konum | İçerik |
 |-------|-------|--------|
@@ -1084,7 +1150,15 @@ Run `./scripts/factory-quality-gate.sh` before merge or release (target **100/10
 
 ### Senaryo A — Yeni proje (önerilen)
 
-GitHub Template → `first-setup.sh` → `init-new-app.sh` → `/baslat`
+1. `./scripts/first-setup.sh`
+2. Cursor'da `/prompt-genesis`
+3. `workspace_role = android-app`
+4. `project_name` + `package_name` explicit onayı
+5. `/yeni-proje` veya `./scripts/init-new-app.sh`
+6. `/baslat`
+7. F0 tamamlanmadan feature implementation yok
+
+> `factory-template` modunda `init-new-app.sh` çalıştırmayın. Eski konuşma bağlamından project intent çıkarmayın.
 
 ### Senaryo B — Mevcut Android projesine aktarma
 
@@ -1145,7 +1219,7 @@ Detay: [`APP-FABRIKASI/README.md`](APP-FABRIKASI/README.md) · [`APP-FABRIKASI/N
 
 | Scenario | Flow |
 |----------|------|
-| **A — New project** | GitHub Template → `first-setup.sh` → `init-new-app.sh` → `/baslat` |
+| **A — New project** | Run `first-setup.sh`, lock explicit `android-app` intent with `/prompt-genesis`, confirm `project_name` and `package_name`, then `/yeni-proje` or `init-new-app.sh`, then `/baslat`. Do not run `init-new-app.sh` in `factory-template` mode. |
 | **B — Existing app** | `sync-standards.sh /path/to/app` + `init-governance.sh` |
 | **C — Submodule** | Add factory as submodule; `sync-standards.sh` on update |
 | **D — Integrity check** | `run-factory-audit.sh` + `factory-quality-gate.sh` + `ci-template-build.sh` |

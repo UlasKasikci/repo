@@ -4,6 +4,25 @@ Bu belge, fabrikayı yeni bir Android projesine nasıl uygulayacağını adım a
 
 **Yazar:** [Ulaş Kaşıkcı](AUTHOR.md)
 
+## Recommended Bootstrap Order
+
+1. Clone APP-FABRIKA (GitHub Template veya `git clone`).
+2. Run `./scripts/first-setup.sh`.
+3. Open the workspace in Cursor.
+4. Run `/prompt-genesis`.
+5. Lock explicit workspace intent (`.factory/project-intent.json`).
+6. For `android-app`, confirm `project_name` and `package_name`.
+7. Run `/yeni-proje` or `./scripts/init-new-app.sh` **only after** intent validation passes.
+8. Run `/baslat` only after the proper intent lock.
+9. Use `/cevap` or `/after-action` to review execution summaries.
+
+**Warnings**
+
+- Do **not** run `init-new-app.sh` in a `factory-template` workspace.
+- Do **not** infer project intent from previous conversations or old chat context.
+
+Belge: [`docs/PROJECT_INTENT_GATE.md`](PROJECT_INTENT_GATE.md) · Komut: [`.cursor/commands/prompt-genesis.md`](../.cursor/commands/prompt-genesis.md)
+
 ## Senaryo A: GitHub Template ile Sıfırdan
 
 1. GitHub'da **Ulas Autonomous Android APP Factory** → **Use this template**
@@ -15,16 +34,17 @@ Bu belge, fabrikayı yeni bir Android projesine nasıl uygulayacağını adım a
 ```
 
 4. MCP kurulumu (zorunlu): `docs/MCP_SETUP.md`
-5. Uygulama oluştur:
+5. **Project Intent Gate** — Cursor'da `/prompt-genesis` çalıştır; `android-app` rolünü ve `package_name` onayla
+6. Uygulama oluştur (yalnızca intent kilidi sonrası):
 
 ```bash
 ./scripts/init-new-app.sh "UygulamaAdi" "com.sirket.uygulama"
 ```
 
-4. `init-new-app.sh` otomatik olarak:
+7. `init-new-app.sh` otomatik olarak:
    - Tüm belgeleri oluşturur
    - **Tam Android iskeletini** scaffold eder (10 modül)
-5. Cursor chat'te:
+8. Cursor chat'te:
 
 ```
 /baslat
@@ -34,7 +54,7 @@ Uygulama: [kısa açıklama]
 
 Overmind önce `YAPILACAKLAR.md` oluşturur (F0–F8), sonra F0'dan başlar — **halüsinasyon uyarısı otomatik**. Detay: `docs/YAPILACAKLAR_SISTEMI.md`
 
-6. Executive OS hazır: `governance/executive/SPRINT_LOCK.json` — P0 AID Sprint P varsayılan
+9. Executive OS hazır: `governance/executive/SPRINT_LOCK.json` — P0 AID Sprint P varsayılan
 
 ## Senaryo B: Mevcut Android Projesine Standart Aktarma
 
