@@ -14,7 +14,7 @@ trap cleanup EXIT
 echo "==> CI template build"
 echo "    Workdir: $WORK"
 
-"$ROOT/scripts/scaffold-android-project-to.sh" "$WORK/ci-smoke" "FactoryCiSmoke" "com.ulas.factory.ci"
+APP_FABRIKA_ALLOW_TEMPLATE_SCAFFOLD=1 "$ROOT/scripts/scaffold-android-project-to.sh" "$WORK/ci-smoke" "FactoryCiSmoke" "com.ulas.factory.ci"
 bash "$ROOT/scripts/bootstrap-gradle-wrapper.sh" "$WORK/ci-smoke" &>/dev/null
 
 # CI smoke: minimal google-services.json (Firebase plugin requires file; not a real project)

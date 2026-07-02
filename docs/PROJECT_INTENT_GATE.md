@@ -116,6 +116,7 @@ Makine okunur **local intent lock** — gitignore altında (`.factory/project-in
 | `init-new-app.sh` | Terminal hook: `--mode genesis --require-role android-app` |
 | `scaffold-android-project.sh` | `--mode scaffold --platform android --require-role android-app` |
 | `scaffold-android-project-to.sh` | Aynı — hedef projede de intent lock önerilir |
+| `ci-template-build.sh` | İzole `/tmp` workdir — `APP_FABRIKA_ALLOW_TEMPLATE_SCAFFOLD=1` (CI only; bkz. aşağı) |
 | `sync-standards.sh` | `existing-project-import` veya uygun intent |
 | `bootstrap-external-project.sh` | `existing-project-import` veya `android-app` |
 
@@ -126,6 +127,14 @@ APP-FABRIKA **Android-first** fabrikadır. `web-app` veya `laravel-mysql-fullsta
 - Yalnızca **plan / diagnostic** üretebilir
 - Android scaffold veya **F3 Android implementation başlatmamalıdır**
 - Tam F0–F8 Android planı yalnızca `workspace_role=android-app` için geçerlidir
+
+### Template CI exception
+
+`APP_FABRIKA_ALLOW_TEMPLATE_SCAFFOLD=1` yalnızca fabrika CI/template smoke build içindir (`scripts/ci-template-build.sh`). İzole geçici dizine scaffold doğrulaması yapar.
+
+- **İzinli:** `--mode scaffold --platform android` (intent dosyası yokken, env set)
+- **Yasak:** `genesis`, `implementation`, repo kökünde scaffold, `init-new-app.sh`, `.factory/project-intent.json` / `.factory/project.json` yazımı
+- **Kullanıcıya önerilmez** — README quickstart veya manuel genesis bypass değildir
 
 ---
 

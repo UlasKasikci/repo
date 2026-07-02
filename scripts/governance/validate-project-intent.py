@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -91,6 +92,13 @@ def main() -> int:
     if intent is None:
         if args.mode == "diagnostic":
             print("ℹ️  Project intent not locked — diagnostic mode allowed")
+            return 0
+        if (
+            args.mode == "scaffold"
+            and args.platform == "android"
+            and os.environ.get("APP_FABRIKA_ALLOW_TEMPLATE_SCAFFOLD") == "1"
+        ):
+            print("ℹ️  Template scaffold allowed for isolated CI smoke build")
             return 0
         print(f"⛔ BLOCKED: mode={args.mode} requires explicit project intent lock.")
         print("   → Run /prompt-genesis and confirm .factory/project-intent.json")
