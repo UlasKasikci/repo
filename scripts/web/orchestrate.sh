@@ -198,6 +198,9 @@ P2 (Code Generation) — App-Fabrika Web Edition MVC iskeletini tamamla.
 Proje dizini: $PROJECT
 Zorunlu yapı: index.php (front-controller), core/ (App, Database, CSRF), views/,
 SQL/veritabani.sql (FK + index + seed, UTF-8), assets/css, assets/js.
+SQL kaynakları SQL/migrations/{schema,seed}/*.sql altında olsun; dump'ı
+\`bash scripts/web/sql-dump.sh .\` ile üret (qa-gate sql_dump drift kapısı byte-identical
+ister — elle dump düzenleme FAIL olur).
 Araç yapılandırmaları: phpstan.neon.dist (level 8), .eslintrc.json, phpunit.xml + tests/ birim testi.
 Güvenlik: PDO prepared statement, htmlspecialchars çıktı, CSRF, PASSWORD_ARGON2ID.
 Yalnız $PROJECT dizinine yaz; QA betiklerine dokunma.

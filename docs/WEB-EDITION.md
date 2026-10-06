@@ -109,7 +109,12 @@ doğrular.
 - **Backend:** Sade PHP 8.1+, MVC (`core/`, `views/`, `index.php` front-controller), stateless,
   `declare(strict_types=1)`.
 - **Veritabanı:** MySQL 8.0+/MariaDB; FK kısıtlamaları + cascade kuralları; B-Tree index;
-  N+1 sorgu yasağı; seed verileri `SQL/veritabani.sql` içinde.
+  N+1 sorgu yasağı; seed verileri `SQL/veritabani.sql` içinde. Şema/seed kaynağı
+  `SQL/migrations/{schema,seed}/*.sql` altında tutulur; `SQL/veritabani.sql`
+  `bash scripts/web/sql-dump.sh <proje>` ile **deterministik** üretilir (LC_ALL=C sıralama,
+  saat damgası yok — aynı kaynak = byte-identical; tarih yorumu opsiyonel
+  `SQL/migrations/SURUM` dosyasından; başlıkta `Kaynak Hash` sürümü). qa-gate `sql_dump`
+  kontrolü üretim ile commit'li dump'ı byte-karşılaştırır, **drift → FAIL**.
 - **API:** RESTful, JSON, HTTP durum kodu (200/201/400/401/403/404/422/500), standart hata şeması:
 
 ```json
@@ -180,7 +185,8 @@ Yukleme/
 - CSS/JS minify: `terser`/`csso` mevcutsa uygulanır; yoksa dosya aynen kopyalanır ve rapora
   `minify: skipped` **notu** düşülür (QA gate'in 0-warning kuralını bozmaz).
 - SQL: `Yukleme/SQL/veritabani.sql` UTF-8, `CREATE TABLE` + `FOREIGN KEY` + seed `INSERT`
-  içermek zorundadır; eksikse paketleme FAIL.
+  içermek zorundadır; eksikse paketleme FAIL. Dosya doğrudan üretilmiş dump olur —
+  `SQL/migrations/` klasörü pakete **girmez** (senkronluk QA'da `sql_dump` ile garantidir).
 - Rapor: `<proje>/packaging-report.json` (sha256 manifest + skipped/nots listesi).
   `Yukleme/` içine ek dosya konmaz — ağaç §14'e birebir sadık kalır.
 
@@ -195,6 +201,7 @@ Yukleme/
 | Statik eşik | `static_coverage` = phpstan ∧ phpunit PASS | aksi **FAIL** (§6) |
 | Paketleme | `bash`, `python3`, `shasum` | zorunlu |
 | Kontrat doğrulama | `python3 -m pip install jsonschema` | yoksa zorunlu-alan/const yedeği |
+| SQL dump | `sql-dump.sh` (python3) | migrations yoksa `sql_dump` SKIPPED; varsa drift **FAIL** |
 | Minify | `npx --no-install terser/csso` | `minify: skipped` notu |
 
 Araç kurulumu (garantici teslimat):

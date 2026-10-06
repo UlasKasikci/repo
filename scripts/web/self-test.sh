@@ -7,7 +7,8 @@ set -euo pipefail
 # negatif RBAC → negatif sepet → --allow-no-cart kaçışı → QA'sız paketleme reddi →
 # orkestratör E2E (bekleme/bozuk rapor/DONE) → asimetrik statik çekirdek
 # (yalnız eslint SKIPPED PASS; phpstan/phpunit eksik FAIL) →
-# semantik P1 kapısı (hollow + fs'de olmayan kanıt → domain_report FAIL)
+# semantik P1 kapısı (hollow + fs'de olmayan kanıt → domain_report FAIL) →
+# SQL dump otomasyonu (deterministik üretim + sql_dump drift kapısı)
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FIX="$ROOT/tests/fixtures/web-sample"
@@ -31,7 +32,7 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 step "0) bash -n söz dizimi + python söz dizimi"
-for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh; do
+for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh; do
   bash -n "$ROOT/scripts/web/$s" || die "bash -n: $s"
   echo "    OK: $s"
 done
@@ -147,8 +148,10 @@ echo "    HALT: 4. başarısızlıkta döngü durdu (max_retries=3)"
 step "6) negatif: RBAC eksik (role_id yok)"
 NEG="$TMP/rbac"
 cp -R "$FIX" "$NEG"
-sed 's/`role_id`/`perm_level`/g' "$NEG/SQL/veritabani.sql" > "$NEG/SQL/veritabani.sql.new"
-mv "$NEG/SQL/veritabani.sql.new" "$NEG/SQL/veritabani.sql"
+while IFS= read -r f; do
+  sed 's/`role_id`/`perm_level`/g' "$f" > "$f.new" && mv "$f.new" "$f"
+done < <(find "$NEG/SQL/migrations" -type f -name '*.sql')
+bash "$ROOT/scripts/web/sql-dump.sh" "$NEG" >/dev/null
 rc="$(run_rc bash "$QA" "$NEG")"
 [[ "$rc" == "1" ]] || die "RBAC negatif beklenen 1, gelen $rc"
 grep -q 'rbac' "$NEG/debug_report.json" || die "debug_report'ta rbac hatası yok"
@@ -165,8 +168,10 @@ echo "    debug_report.json üretildi (halted=false)"
 step "7) negatif: katalog var, sepet yok"
 NEG2="$TMP/cart"
 cp -R "$FIX" "$NEG2"
-sed 's/`orders`/`fatura_kayitlari`/g' "$NEG2/SQL/veritabani.sql" > "$NEG2/SQL/veritabani.sql.new"
-mv "$NEG2/SQL/veritabani.sql.new" "$NEG2/SQL/veritabani.sql"
+while IFS= read -r f; do
+  sed 's/`orders`/`fatura_kayitlari`/g' "$f" > "$f.new" && mv "$f.new" "$f"
+done < <(find "$NEG2/SQL/migrations" -type f -name '*.sql')
+bash "$ROOT/scripts/web/sql-dump.sh" "$NEG2" >/dev/null
 rc="$(run_rc bash "$QA" "$NEG2")"
 [[ "$rc" == "1" ]] || die "sepet negatif beklenen 1, gelen $rc"
 grep -q 'eksik modül' "$NEG2/debug_report.json" || die "debug_report'ta eksik modül hatası yok"
@@ -376,6 +381,30 @@ echo "    fs-uydurma: qa-gate domain_report FAIL (olmayan dosyaya atıf)"
 rc="$(run_rc bash "$ORCH" "$PHANTOM")"
 [[ "$rc" == "1" ]] || die "orkestratör fs-uydurma P1 reddi (1) beklenir, gelen $rc"
 echo "    fs-uydurma: orkestratör P1 → exit 1 (domain-check.py fs katmanı)"
+
+step "13) SQL dump otomasyonu: deterministik üretim + drift kapısı"
+DUMP="$TMP/dumpproj"
+cp -R "$FIX" "$DUMP"
+T1="$TMP/dump1.sql"
+T2="$TMP/dump2.sql"
+bash "$ROOT/scripts/web/sql-dump.sh" "$DUMP" --output "$T1" >/dev/null
+bash "$ROOT/scripts/web/sql-dump.sh" "$DUMP" --output "$T2" >/dev/null
+cmp -s "$T1" "$T2" || die "sql-dump: iki koşu farklı çıktı (determinizm bozuk)"
+cmp -s "$T1" "$DUMP/SQL/veritabani.sql" || die "sql-dump: üretilen dump commit'li SQL/veritabani.sql ile farklı"
+grep -q 'Kaynak Hash: [0-9a-f]\{12\}' "$T1" || die "dump başlığında Kaynak Hash yok"
+grep -q -- '============ SCHEMA ============' "$T1" || die "dump'ta SCHEMA bölümü yok"
+grep -q -- '============ SEED ============' "$T1" || die "dump'ta SEED bölümü yok"
+grep -q 'source: SQL/migrations/schema/001_core.sql' "$T1" || die "schema source marker yok"
+printf '\n-- elle eklendi satir\n' >> "$DUMP/SQL/veritabani.sql"
+rc="$(run_rc bash "$QA" "$DUMP")"
+[[ "$rc" == "1" ]] || die "dump drift FAIL (1) beklenir, gelen $rc"
+python3 - "$DUMP/qa-report.json" <<'PY' || die "sql_dump drift tespiti raporda yok"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["checks"].get("sql_dump") == "FAIL", r["checks"]
+assert any("senkron değil" in e for e in r["errors"]), r["errors"]
+PY
+echo "    deterministik üretim (iki koşu byte-identical + commit'li dosyayla eşit) + drift → sql_dump FAIL"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

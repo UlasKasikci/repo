@@ -144,6 +144,20 @@ else
 fi
 check_end sql_schema
 
+# --- 3b) SQL dump determinizmi: SQL/migrations → veritabani.sql senkronluğu ---
+set_check sql_dump SKIPPED
+if [[ -d "$PROJECT/SQL/migrations/schema" ]]; then
+  check_begin
+  DUMP_TMP="$(mktemp)"
+  if ! bash "$ROOT/scripts/web/sql-dump.sh" "$PROJECT" --output "$DUMP_TMP" >/dev/null 2>&1; then
+    err "sql: sql-dump.sh başarısız — SQL/migrations/{schema,seed} okunamadı"
+  elif [[ -f "$PROJECT/SQL/veritabani.sql" ]] && ! cmp -s "$DUMP_TMP" "$PROJECT/SQL/veritabani.sql"; then
+    err "sql: SQL/veritabani.sql SQL/migrations ile senkron değil (drift) — \`bash scripts/web/sql-dump.sh $PROJECT\` ile yeniden üret"
+  fi
+  rm -f "$DUMP_TMP"
+  check_end sql_dump
+fi
+
 # --- 4) OWASP statik grep'leri ---
 check_begin
 SEC_PATTERNS=(
