@@ -9,7 +9,8 @@ set -euo pipefail
 # (yalnız eslint SKIPPED PASS; phpstan/phpunit eksik FAIL) →
 # semantik P1 kapısı (hollow + fs'de olmayan kanıt → domain_report FAIL) →
 # SQL dump otomasyonu (deterministik üretim + sql_dump drift kapısı) →
-# lighthouse raporlayıcı faz (SKIPPED/PASS/WARN/strict + --serve)
+# lighthouse raporlayıcı faz (SKIPPED/PASS/WARN/strict + --serve) →
+# temiz bootstrap (dry-run dokunmaz, --yes kopyalar, hariçler + git izi)
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FIX="$ROOT/tests/fixtures/web-sample"
@@ -18,6 +19,7 @@ PKG="$ROOT/scripts/web/package-yukleme.sh"
 STATE="$ROOT/scripts/web/state.sh"
 ORCH="$ROOT/scripts/web/orchestrate.sh"
 LHS="$ROOT/scripts/web/lighthouse-verify.sh"
+BOOTER="$ROOT/scripts/web/bootstrap-project.sh"
 
 die() {
   echo "SELF-TEST FAIL: $*" >&2
@@ -34,7 +36,7 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 step "0) bash -n söz dizimi + python söz dizimi"
-for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh; do
+for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh bootstrap-project.sh; do
   bash -n "$ROOT/scripts/web/$s" || die "bash -n: $s"
   echo "    OK: $s"
 done
@@ -531,6 +533,42 @@ assert any("kurulu değil" in n for n in r["nots"]), r["nots"]
 PY
   echo "    araç yok → SKIPPED (kurulum ipucuyla)"
 fi
+
+step "15) bootstrap: dry-run dokunmaz, --yes kopyalar, hariçler + git izi"
+BOOT="$TMP/bootnew"
+OUT="$(bash "$BOOTER" "$BOOT" 2>&1)" || die "bootstrap dry-run hata verdi"
+[[ ! -e "$BOOT" ]] || die "dry-run hedefe dokundu"
+grep -q 'DRY-RUN' <<<"$OUT" || die "DRY-RUN etiketi yok"
+grep -Eq 'kopyalanacak: [0-9]+ dosya \([0-9]+ bayt\)' <<<"$OUT" || die "plan sayımı yok"
+echo "    dry-run: dosya/bayt planı yazdı, hedefe dokunmadı"
+
+rc="$(run_rc bash "$BOOTER" "$BOOT" --yes)"
+[[ "$rc" == "0" ]] || die "bootstrap --yes rc0 beklenir, gelen $rc"
+for f in scripts/web/qa-gate.sh scripts/web/orchestrate.sh scripts/web/domain-check.py \
+         .factory/contracts/p1-domain-report.schema.json .factory/web-state-graph.json \
+         .factory/meta.json .cursor/rules/25-web-domain-architect.mdc \
+         .cursor/agents/web-qa-gatekeeper.md .opencode/agent/web-domain-architect.md \
+         .opencode/command/web-baslat.md docs/WEB-EDITION.md CLAUDE.md .cursorrules opencode.json; do
+  [[ -e "$BOOT/$f" ]] || die "kopyalanmamalı eksik: $f"
+done
+for f in scripts/web/self-test.sh scripts/web/bootstrap-project.sh tests .github \
+         .factory/context .factory/freeze.json .factory/web-state.json \
+         .cursor/skills .cursor/mcp.json .opencode/node_modules .opencode/plans; do
+  [[ ! -e "$BOOT/$f" ]] || die "kopyalanmamalıydı: $f"
+done
+MSG="$(git -C "$BOOT" log -1 --format=%s)"
+grep -Eq '^bootstrap from app-fabrika@[0-9a-f]{12}$' <<<"$MSG" || die "git izi beklenen biçimde değil: $MSG"
+BR="$(git -C "$BOOT" rev-parse --abbrev-ref HEAD)"
+[[ "$BR" == "main" ]] || die "branch main değil: $BR"
+echo "    --yes: kritik dosyalar kopyalandı, hariçler temiz, iz: $MSG"
+
+rc="$(run_rc bash "$BOOTER" "$BOOT" --yes)"
+[[ "$rc" == "1" ]] || die "dolu hedef --force'suz red (1) beklenir, gelen $rc"
+rc="$(run_rc bash "$BOOTER" "$BOOT" --yes --force)"
+[[ "$rc" == "0" ]] || die "--force idempotent (0) beklenir, gelen $rc"
+COMMITS="$(git -C "$BOOT" rev-list --count HEAD)"
+[[ "$COMMITS" == "1" ]] || die "ikinci koşu commit atmamalı (toplam $COMMITS)"
+echo "    dolu hedef: --force'suz red, --force ile idempotent (commit atlandı)"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

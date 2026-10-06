@@ -230,6 +230,7 @@ npm install -g eslint
 | Paketle | `/web-yukle` | `bash scripts/web/package-yukleme.sh .` | `/web-yukle` |
 | Faz durumu | `/web-faz` | `bash scripts/web/state.sh status` | `/web-faz` |
 | Canlı doğrulama (Lighthouse) | — | `bash scripts/web/lighthouse-verify.sh .` | — |
+| Temiz bootstrap (yeni proje) | — | `bash scripts/web/bootstrap-project.sh <hedef> [--yes] [--force]` | — |
 
 **Lighthouse faz yerleşimi (v1 kararı):** P5 **sonrası bağımsız, raporlayıcı** bir fazdır —
 state graph'a girmez, `qa-gate.sh`'yi ağırlaştırmaz (çalışan sunucu + Chrome gerekir;
@@ -253,5 +254,8 @@ ve `debug config` öncesi `find . -name '._*' -delete` ile temizle.
 - Orkestratör: `bash scripts/web/orchestrate.sh <proje> [--auto]`
 - SQL dump üretici: `bash scripts/web/sql-dump.sh <proje> [--output <path>]`
 - Lighthouse (raporlayıcı): `bash scripts/web/lighthouse-verify.sh <proje> [--serve] [--strict]`
+- Temiz bootstrap: `bash scripts/web/bootstrap-project.sh <hedef> [--yes] [--force]`
+  (dry-run default; kopya/hariç listesi betiğin baş yorumunda; ilk commit
+  `bootstrap from app-fabrika@<12-hex>` — fabrika sürümü izlenebilir)
 - Öz-test: `bash scripts/web/self-test.sh` (CI ile aynı sahne; phpstan+phpunit+eslint gerektirir)
 - CI: `.github/workflows/validate.yml`
