@@ -11,7 +11,7 @@
       "name": "Domain & Scope Validation",
       "owner_agent": "web-domain-architect",
       "gate": "requirements-frozen",
-      "checks": ["missing-module-audit", "rbac-audit", "schema-analysis", "security-context"]
+      "checks": ["missing-module-audit", "rbac-audit", "schema-analysis", "security-context", "module-matrix-semantics"]
     },
     {
       "id": "P2",

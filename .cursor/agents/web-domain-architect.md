@@ -31,14 +31,18 @@ cat <proje>/qa-report.json
 ## Çıktı formatı
 
 Raporu önce UTF-8 JSON olarak `<proje>/.factory/domain-report.json` dosyasına yaz
-(şema: `.factory/contracts/p1-domain-report.schema.json`; `module_matrix` zorunlu —
-her modül `present|missing|injected|proposed` + evidence). Ardından özeti sun:
+(şema: `.factory/contracts/p1-domain-report.schema.json`). `module_matrix` zorunlu —
+≥4 modül, her hücre `present|missing|injected|proposed` + **dolu** `evidence`
+(kaynak ref: `SQL/veritabani.sql:users` gibi dosya/satır) + `justification` (≥20 kr
+gerçek gerekçe). Şablon/boş matrix `qa-gate.sh` `domain_report` kontrolünde FAIL olur.
+Ardından özeti sun:
 
 ```
 ## P1 Domain Analiz — <proje>
 - Varlıklar: ...
 - Roller: Admin / Moderatör / Kullanıcı (role_id zorunlu)
 - Modül matrisi: rbac=..., cart=..., seo=..., kvkk=... (present/missing/injected/proposed)
+  · her hücre: evidence (dosya:kanıt) + justification (≥20 kr)
 - Enjekte edilen eksik modüller: ...
 - Onay bekleyen istisnalar: ...
 - Edge cases: ...

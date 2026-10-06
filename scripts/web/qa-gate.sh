@@ -205,9 +205,90 @@ else
   set_check password_policy SKIPPED
 fi
 
+# --- 5b) P1 domain artefaktı semantik denetimi (hollow module_matrix) ---
+# domain-report.json varsa dolu olmak zorunda: ≥4 modül, benzersiz ad,
+# her hücrede justification (≥20 kr) + evidence (≥10 kr, dosya/satır kaynağı).
+set_check domain_report SKIPPED
+DOMAIN_REPORT="$PROJECT/.factory/domain-report.json"
+if [[ -f "$DOMAIN_REPORT" ]]; then
+  check_begin
+  DR_TMP="$(mktemp)"
+  DR_RC=0
+  python3 - "$DOMAIN_REPORT" <<'PY' >/dev/null 2>"$DR_TMP" || DR_RC=$?
+import json, re, sys
+
+path = sys.argv[1]
+errors = []
+try:
+    with open(path, encoding="utf-8") as fh:
+        doc = json.load(fh)
+except Exception as exc:
+    print(f"geçersiz JSON: {exc}", file=sys.stderr)
+    sys.exit(1)
+
+if doc.get("result") != "requirements-frozen":
+    errors.append('result "requirements-frozen" değil')
+
+mm = doc.get("module_matrix")
+if not isinstance(mm, list):
+    errors.append("module_matrix yok")
+    mm = []
+if len(mm) < 4:
+    errors.append(f"module_matrix en az 4 modül içermeli (bulunan: {len(mm)})")
+
+seen = set()
+for i, cell in enumerate(mm):
+    if not isinstance(cell, dict):
+        errors.append(f"module_matrix[{i}] obje değil")
+        continue
+    name = str(cell.get("module", "")).strip()
+    if not name:
+        errors.append(f"module_matrix[{i}].module boş")
+    elif name.lower() in seen:
+        errors.append(f"module_matrix modül tekrarı: {name}")
+    else:
+        seen.add(name.lower())
+
+    status = cell.get("status")
+    if status not in ("present", "missing", "injected", "proposed"):
+        errors.append(f"module_matrix[{i}].status geçersiz: {status!r}")
+
+    just = str(cell.get("justification", "")).strip()
+    if len(just) < 20:
+        errors.append(
+            f"module_matrix[{i}] justification yetersiz (<20 karakter) — şablon/boş çıktı"
+        )
+    elif name and just.lower() == name.lower():
+        errors.append(f"module_matrix[{i}] justification şablon (yalnız modül adı tekrarı)")
+
+    ev = str(cell.get("evidence", "")).strip()
+    if len(ev) < 10:
+        errors.append(
+            f"module_matrix[{i}] evidence yetersiz (<10 karakter) — dosya/satır kanıtı bekleniyor"
+        )
+    elif not re.search(r"[/\\:]|\.[A-Za-z]{2,6}\b", ev):
+        errors.append(
+            f"module_matrix[{i}] evidence kaynak referansı içermiyor "
+            f"(ör. SQL/veritabani.sql:users veya core/App.php:21)"
+        )
+
+if errors:
+    print("\n".join(errors), file=sys.stderr)
+    sys.exit(1)
+sys.exit(0)
+PY
+  if [[ "$DR_RC" -ne 0 ]]; then
+    while IFS= read -r line; do
+      if [[ -n "$line" ]]; then err "domain_report: $line"; fi
+    done < "$DR_TMP"
+  fi
+  rm -f "$DR_TMP"
+  check_end domain_report
+fi
+
 # --- 6) Statik analiz + birim test (garantici teslimat) ---
 # Kural: yapılandırma var ama araç yok → o kontrol FAIL;
-#        3 kontrolden (phpstan, eslint, phpunit) >2'si SKIPPED → static_coverage FAIL.
+#        3 kontrolden (phpstan, eslint, phpunit) ≥2'si SKIPPED → static_coverage FAIL.
 STATIC_SKIPPED=0
 
 set_check phpstan SKIPPED
@@ -264,9 +345,9 @@ else
   STATIC_SKIPPED=$((STATIC_SKIPPED + 1))
 fi
 
-if [[ "$STATIC_SKIPPED" -gt 2 ]]; then
+if [[ "$STATIC_SKIPPED" -ge 2 ]]; then
   check_begin
-  err "statik/test: phpstan, eslint, phpunit kontrollerinin tamamı SKIPPED (>2) — garanti kapsamı yok; araçları kurun: composer global require phpstan/phpstan phpunit/phpunit && npm install -g eslint"
+  err "statik/test: phpstan, eslint, phpunit kontrollerinden ≥2'si SKIPPED — garanti kapsamı yok; araçları kurun: composer global require phpstan/phpstan phpunit/phpunit && npm install -g eslint"
   check_end static_coverage
 fi
 

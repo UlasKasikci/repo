@@ -5,7 +5,8 @@ set -euo pipefail
 # Senaryolar: syntax → araç ön-şartı → pozitif QA (statik 3'lü PASS) →
 # paketleme + exclusion → state graph (qa-pass / 3 retry / 4. fail HALT) →
 # negatif RBAC → negatif sepet → --allow-no-cart kaçışı → QA'sız paketleme reddi →
-# orkestratör E2E (bekleme/bozuk rapor/DONE) → statik SKIPPED eşiği
+# orkestratör E2E (bekleme/bozuk rapor/DONE) → statik SKIPPED eşiği (2/3 ve 3/3) →
+# semantik P1 kapısı (hollow module_matrix → domain_report FAIL)
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FIX="$ROOT/tests/fixtures/web-sample"
@@ -205,10 +206,30 @@ cat > "$PROJ/.factory/domain-report.json" <<'JSON'
   ],
   "roles": ["admin", "editor", "user"],
   "module_matrix": [
-    {"module": "rbac", "status": "present", "evidence": "roles + users.role_id FK"},
-    {"module": "cart", "status": "present", "evidence": "orders tablosu"},
-    {"module": "seo", "status": "present", "evidence": "robots.txt + sitemap.xml"},
-    {"module": "kvkk", "status": "present", "evidence": "KVKK aydınlatma"}
+    {
+      "module": "rbac",
+      "status": "present",
+      "evidence": "SQL/veritabani.sql:users.role_id + roles seed",
+      "justification": "users tablosunda role_id var ve roles tablosu FK ile bağlı — rol katmanı şemada present"
+    },
+    {
+      "module": "cart",
+      "status": "present",
+      "evidence": "SQL/veritabani.sql:orders.user_id FK",
+      "justification": "orders tablosu user_id FK ile sipariş akışını karşılıyor — sepet/sipariş mekanizması present"
+    },
+    {
+      "module": "seo",
+      "status": "present",
+      "evidence": "robots.txt + sitemap.xml + index.php meta description",
+      "justification": "robots.txt, sitemap.xml ve meta description çıktısı hazır — SEO modülü present"
+    },
+    {
+      "module": "kvkk",
+      "status": "present",
+      "evidence": "index.php:session_set_cookie_params SameSite=Strict",
+      "justification": "çerez onayı SameSite/HttpOnly ayarlarıyla yapıldı — KVKK aydınlatma metni home şablonunda"
+    }
   ],
   "injected_modules": [],
   "approvals": [],
@@ -223,24 +244,67 @@ rc="$(run_rc bash "$ORCH" "$PROJ")"
 grep -q '"current_phase": "DONE"' "$PROJ/.factory/web-state.json" || die "state DONE bekleniyordu"
 grep -q '"status": "done"' "$PROJ/.factory/web-state.json" || die "status=done bekleniyordu"
 [[ -f "$PROJ/Yukleme/index.php" ]] || die "Yukleme/ üretilemedi"
-python3 - "$PROJ/packaging-report.json" <<'PY' || die "packaging-report PASS değil"
+python3 - "$PROJ/packaging-report.json" "$PROJ/qa-report.json" <<'PY' || die "rapor doğrulama"
 import json, sys
-r = json.load(open(sys.argv[1], encoding="utf-8"))
-assert r["result"] == "PASS", r
+pkg = json.load(open(sys.argv[1], encoding="utf-8"))
+assert pkg["result"] == "PASS", pkg
+qa = json.load(open(sys.argv[2], encoding="utf-8"))
+assert qa["checks"].get("domain_report") == "PASS", qa["checks"]
 PY
 rc="$(run_rc bash "$ORCH" "$PROJ")"
 [[ "$rc" == "0" ]] || die "ikinci çalıştırma (zaten DONE) exit 0 beklenir, gelen $rc"
-echo "    E2E: 3 → 1 → 0 · P1..P5 → DONE · idempotent"
+echo "    E2E: 3 → 1 → 0 · P1..P5 → DONE · idempotent · domain_report=PASS"
 
-step "11) statik garanti eşiği: 3 SKIPPED → static_coverage FAIL"
+step "11) statik garanti eşiği: 2/3 SKIPPED → FAIL, 3/3 SKIPPED → FAIL"
 NOSTAT="$TMP/nostat"
 cp -R "$FIX" "$NOSTAT"
-rm -f "$NOSTAT/phpstan.neon.dist" "$NOSTAT/.eslintrc.json" "$NOSTAT/phpunit.xml"
+rm -f "$NOSTAT/phpstan.neon.dist" "$NOSTAT/phpunit.xml"
+rc="$(run_rc bash "$QA" "$NOSTAT")"
+[[ "$rc" == "1" ]] || die "2/3 SKIPPED eşiği FAIL (1) beklenir, gelen $rc"
+grep -q 'static_coverage' "$NOSTAT/qa-report.json" || die "qa-report'ta static_coverage kontrolü yok"
+echo "    2/3 SKIPPED (yalnız eslint kaldı) → static_coverage FAIL"
+rm -f "$NOSTAT/.eslintrc.json"
 rm -rf "$NOSTAT/tests"
 rc="$(run_rc bash "$QA" "$NOSTAT")"
-[[ "$rc" == "1" ]] || die "statik SKIPPED eşiği FAIL (1) beklenir, gelen $rc"
-grep -q 'static_coverage' "$NOSTAT/qa-report.json" || die "qa-report'ta static_coverage kontrolü yok"
-echo "    static_coverage: FAIL (3/3 SKIPPED > 2)"
+[[ "$rc" == "1" ]] || die "3/3 SKIPPED eşiği FAIL (1) beklenir, gelen $rc"
+echo "    3/3 SKIPPED → static_coverage FAIL (en fazla 1 SKIPPED tolere edilir)"
+
+step "12) semantik P1 kapısı: hollow module_matrix → domain_report FAIL"
+HOLLOW="$TMP/hollow"
+cp -R "$FIX" "$HOLLOW"
+mkdir -p "$HOLLOW/.factory"
+cat > "$HOLLOW/.factory/domain-report.json" <<'JSON'
+{
+  "schema_version": 1,
+  "project": "web-sample",
+  "entities": [{"name": "users"}],
+  "roles": ["user"],
+  "module_matrix": [
+    {"module": "rbac", "status": "present", "evidence": "ok", "justification": "rbac"},
+    {"module": "rbac", "status": "present", "evidence": "SQL/veritabani.sql:users", "justification": "roles tablosu var ve kullanıcılar role_id üzerinden sınıflandırılıyor"},
+    {"module": "cart", "status": "present", "evidence": "orders tablosu var", "justification": "sipariş tablosu bulunduğu için sepet mevcut kabul edildi"},
+    {"module": "seo", "status": "present", "evidence": "robots.txt mevcut", "justification": "robots.txt ve sitemap.xml dosyaları proje kökünde hazır"}
+  ],
+  "injected_modules": [],
+  "approvals": [],
+  "edge_cases": ["x"],
+  "security_context": ["y"],
+  "sql_draft": {"tables": ["users"]},
+  "result": "requirements-frozen"
+}
+JSON
+rc="$(run_rc bash "$QA" "$HOLLOW")"
+[[ "$rc" == "1" ]] || die "hollow module_matrix FAIL (1) beklenir, gelen $rc"
+python3 - "$HOLLOW/qa-report.json" <<'PY' || die "domain_report semantik hataları raporda yok"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["checks"].get("domain_report") == "FAIL", r["checks"]
+joined = " ".join(r["errors"])
+assert "justification yetersiz" in joined, r["errors"]
+assert "modül tekrarı" in joined, r["errors"]
+assert "kaynak referansı" in joined, r["errors"]
+PY
+echo "    hollow matrix: domain_report FAIL (şablon justification + modül tekrarı + kaynaksız evidence)"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

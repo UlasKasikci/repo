@@ -28,14 +28,18 @@ cat <project>/qa-report.json
 
 First write the report as UTF-8 JSON to `<project>/.factory/domain-report.json`
 (schema: `.factory/contracts/p1-domain-report.schema.json`). `module_matrix` is
-mandatory — one entry per audited module with
-`status ∈ present | missing | injected | proposed` plus evidence. Then summarize:
+mandatory with ≥4 modules; EVERY cell must be substantive:
+`status ∈ present | missing | injected | proposed`, `evidence` (≥10 chars, a real
+source reference such as `SQL/veritabani.sql:users.role_id` or `core/App.php:21`),
+and `justification` (≥20 chars, a real reason — echoing the module name or a template
+value fails the `qa-gate.sh` `domain_report` check). Then summarize:
 
 ```
 ## P1 Domain Analysis — <project>
 - Entities: ...
 - Roles: Admin / Moderator / User (role_id mandatory)
 - Module matrix: rbac=..., cart=..., seo=..., kvkk=... (present/missing/injected/proposed)
+  · each cell: evidence (file:line) + justification (≥20 chars)
 - Injected missing modules: ...
 - Awaiting approval: ...
 - Edge cases: ...

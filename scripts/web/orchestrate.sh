@@ -105,6 +105,8 @@ def check(val, sch, path):
                 check(item, items, f"{path}[{i}]")
     elif typ == "string" and not isinstance(val, str):
         errs.append(f"{path}: tip string beklenir, {type(val).__name__} bulundu")
+    elif typ == "string" and "minLength" in sch and len(val) < int(sch["minLength"]):
+        errs.append(f"{path}: en az {sch['minLength']} karakter gerekir ({len(val)} bulundu)")
     elif typ == "integer" and not isinstance(val, int):
         errs.append(f"{path}: tip integer beklenir, {type(val).__name__} bulundu")
 
@@ -171,8 +173,11 @@ Proje dizini: $PROJECT
 Kanonik şartname: $ROOT/docs/WEB-EDITION.md (§3 proaktif domain denetimi: RBAC, sepet/sipariş, SEO/KVKK).
 Çıktıyı MUTLAKA UTF-8 JSON olarak şu dosyaya yaz: $PROJECT/.factory/domain-report.json
 Şema: $CONTRACTS/p1-domain-report.schema.json
-Zorunlu alanlar: schema_version=1, project, entities, roles, module_matrix
-(modül başına {module, status: present|missing|injected|proposed, evidence}),
+Zorunlu alanlar: schema_version=1, project, entities, roles,
+module_matrix (≥4 modül; her hücre: {module, status: present|missing|injected|proposed,
+evidence: dosya/satır kaynağı örn. SQL/veritabani.sql:users.role_id veya core/App.php:21,
+justification: ≥20 karakter gerçek gerekçe} — şablon/boş değer yasak,
+qa-gate domain_report denetimini geçirmez),
 injected_modules, approvals, edge_cases, security_context,
 sql_draft.tables, result="requirements-frozen".
 EOF

@@ -35,8 +35,21 @@ cat <proje>/qa-report.json
 2. Enjekte edilen eksik modüller (gerekçe ile)
 3. Onay bekleyen istisnalar (`--allow-no-cart` vb.)
 4. SQL şema taslağı: tablolar, FK, index, seed
-5. **Modül matrisi** — her denetlenen modül için `{module, status, evidence}`;
+5. **Modül matrisi** — her denetlenen modül için `{module, status, evidence, justification}`;
    `status ∈ present | missing | injected | proposed`
+
+### Semantik zorunluluk (hollow output yasağı)
+
+Her `module_matrix` hücresi **dolu** olmak zorunda:
+
+- `evidence` (≥10 karakter): **kaynak referansı** — dosya/satır veya tablo kanıtı
+  (ör. `SQL/veritabani.sql:users.role_id`, `core/App.php:21`)
+- `justification` (≥20 karakter): modülün neden o durumda olduğuna dair **gerçek gerekçe** —
+  modül adının tekrarı veya şablon değer yasak
+- `module_matrix` ≥ 4 modül; adlar benzersiz
+
+Bu denetim iki yerde uygulanır: `orchestrate.sh` JSON şemasıyla (P1→P2 kapısı) ve
+`qa-gate.sh` `domain_report` kontrolü (şablon/boş matrix → FAIL).
 
 ### Zorunlu artefakt
 
@@ -47,7 +60,8 @@ Rapor sohbet metninde kalmaz; UTF-8 JSON olarak şu dosyaya yazılır:
 ```
 
 Zorunlu alanlar: `schema_version=1`, `project`, `entities`, `roles`,
-`module_matrix`, `injected_modules`, `approvals`, `edge_cases`,
+`module_matrix` (≥4 modül; `evidence` + `justification` zorunlu — bkz. semantik zorunluluk),
+`injected_modules`, `approvals`, `edge_cases`,
 `security_context`, `sql_draft.tables`, `result="requirements-frozen"`.
 
 Bu rapor şemaya uymadan ve dosyaya yazılmadan **P2'ye geçiş yok**
