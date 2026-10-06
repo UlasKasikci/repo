@@ -8,7 +8,8 @@ set -euo pipefail
 # orkestratör E2E (bekleme/bozuk rapor/DONE) → asimetrik statik çekirdek
 # (yalnız eslint SKIPPED PASS; phpstan/phpunit eksik FAIL) →
 # semantik P1 kapısı (hollow + fs'de olmayan kanıt → domain_report FAIL) →
-# SQL dump otomasyonu (deterministik üretim + sql_dump drift kapısı)
+# SQL dump otomasyonu (deterministik üretim + sql_dump drift kapısı) →
+# lighthouse raporlayıcı faz (SKIPPED/PASS/WARN/strict + --serve)
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FIX="$ROOT/tests/fixtures/web-sample"
@@ -16,6 +17,7 @@ QA="$ROOT/scripts/web/qa-gate.sh"
 PKG="$ROOT/scripts/web/package-yukleme.sh"
 STATE="$ROOT/scripts/web/state.sh"
 ORCH="$ROOT/scripts/web/orchestrate.sh"
+LHS="$ROOT/scripts/web/lighthouse-verify.sh"
 
 die() {
   echo "SELF-TEST FAIL: $*" >&2
@@ -32,7 +34,7 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 step "0) bash -n söz dizimi + python söz dizimi"
-for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh; do
+for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh; do
   bash -n "$ROOT/scripts/web/$s" || die "bash -n: $s"
   echo "    OK: $s"
 done
@@ -447,6 +449,88 @@ rc="$(run_rc bash "$QA" "$DUAL")"
 [[ "$rc" == "1" ]] || die "migrations+dump birlikte yokken FAIL (1) beklenir, gelen $rc"
 grep -q '"sql_schema": "FAIL"' "$DUAL/qa-report.json" || die "sql_schema FAIL değildi (koşulsuz AND kuralı)"
 echo "    migrations + dump birlikte yokken sql_schema FAIL (eski tip dump zorunlu)"
+
+step "14) lighthouse-verify: raporlayıcı faz (SKIPPED → PASS → WARN → strict + --serve)"
+LHP="$TMP/lhproj"
+cp -R "$FIX" "$LHP"
+rc="$(run_rc env -u LIGHTHOUSE_URL bash "$LHS" "$LHP")"
+[[ "$rc" == "0" ]] || die "lighthouse env yok rc0 beklenir, gelen $rc"
+python3 - "$LHP/.factory/lighthouse-report.json" <<'PY' || die "SKIPPED raporu"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["tool"] == "lighthouse-verify" and r["result"] == "SKIPPED", r
+assert any("LIGHTHOUSE_URL" in n for n in r["nots"]), r["nots"]
+PY
+echo "    env yok → SKIPPED (rc0, neden raporlandı)"
+
+STUB="$TMP/lhbin"
+mkdir -p "$STUB"
+cat > "$STUB/lighthouse" <<'STUB'
+#!/usr/bin/env bash
+OUT=""
+for a in "$@"; do case "$a" in --output-path=*) OUT="${a#*=}";; esac; done
+if [[ -z "$OUT" ]]; then echo "fake lighthouse 1.0"; exit 0; fi
+python3 - "$OUT" "${LH_FAKE_SCORE:-0.96}" <<'PYF'
+import json, sys
+json.dump({
+ "categories": {"performance": {"value": float(sys.argv[2])}, "accessibility": {"value": 1.0},
+                "best-practices": {"value": 1.0}, "seo": {"value": 0.93}},
+ "audits": {"largest-contentful-paint": {"numericValue": 1800},
+            "cumulative-layout-shift": {"numericValue": 0.02}}
+}, open(sys.argv[1], "w"))
+PYF
+STUB
+chmod +x "$STUB/lighthouse"
+
+rc="$(run_rc env PATH="$STUB:$PATH" LIGHTHOUSE_URL=http://127.0.0.1:9/ bash "$LHS" "$LHP")"
+[[ "$rc" == "0" ]] || die "lighthouse PASS rc0 beklenir, gelen $rc"
+python3 - "$LHP/.factory/lighthouse-report.json" <<'PY' || die "PASS raporu"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["result"] == "PASS", r
+assert r["scores"]["performance"] == 96 and r["metrics"]["lcp_ms"] == 1800, r
+assert r["violations"] == [], r
+PY
+echo "    eşik üstü → PASS (kategori skorları + LCP/CLS raporlandı)"
+
+rc="$(run_rc env PATH="$STUB:$PATH" LH_FAKE_SCORE=0.85 LIGHTHOUSE_URL=http://127.0.0.1:9/ bash "$LHS" "$LHP")"
+[[ "$rc" == "0" ]] || die "lighthouse WARN v1 rc0 beklenir, gelen $rc"
+python3 - "$LHP/.factory/lighthouse-report.json" <<'PY' || die "WARN raporu"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["result"] == "WARN", r
+assert any("performance 85" in v for v in r["violations"]), r["violations"]
+PY
+echo "    eşik altı → WARN ama v1'de rc0 (raporlayıcı: CI flaky değil)"
+
+rc="$(run_rc env PATH="$STUB:$PATH" LH_FAKE_SCORE=0.85 LIGHTHOUSE_URL=http://127.0.0.1:9/ bash "$LHS" "$LHP" --strict)"
+[[ "$rc" == "1" ]] || die "lighthouse --strict WARN rc1 beklenir, gelen $rc"
+echo "    --strict: WARN → exit 1 (sıkılaştırma kapısı hazır)"
+
+LH_PORT=$((21000 + RANDOM % 2000))
+rc="$(run_rc env PATH="$STUB:$PATH" LIGHTHOUSE_PORT="$LH_PORT" LIGHTHOUSE_URL= bash "$LHS" "$LHP" --serve)"
+[[ "$rc" == "0" ]] || die "lighthouse --serve rc0 beklenir, gelen $rc"
+python3 - "$LHP/.factory/lighthouse-report.json" <<'PY' || die "--serve raporu"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["result"] == "PASS" and r["url"].startswith("http://127.0.0.1:"), r
+assert any("--serve" in n for n in r["nots"]), r["nots"]
+PY
+echo "    --serve: php -S ayağa kalktı, URL türetildi, süreç kapatıldı"
+
+if command -v lighthouse >/dev/null 2>&1; then
+  echo "    (gerçek lighthouse kurulu — araç-yok yolu bu ortamda atlandı)"
+else
+  rc="$(run_rc env LIGHTHOUSE_URL=http://127.0.0.1:9/ bash "$LHS" "$LHP")"
+  [[ "$rc" == "0" ]] || die "lighthouse araç yok rc0 beklenir, gelen $rc"
+  python3 - "$LHP/.factory/lighthouse-report.json" <<'PY' || die "araç-yok SKIPPED raporu"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["result"] == "SKIPPED", r
+assert any("kurulu değil" in n for n in r["nots"]), r["nots"]
+PY
+  echo "    araç yok → SKIPPED (kurulum ipucuyla)"
+fi
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

@@ -207,6 +207,7 @@ Yukleme/
 | Paketleme | `bash`, `python3`, `shasum` | zorunlu |
 | Kontrat doğrulama | `python3 -m pip install jsonschema` | yoksa zorunlu-alan/const yedeği |
 | SQL dump | `sql-dump.sh` (python3) | migrations yoksa `sql_dump` SKIPPED; varsa drift **FAIL** |
+| Lighthouse | `lighthouse` (npm) + `LIGHTHOUSE_URL` | env/araç yoksa SKIPPED — **raporlayıcı faz** (§9) |
 | Minify | `npx --no-install terser/csso` | `minify: skipped` notu |
 
 Araç kurulumu (garantici teslimat):
@@ -228,6 +229,16 @@ npm install -g eslint
 | QA kapısı | `/web-denetle` | `bash scripts/web/qa-gate.sh .` | `/web-denetle` |
 | Paketle | `/web-yukle` | `bash scripts/web/package-yukleme.sh .` | `/web-yukle` |
 | Faz durumu | `/web-faz` | `bash scripts/web/state.sh status` | `/web-faz` |
+| Canlı doğrulama (Lighthouse) | — | `bash scripts/web/lighthouse-verify.sh .` | — |
+
+**Lighthouse faz yerleşimi (v1 kararı):** P5 **sonrası bağımsız, raporlayıcı** bir fazdır —
+state graph'a girmez, `qa-gate.sh`'yi ağırlaştırmaz (çalışan sunucu + Chrome gerekir;
+gate "hızlı ve deterministik" kalır). Sonuç `.factory/lighthouse-report.json`'a yazılır;
+`LIGHTHOUSE_URL` tanımlı değilse veya `lighthouse` kurulu değilse **SKIPPED** (exit 0).
+Eşikler (kategori ≥90, LCP <2.5s, CLS <0.1) ilk sürümde **bloklayıcı değildir** —
+altında kalınırsa `result: WARN` + exit 0; sıkılaştırmak istenirse `--strict` ile
+WARN → exit 1. `--serve` geçici `php -S` ile URL türetir. Paketlemeye girmez
+(`.factory/` denylist'tedir).
 
 **Operasyon notu (opencode):** `.opencode/agent/*` ve `.opencode/command/*` değişiklikleri
 yalnız opencode **yeniden başlatıldığında** yüklenir; `opencode debug config` ile doğrula.
@@ -240,5 +251,7 @@ ve `debug config` öncesi `find . -name '._*' -delete` ile temizle.
 - Artefakt şemaları: `.factory/contracts/{p1-domain-report,p3-qa-report,p5-packaging-report}.schema.json`
 - Örnek state: `.factory/web-state.example.json`
 - Orkestratör: `bash scripts/web/orchestrate.sh <proje> [--auto]`
+- SQL dump üretici: `bash scripts/web/sql-dump.sh <proje> [--output <path>]`
+- Lighthouse (raporlayıcı): `bash scripts/web/lighthouse-verify.sh <proje> [--serve] [--strict]`
 - Öz-test: `bash scripts/web/self-test.sh` (CI ile aynı sahne; phpstan+phpunit+eslint gerektirir)
 - CI: `.github/workflows/validate.yml`
