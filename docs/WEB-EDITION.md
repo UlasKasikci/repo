@@ -153,6 +153,7 @@ Yukleme/
 |------|------|-------|
 | Syntax | `php -l` | QA FAIL (php-cli zorunlu) |
 | Statik analiz | `phpstan` (Level 8), `eslint` | kuruluysa çalışır, yoksa atlanır + not |
+| Birim test | `phpunit` (`phpunit.xml` varsa) | kuruluysa çalışır, yoksa atlanır + not |
 | Paketleme | `bash`, `python3`, `shasum` | zorunlu |
 | Minify | `npx --no-install terser/csso` | `minify: skipped` notu |
 

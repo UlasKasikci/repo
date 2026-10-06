@@ -1,0 +1,21 @@
+# App-Fabrika Web Edition — canlı rewrite + güvenlik başlıkları
+Options -Indexes
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# hassas dosyalara erişimi kes
+<FilesMatch "^(veritabani\.sql|\.env)">
+  Require all denied
+</FilesMatch>

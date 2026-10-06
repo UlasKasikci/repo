@@ -212,11 +212,28 @@ fi
 
 set_check eslint SKIPPED
 if [[ -f "$PROJECT/.eslintrc" || -f "$PROJECT/.eslintrc.json" || -f "$PROJECT/eslint.config.js" ]]; then
-  if command -v npx >/dev/null 2>&1; then
+  if command -v npx >/dev/null 2>&1 && (cd "$PROJECT" && npx --no-install eslint --version >/dev/null 2>&1); then
     check_begin
     (cd "$PROJECT" && npx --no-install eslint . >/dev/null 2>&1) \
       || err "statik: eslint hatası verdi"
     check_end eslint
+  fi
+fi
+
+# birim testleri (phpunit.xml varsa ve araç kuruluysa)
+set_check phpunit SKIPPED
+if [[ -f "$PROJECT/phpunit.xml" || -f "$PROJECT/phpunit.xml.dist" ]]; then
+  PU=""
+  if [[ -x "$PROJECT/vendor/bin/phpunit" ]]; then
+    PU="$PROJECT/vendor/bin/phpunit"
+  elif command -v phpunit >/dev/null 2>&1; then
+    PU="phpunit"
+  fi
+  if [[ -n "$PU" ]]; then
+    check_begin
+    (cd "$PROJECT" && "$PU" --configuration phpunit.xml >/dev/null 2>&1) \
+      || err "test: phpunit birim testleri başarısız"
+    check_end phpunit
   fi
 fi
 
