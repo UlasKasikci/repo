@@ -16,6 +16,18 @@ final class App
                 http_response_code(422);
                 exit('Geçersiz e-posta');
             }
+
+            $password = (string)($_POST['password'] ?? '');
+            if (isset($_POST['register'])) {
+                if ($password === '') {
+                    http_response_code(422);
+                    exit('Parola zorunlu');
+                }
+                $this->registerUser($email, $password);
+            } elseif ($password !== '' && !$this->attemptLogin($email, $password)) {
+                http_response_code(401);
+                exit('E-posta veya parola hatalı');
+            }
         }
 
         $users = $this->listUsers();
@@ -31,12 +43,18 @@ final class App
         }
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     private function listUsers(): array
     {
         $stmt = (new Database())->pdo()->prepare('SELECT id, email FROM users ORDER BY id ASC');
         $stmt->execute();
 
-        return $stmt->fetchAll();
+        /** @var array<int, array<string, mixed>> $rows */
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return $rows;
     }
 
     private function attemptLogin(string $email, string $rawPassword): bool
@@ -54,5 +72,14 @@ final class App
     private function hashPassword(string $rawPassword): string
     {
         return password_hash($rawPassword, PASSWORD_ARGON2ID);
+    }
+
+    private function registerUser(string $email, string $rawPassword): void
+    {
+        $stmt = (new Database())->pdo()->prepare('INSERT INTO users (email, password_hash) VALUES (:email, :password_hash)');
+        $stmt->execute([
+            ':email' => $email,
+            ':password_hash' => $this->hashPassword($rawPassword),
+        ]);
     }
 }

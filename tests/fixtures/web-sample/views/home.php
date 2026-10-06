@@ -1,4 +1,4 @@
-<?php /** @var array $users */ ?>
+<?php /** @var array<int, array<string, mixed>> $users */ ?>
 <!doctype html>
 <html lang="tr">
 <head>

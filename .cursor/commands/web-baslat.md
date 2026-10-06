@@ -24,8 +24,14 @@ bash scripts/web/qa-gate.sh . ; cat qa-report.json
 
    (Bu koşu P1 analiz kanıtıdır; faz geçişi kaydı için `/web-denetle` kullanılır.)
 
-4. P1 raporunu yaz: varlıklar, roller, enjekte edilen modüller, onay bekleyen istisnalar,
-   edge case'ler, security context, SQL şema taslağı.
+4. P1 raporunu **zorunlu artefakt olarak yaz**: `<proje>/.factory/domain-report.json`
+   (UTF-8 JSON; şema: `.factory/contracts/p1-domain-report.schema.json` — `module_matrix`
+   her modül için `present|missing|injected|proposed` + evidence) ve özet: varlıklar,
+   roller, enjekte edilen modüller, onay bekleyen istisnalar, edge case'ler,
+   security context, SQL şema taslağı.
+
+   `bash scripts/web/orchestrate.sh .` bu artefaktı şemayla doğrular; yoksa P2'ye
+   beklemede kalır (exit 3) veya geçersiz raporda hata verir (exit 1).
 
 ## Faz dondurma (kullanıcı onayı)
 

@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://app-fabrika.local/contracts/p1-domain-report.schema.json",
+  "title": "App-Fabrika P1 Domain Report",
+  "description": "P1 → P2 geçiş kapısı: Domain Architect analiz çıktısı (.factory/domain-report.json)",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "project",
+    "entities",
+    "roles",
+    "module_matrix",
+    "injected_modules",
+    "approvals",
+    "edge_cases",
+    "security_context",
+    "sql_draft",
+    "result"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": { "const": 1 },
+    "project": { "type": "string", "minLength": 1 },
+    "entities": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "additionalProperties": true,
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "fields": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "roles": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "module_matrix": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["module", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "module": { "type": "string", "minLength": 1 },
+          "status": {
+            "enum": ["present", "missing", "injected", "proposed"]
+          },
+          "evidence": { "type": "string" }
+        }
+      }
+    },
+    "injected_modules": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "approvals": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "edge_cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "security_context": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "sql_draft": {
+      "type": "object",
+      "required": ["tables"],
+      "additionalProperties": true,
+      "properties": {
+        "tables": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "seed_rows": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "result": { "const": "requirements-frozen" }
+  }
+}

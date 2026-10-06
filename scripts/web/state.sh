@@ -126,7 +126,24 @@ if op == "advance":
         if phase == "P4":
             die("P4 → düzeltme sonrası `qa-pass` veya `qa-fail` beklenir")
         if phase == "P5":
-            die("P5 son faz — ilerleme yok (paketleme sonrası DONE)")
+            pkg_path = os.path.join(project, "packaging-report.json")
+            if not os.path.exists(pkg_path):
+                die("P5 → DONE yalnız paketleme raporu varken geçerli "
+                    "(önce `package-yukleme.sh` → packaging-report.json)")
+            try:
+                with open(pkg_path, encoding="utf-8") as fh:
+                    pkg = json.load(fh)
+            except (OSError, json.JSONDecodeError) as exc:
+                die(f"packaging-report.json okunamadı: {exc}")
+            if pkg.get("result") != "PASS":
+                die("packaging-report.json result != PASS — yükleme doğrulanamadı")
+            state["current_phase"] = "DONE"
+            state["status"] = "done"
+            state["last_error"] = None
+            log(state, "advance", **{"from": "P5", "to": "DONE", "condition": "yukleme-verified"})
+            save_state(state)
+            print("state: P5 → DONE (yukleme-verified)")
+            sys.exit(0)
         die(f"geçersiz faz: {phase}")
     state["current_phase"] = nxt
     log(state, "advance", **{"from": phase, "to": nxt})

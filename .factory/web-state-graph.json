@@ -56,13 +56,22 @@
     { "from": "P4", "to": "HALT", "condition": "retries-exhausted", "artifact": "debug_report.json" },
     { "from": "P5", "to": "DONE", "condition": "yukleme-verified" }
   ],
-  "exit_codes": { "0": "PASS", "1": "FAIL_OR_INVALID", "2": "HALT" },
+  "exit_codes": {
+    "0": "PASS",
+    "1": "FAIL_OR_INVALID",
+    "2": "HALT",
+    "3": "WAITING_FOR_LLM_STEP (orchestrate.sh — bekleme, mimari değil)"
+  },
   "artifacts": {
     "state": ".factory/web-state.json",
     "graph_contract": ".factory/web-state-graph.json",
+    "domain_report": ".factory/domain-report.json",
+    "domain_contract": ".factory/contracts/p1-domain-report.schema.json",
     "qa_report": "qa-report.json",
+    "qa_contract": ".factory/contracts/p3-qa-report.schema.json",
     "debug_report": "debug_report.json",
     "packaging_report": "packaging-report.json",
+    "packaging_contract": ".factory/contracts/p5-packaging-report.schema.json",
     "output_dir": "Yukleme/",
     "sql_dump": "Yukleme/SQL/veritabani.sql"
   },
@@ -70,6 +79,7 @@
     "state": "scripts/web/state.sh",
     "qa_gate": "scripts/web/qa-gate.sh",
     "packager": "scripts/web/package-yukleme.sh",
-    "self_test": "scripts/web/self-test.sh"
+    "self_test": "scripts/web/self-test.sh",
+    "orchestrator": "scripts/web/orchestrate.sh"
   }
 }

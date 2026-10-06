@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://app-fabrika.local/contracts/p3-qa-report.schema.json",
+  "title": "App-Fabrika P3 QA Report",
+  "description": "P3 QA kapısı çıktısı (qa-gate.sh her koşuda üretir): <proje>/qa-report.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "tool",
+    "version",
+    "project",
+    "result",
+    "checks",
+    "errors",
+    "warnings",
+    "approved_exceptions",
+    "state",
+    "at"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": { "const": 1 },
+    "tool": { "const": "qa-gate" },
+    "version": { "type": "string", "minLength": 1 },
+    "project": { "type": "string", "minLength": 1 },
+    "result": { "enum": ["PASS", "FAIL"] },
+    "checks": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["PASS", "FAIL", "SKIPPED"]
+      }
+    },
+    "errors": { "type": "array", "items": { "type": "string" } },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "approved_exceptions": { "type": "array", "items": { "type": "string" } },
+    "state": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["current_phase", "retry_count", "max_retries", "status"],
+          "additionalProperties": true,
+          "properties": {
+            "current_phase": { "type": "string" },
+            "retry_count": { "type": "integer", "minimum": 0 },
+            "max_retries": { "type": "integer", "minimum": 1 },
+            "status": { "type": "string" }
+          }
+        }
+      ]
+    },
+    "at": { "type": "string", "minLength": 1 }
+  }
+}

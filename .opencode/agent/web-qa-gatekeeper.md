@@ -19,7 +19,9 @@ cat <project>/qa-report.json
 Checks: `php -l` on every file, structure (index.php, .htaccess, robots.txt, sitemap.xml,
 core/, views/), SQL (UTF-8, CREATE TABLE, FOREIGN KEY, seed, RBAC role_id/permissions,
 catalog→cart), OWASP static greps (eval, mysql_*, superglobal-in-query, md5/sha1, LFI),
-CSRF, HttpOnly session, password_hash/password_verify.
+CSRF, HttpOnly session, password_hash/password_verify, and the static trio
+(phpstan level 8, eslint, phpunit): config declared but tool missing = FAIL; all three
+SKIPPED (>2) = `static_coverage` FAIL (guarantee threshold).
 
 Decision: exit 0 = `Check: PASS` (0 errors AND 0 warnings) → P5; exit 1 = FAIL with
 `debug_report.json` (retry 1–3 → P4); exit 2 = HALT (4th failure, max_retries: 3).

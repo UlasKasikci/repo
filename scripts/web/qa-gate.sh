@@ -35,6 +35,12 @@ command -v python3 >/dev/null 2>&1 || { echo "qa-gate: python3 gerekli" >&2; exi
 [[ -d "$PROJECT" ]] || { echo "qa-gate: dizin yok: $PROJECT" >&2; exit 1; }
 PROJECT="$(cd "$PROJECT" && pwd)"
 
+# composer global araç dizinleri (phpstan, phpunit) PATH'e ekle
+for _bin in "$HOME/.composer/vendor/bin" "$HOME/.config/composer/vendor/bin"; do
+  if [[ -d "$_bin" ]]; then PATH="$_bin:$PATH"; fi
+done
+export PATH
+
 ERR_FILE="$(mktemp)"
 WARN_FILE="$(mktemp)"
 EXC_FILE="$(mktemp)"
@@ -199,15 +205,25 @@ else
   set_check password_policy SKIPPED
 fi
 
-# --- 6) İsteğe bağlı statik analiz (yalnız proje yapılandırması varsa) ---
+# --- 6) Statik analiz + birim test (garantici teslimat) ---
+# Kural: yapılandırma var ama araç yok → o kontrol FAIL;
+#        3 kontrolden (phpstan, eslint, phpunit) >2'si SKIPPED → static_coverage FAIL.
+STATIC_SKIPPED=0
+
 set_check phpstan SKIPPED
-if command -v phpstan >/dev/null 2>&1 || [[ -x "$PROJECT/vendor/bin/phpstan" ]]; then
-  if [[ -f "$PROJECT/phpstan.neon" || -f "$PROJECT/phpstan.neon.dist" ]]; then
+if [[ -f "$PROJECT/phpstan.neon" || -f "$PROJECT/phpstan.neon.dist" ]]; then
+  if command -v phpstan >/dev/null 2>&1 || [[ -x "$PROJECT/vendor/bin/phpstan" ]]; then
     check_begin
     (cd "$PROJECT" && phpstan analyse --no-progress --error-format=raw >/dev/null 2>&1) \
       || err "statik: phpstan Level 8 hatası verdi"
     check_end phpstan
+  else
+    check_begin
+    err "statik: phpstan yapılandırması var ama araç kurulu değil — composer global require phpstan/phpstan"
+    check_end phpstan
   fi
+else
+  STATIC_SKIPPED=$((STATIC_SKIPPED + 1))
 fi
 
 set_check eslint SKIPPED
@@ -217,10 +233,15 @@ if [[ -f "$PROJECT/.eslintrc" || -f "$PROJECT/.eslintrc.json" || -f "$PROJECT/es
     (cd "$PROJECT" && npx --no-install eslint . >/dev/null 2>&1) \
       || err "statik: eslint hatası verdi"
     check_end eslint
+  else
+    check_begin
+    err "statik: eslint yapılandırması var ama araç kurulu değil — npm install -g eslint"
+    check_end eslint
   fi
+else
+  STATIC_SKIPPED=$((STATIC_SKIPPED + 1))
 fi
 
-# birim testleri (phpunit.xml varsa ve araç kuruluysa)
 set_check phpunit SKIPPED
 if [[ -f "$PROJECT/phpunit.xml" || -f "$PROJECT/phpunit.xml.dist" ]]; then
   PU=""
@@ -234,7 +255,19 @@ if [[ -f "$PROJECT/phpunit.xml" || -f "$PROJECT/phpunit.xml.dist" ]]; then
     (cd "$PROJECT" && "$PU" --configuration phpunit.xml >/dev/null 2>&1) \
       || err "test: phpunit birim testleri başarısız"
     check_end phpunit
+  else
+    check_begin
+    err "test: phpunit yapılandırması var ama araç kurulu değil — composer global require phpunit/phpunit"
+    check_end phpunit
   fi
+else
+  STATIC_SKIPPED=$((STATIC_SKIPPED + 1))
+fi
+
+if [[ "$STATIC_SKIPPED" -gt 2 ]]; then
+  check_begin
+  err "statik/test: phpstan, eslint, phpunit kontrollerinin tamamı SKIPPED (>2) — garanti kapsamı yok; araçları kurun: composer global require phpstan/phpstan phpunit/phpunit && npm install -g eslint"
+  check_end static_coverage
 fi
 
 # --- Sonuç: 0 Error, 0 Warning ---

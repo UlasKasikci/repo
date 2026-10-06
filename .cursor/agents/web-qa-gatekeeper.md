@@ -21,7 +21,8 @@ cat <proje>/qa-report.json
 
 Kontroller: `php -l` (tüm dosyalar) · yapı · SQL (UTF-8/FK/seed/RBAC/sepet) · OWASP grep
 (eval, mysql_*, superglobal-in-query, ham md5, LFI) · CSRF/HttpOnly/password_hash politikası
-· phpstan/eslint (yapılandırılmışsa).
+· phpstan (Level 8) + eslint + phpunit: yapılandırma var ama araç yoksa **FAIL**;
+üçü de SKIPPED olursa `static_coverage` **FAIL** (§6/§8 garanti eşiği).
 
 ## Karar semantiği
 

@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://app-fabrika.local/contracts/p5-packaging-report.schema.json",
+  "title": "App-Fabrika P5 Packaging Report",
+  "description": "P5 paketleme çıktısı (package-yukleme.sh): <proje>/packaging-report.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "tool",
+    "version",
+    "project",
+    "output",
+    "result",
+    "files_count",
+    "bytes_total",
+    "sql_source",
+    "sql_output",
+    "failures",
+    "skipped",
+    "notes",
+    "manifest",
+    "at"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": { "const": 1 },
+    "tool": { "const": "package-yukleme" },
+    "version": { "type": "string", "minLength": 1 },
+    "project": { "type": "string", "minLength": 1 },
+    "output": { "type": "string", "minLength": 1 },
+    "result": { "enum": ["PASS", "FAIL"] },
+    "files_count": { "type": "integer", "minimum": 0 },
+    "bytes_total": { "type": "integer", "minimum": 0 },
+    "sql_source": { "type": ["string", "null"] },
+    "sql_output": { "type": ["string", "null"] },
+    "failures": { "type": "array", "items": { "type": "string" } },
+    "skipped": { "type": "array", "items": { "type": "string" } },
+    "notes": { "type": "array", "items": { "type": "string" } },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["sha256", "bytes"],
+        "additionalProperties": true,
+        "properties": {
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "bytes": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "at": { "type": "string", "minLength": 1 }
+  }
+}

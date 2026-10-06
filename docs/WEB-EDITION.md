@@ -37,7 +37,9 @@ START → P1 (Domain & Scope) → P2 (Code Gen) → P3 (QA Pool) ──PASS─�
 ### Geçiş kuralları
 
 1. **P1 → P2:** Tüm iş kuralları (edge case, security context, eksik modül kararı) dondurulmadan
-   kod üretimi tetiklenemez.
+   kod üretimi tetiklenemez. Kapı artefaktı: `<proje>/.factory/domain-report.json`
+   (şema: `.factory/contracts/p1-domain-report.schema.json` — `module_matrix` zorunlu;
+   `orchestrate.sh` JSON şemasıyla doğrular).
 2. **P2 → P3:** Kod yalnızca dosya varlığı ve yapı bütünlüğüyle geçer; asıl kapı P3'tedir.
 3. **P3 → P5:** `scripts/web/qa-gate.sh` exit 0 (`0 Error, 0 Warning`) alınmadan `Yukleme/`
    dizini oluşturulamaz.
@@ -45,19 +47,33 @@ START → P1 (Domain & Scope) → P2 (Code Gen) → P3 (QA Pool) ──PASS─�
 5. **max_retries: 3** — 3 başarısızlık toleranslıdır (retry 1–3 → P4); **4. başarısızlık
    (3 defadan fazla)** graph'ı **HALT**'a götürür: `debug_report.json` üretilir, mimari
    durur, sonsuz döngü yoktur.
+6. **P5 → DONE:** `packaging-report.json` `result=PASS` iken `state.sh advance` ile kapanır
+   (`condition: yukleme-verified`).
+
+### Orkestratör (faz sürücüsü)
+
+```bash
+bash scripts/web/orchestrate.sh <proje_dizini>          # deterministik faz sürüşü
+bash scripts/web/orchestrate.sh <proje_dizini> --auto   # eksik LLM adımları opencode run --agent ile
+```
+
+Eksik faz artefaktını (P1 raporu, P2 iskeleti, P4 düzeltmesi) **bekletir**; hazır olanı
+işler, HALT'ı aynadan geçirir. Çıktı raporları `.factory/contracts/*.schema.json` ile
+doğrulanır (`jsonschema` varsa tam, yoksa zorunlu-alan/const yedeği).
 
 ### State komutları
 
 ```bash
 bash scripts/web/state.sh status     # okuma
 bash scripts/web/state.sh start      # P1, retry=0
-bash scripts/web/state.sh advance    # P1→P2→P3→P5 sıralı ilerleme
+bash scripts/web/state.sh advance    # P1→P2→P3; P5→DONE (yukleme-verified)
 bash scripts/web/state.sh qa-pass    # P3/P4 → P5
 bash scripts/web/state.sh qa-fail    # retry++ / HALT (retry alias)
 bash scripts/web/state.sh halt       # manuel durdurma
 ```
 
-Exit kodları: `0` OK · `1` geçersiz geçiş · `2` HALT.
+Exit kodları: `0` OK · `1` geçersiz geçiş/geçersiz artefakt · `2` HALT ·
+`3` orkestratör bekleme (LLM adımı gerekli; mimari değil).
 
 ## 3. Faz 1 — Proaktif Domain Denetimi (Agent 1)
 
@@ -72,6 +88,13 @@ Exit kodları: `0` OK · `1` geçersiz geçiş · `2` HALT.
   eklenir.
 
 Bu denetimler `scripts/web/qa-gate.sh` içinde deterministik olarak uygulanır.
+
+**P1 artefaktı (zorunlu):** Domain Architect denetim sonucunu
+`<proje>/.factory/domain-report.json` dosyasına UTF-8 JSON olarak yazar
+(şema: `.factory/contracts/p1-domain-report.schema.json`; `module_matrix` — her modül
+`present|missing|injected|proposed` + evidence). Bu dosya yoksa veya şemaya uymuyorsa
+`orchestrate.sh` P2'ye geçmez (exit 1/3); `state.sh advance` P1→P2'yi yalnız geçiş
+anında hücresel olarak değil, artefakt varlığını orkestratör katmanında doğrular.
 
 ## 4. Faz 2/3 — Mimari & Kod Standartları
 
@@ -109,10 +132,13 @@ bash scripts/web/qa-gate.sh <proje_dizini>
 ```
 
 Kontroller: `php -l` (tüm PHP dosyaları) · yapısal dosya denetimi · SQL şema denetimi
-(FK/index/seed/RBAC/sepet) · OWASP grep'leri · raporlar.
+(FK/index/seed/RBAC/sepet) · OWASP grep'leri · **statik/test üçlüsü** · raporlar.
 
 - Çıktılar: `qa-report.json` (her koşuda), `debug_report.json` (yalnız FAIL).
 - `0 Error, 0 Warning` → `Check: PASS` → yalnız o zaman P5.
+- **Statik garanti eşiği:** `phpstan`/`eslint`/`phpunit` yapılandırması var ama araç
+  kurulmamışsa o kontrol **FAIL**; üç kontrolün tamamı SKIPPED olursa (eşik: >2)
+  `static_coverage` kontrolü FAIL — araçsız QA kabul edilmez.
 - **max_retries: 3** — 3 başarısızlık P4'e döner; **4. başarısızlıkta** `state.sh` HALT
   (exit 2) + `debug_report.json`.
 
@@ -152,23 +178,43 @@ Yukleme/
 | Adım | Araç | Yoksa |
 |------|------|-------|
 | Syntax | `php -l` | QA FAIL (php-cli zorunlu) |
-| Statik analiz | `phpstan` (Level 8), `eslint` | kuruluysa çalışır, yoksa atlanır + not |
-| Birim test | `phpunit` (`phpunit.xml` varsa) | kuruluysa çalışır, yoksa atlanır + not |
+| Statik analiz | `phpstan` (Level 8), `eslint` | yapılandırma varsa kurulmamışsa **FAIL**; yoksa SKIPPED |
+| Birim test | `phpunit` (`phpunit.xml` varsa) | yapılandırma varsa kurulmamışsa **FAIL**; yoksa SKIPPED |
+| Statik eşik | 3 kontrolün >2'si SKIPPED | `static_coverage` **FAIL** (§6) |
 | Paketleme | `bash`, `python3`, `shasum` | zorunlu |
+| Kontrat doğrulama | `python3 -m pip install jsonschema` | yoksa zorunlu-alan/const yedeği |
 | Minify | `npx --no-install terser/csso` | `minify: skipped` notu |
+
+Araç kurulumu (garantici teslimat):
+
+```bash
+composer global require phpstan/phpstan phpunit/phpunit
+npm install -g eslint
+```
+
+`qa-gate.sh`/`self-test.sh` composer global bin dizinlerini (`~/.composer/vendor/bin`,
+`~/.config/composer/vendor/bin`) PATH'e otomatik ekler.
 
 ## 9. Route / Komut Eşlemesi
 
 | İşlem | Cursor | Claude Code | opencode |
 |-------|--------|-------------|----------|
 | Başlat (P1 + intent) | `/web-baslat` | `bash scripts/web/state.sh start` | `/web-baslat` |
+| Orkestratör (faz sürücüsü) | `/web-baslat` | `bash scripts/web/orchestrate.sh .` | `/web-baslat` |
 | QA kapısı | `/web-denetle` | `bash scripts/web/qa-gate.sh .` | `/web-denetle` |
 | Paketle | `/web-yukle` | `bash scripts/web/package-yukleme.sh .` | `/web-yukle` |
 | Faz durumu | `/web-faz` | `bash scripts/web/state.sh status` | `/web-faz` |
 
+**Operasyon notu (opencode):** `.opencode/agent/*` ve `.opencode/command/*` değişiklikleri
+yalnız opencode **yeniden başlatıldığında** yüklenir; `opencode debug config` ile doğrula.
+exFAT/FAT32 hacimlerde `._*` AppleDouble ikizleri komut/ajan listesini bozar — paketleme
+ve `debug config` öncesi `find . -name '._*' -delete` ile temizle.
+
 ## 10. Referanslar
 
 - State kontratı: `.factory/web-state-graph.json`
+- Artefakt şemaları: `.factory/contracts/{p1-domain-report,p3-qa-report,p5-packaging-report}.schema.json`
 - Örnek state: `.factory/web-state.example.json`
-- Öz-test: `bash scripts/web/self-test.sh` (CI ile aynı sahne)
+- Orkestratör: `bash scripts/web/orchestrate.sh <proje> [--auto]`
+- Öz-test: `bash scripts/web/self-test.sh` (CI ile aynı sahne; phpstan+phpunit+eslint gerektirir)
 - CI: `.github/workflows/validate.yml`

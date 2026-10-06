@@ -28,9 +28,9 @@ jobs:
             echo "OK: $f"
           done
 
-      - name: JSON lint (config matrisi + state kontratı)
+      - name: JSON lint (config matrisi + state kontratı + contracts)
         run: |
-          for f in opencode.json .factory/*.json .cursor/mcp*.json*; do
+          for f in opencode.json .factory/*.json .factory/contracts/*.json .cursor/mcp*.json*; do
             [ -f "$f" ] || continue
             python3 -m json.tool "$f" > /dev/null
             echo "OK: $f"
@@ -40,6 +40,14 @@ jobs:
         run: |
           python3 -m pip install --quiet pyyaml
           python3 -c "import yaml; yaml.safe_load(open('antigravity.yaml', encoding='utf-8')); print('OK: antigravity.yaml')"
+
+      - name: Static analysis & test tools (garantici teslimat, §8)
+        run: |
+          composer global require phpstan/phpstan phpunit/phpunit --no-interaction --no-progress
+          echo "$(composer global config bin-dir --absolute 2>/dev/null | tail -1)" >> "$GITHUB_PATH"
+          npm install -g eslint@8
+          python3 -m pip install --quiet jsonschema
+          echo "tools ready"
 
       - name: State Graph + QA + Packaging self-test
         run: bash scripts/web/self-test.sh

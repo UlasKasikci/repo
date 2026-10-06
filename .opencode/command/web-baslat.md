@@ -10,7 +10,12 @@ Proje dizini: `$ARGUMENTS` (boşsa `.`).
    eksiklerini öner ve enjekte et.
 3. Proje dosyaları varsa deterministik kanıt: `bash scripts/web/qa-gate.sh $ARGUMENTS` +
    `qa-report.json` oku.
-4. P1 raporunu yaz (varlıklar, roller, enjekte modüller, onay bekleyen istisnalar, edge
-   case'ler, security context, SQL taslağı).
+4. P1 raporunu **zorunlu artefakt** olarak yaz: `$ARGUMENTS/.factory/domain-report.json`
+   (UTF-8 JSON; şema: `.factory/contracts/p1-domain-report.schema.json` — `module_matrix`
+   her modül için `present|missing|injected|proposed` + evidence): varlıklar, roller,
+   enjekte modüller, onay bekleyen istisnalar, edge case'ler, security context, SQL taslağı.
+   `bash scripts/web/orchestrate.sh $ARGUMENTS` bu artefaktı doğrular (yoksa exit 3 bekleme,
+   geçersizse exit 1).
 5. Kullanıcı onaylayınca: `bash scripts/web/state.sh advance $ARGUMENTS` (requirements-frozen
-   → P2). Kullanıcı onaysız P2'ye geçme.
+   → P2) veya tüm zincir için `bash scripts/web/orchestrate.sh $ARGUMENTS`. Kullanıcı
+   onaysız P2'ye geçme.
