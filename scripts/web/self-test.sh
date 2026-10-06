@@ -381,6 +381,25 @@ echo "    fs-uydurma: qa-gate domain_report FAIL (olmayan dosyaya atıf)"
 rc="$(run_rc bash "$ORCH" "$PHANTOM")"
 [[ "$rc" == "1" ]] || die "orkestratör fs-uydurma P1 reddi (1) beklenir, gelen $rc"
 echo "    fs-uydurma: orkestratör P1 → exit 1 (domain-check.py fs katmanı)"
+# nokta-dosya kanıtı: `.eslintrc.json` noktalı adla fs'e sorulur → mevcutsa PASS
+python3 - "$PHANTOM/.factory/domain-report.json" <<'PY' || die "dotfile kanıtı kurulamadı"
+import json, sys
+p = sys.argv[1]
+d = json.load(open(p, encoding="utf-8"))
+for cell in d["module_matrix"]:
+    if cell["module"] == "kvkk":
+        cell["evidence"] = ".eslintrc.json yapılandırma + sitemap.xml kanıtı"
+with open(p, "w", encoding="utf-8") as fh:
+    json.dump(d, fh, ensure_ascii=False)
+PY
+rc="$(run_rc bash "$QA" "$PHANTOM")"
+[[ "$rc" == "0" ]] || die "nokta-dosya kanıtı PASS (0) beklenir, gelen $rc"
+python3 - "$PHANTOM/qa-report.json" <<'PY' || die "dotfile domain_report PASS değil"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["checks"].get("domain_report") == "PASS", r["checks"]
+PY
+echo "    nokta-dosya kanıtı (.eslintrc.json): noktalı adla fs kontrolü → PASS"
 
 step "13) SQL dump otomasyonu: deterministik üretim + drift kapısı"
 DUMP="$TMP/dumpproj"
@@ -405,6 +424,29 @@ assert r["checks"].get("sql_dump") == "FAIL", r["checks"]
 assert any("senkron değil" in e for e in r["errors"]), r["errors"]
 PY
 echo "    deterministik üretim (iki koşu byte-identical + commit'li dosyayla eşit) + drift → sql_dump FAIL"
+
+# SKIPPED bütçesi bilinçli: iki kanal yan yana PASS edebilir, ama her kanalın
+# kendi zorunlu çekirdeği var — sql_dump SKIPPED olsa bile sql_schema koşulsuzdur.
+DUAL="$TMP/dual"
+cp -R "$FIX" "$DUAL"
+rm -rf "$DUAL/SQL/migrations"
+rm -f "$DUAL/.eslintrc.json"
+rc="$(run_rc bash "$QA" "$DUAL")"
+[[ "$rc" == "0" ]] || die "dual-SKIPPED PASS (0) beklenir, gelen $rc"
+python3 - "$DUAL/qa-report.json" <<'PY' || die "dual-SKIPPED kanal denetimi"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+c = r["checks"]
+assert r["result"] == "PASS" and r["errors"] == [], (r["result"], r["errors"])
+assert c.get("sql_dump") == "SKIPPED" and c.get("eslint") == "SKIPPED", c
+assert c.get("sql_schema") == "PASS" and c.get("static_coverage") == "PASS", c
+PY
+echo "    dual-SKIPPED (sql_dump+eslint) PASS — kanal-bazlı çekirdekler ayakta"
+rm -f "$DUAL/SQL/veritabani.sql"
+rc="$(run_rc bash "$QA" "$DUAL")"
+[[ "$rc" == "1" ]] || die "migrations+dump birlikte yokken FAIL (1) beklenir, gelen $rc"
+grep -q '"sql_schema": "FAIL"' "$DUAL/qa-report.json" || die "sql_schema FAIL değildi (koşulsuz AND kuralı)"
+echo "    migrations + dump birlikte yokken sql_schema FAIL (eski tip dump zorunlu)"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

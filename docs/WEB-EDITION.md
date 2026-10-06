@@ -155,6 +155,11 @@ Kontroller: `php -l` (tüm PHP dosyaları) · yapısal dosya denetimi · SQL şe
   yapılandırması yoksa o kontrol doğrudan **FAIL**; yapılandırma var ama araç kurulu
   değilse de FAIL. Yalnız `eslint` SKIPPED olabilir (ör. JS'siz proje).
   `static_coverage` = `phpstan=PASS ∧ phpunit=PASS`; aksi her koşulda FAIL.
+- **SKIPPED bütçesi yerine kanal-bazlı çekirdekler:** genel "≥2 SKIPPED" sayacı yoktur;
+  her SKIPPED kanalın kendi zorunlu karşılığı vardır. `sql_dump` SKIPPED olsa bile
+  `sql_schema` **koşulsuz** çalışır (migrations yoksa eski tip `SQL/veritabani.sql`
+  zorunlu — UTF-8/FK/INSERT/RBAC/sepet denetimi); `domain_report` yalnız P1 artefaktı
+  hiç yoksa SKIPPED olabilir (fabrika akışında P1'i `orchestrate.sh`/`state.sh` zorlar).
 - **max_retries: 3** — 3 başarısızlık P4'e döner; **4. başarısızlıkta** `state.sh` HALT
   (exit 2) + `debug_report.json`.
 

@@ -20,8 +20,11 @@ FILE_EXTS = (
     "htaccess|ini|dist|env|example|lock"
 )
 SOURCE_RE = re.compile(r"[/\\:]|\.[A-Za-z]{2,6}\b")
+# Baştaki nokta dahil: `.eslintrc.json` / `.htaccess` gibi adaylar doğru adla
+# fs'e sorulur (nokta düşerse `eslintrc.json` → varolmayan dosya → sahte FAIL).
+# `:users` / `:21` sonekleri char class'ta `:` olmadığından doğal olarak split edilir.
 FILE_RE = re.compile(
-    r"(?<![\w])([A-Za-z0-9_][A-Za-z0-9_./-]*\.(?:" + FILE_EXTS + r"))\b"
+    r"(?<![\w])(\.?[A-Za-z0-9_][A-Za-z0-9_./-]*\.(?:" + FILE_EXTS + r"))\b"
 )
 
 
