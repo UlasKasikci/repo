@@ -148,6 +148,14 @@ except Exception:
 PY
 }
 
+semantic_domain() {
+  python3 "$ROOT/scripts/web/domain-check.py" "$1" "$PROJECT"
+}
+
+p1_gate_ok() {
+  validate_artifact "$1" "$CONTRACTS/p1-domain-report.schema.json" && semantic_domain "$1"
+}
+
 run_agent() {
   local agent="$1" prompt="$2"
   if ! command -v opencode >/dev/null 2>&1; then
@@ -175,7 +183,8 @@ Kanonik şartname: $ROOT/docs/WEB-EDITION.md (§3 proaktif domain denetimi: RBAC
 Şema: $CONTRACTS/p1-domain-report.schema.json
 Zorunlu alanlar: schema_version=1, project, entities, roles,
 module_matrix (≥4 modül; her hücre: {module, status: present|missing|injected|proposed,
-evidence: dosya/satır kaynağı örn. SQL/veritabani.sql:users.role_id veya core/App.php:21,
+evidence: dosya/satır kaynağı örn. SQL/veritabani.sql:users.role_id veya core/App.php:21 —
+adı geçen dosyalar proje kökünde GERÇEKTEN VAR olmalı (domain-check.py fs doğrulaması),
 justification: ≥20 karakter gerçek gerekçe} — şablon/boş değer yasak,
 qa-gate domain_report denetimini geçirmez),
 injected_modules, approvals, edge_cases, security_context,
@@ -235,11 +244,11 @@ while true; do
       R="$PROJECT/.factory/domain-report.json"
       S="$CONTRACTS/p1-domain-report.schema.json"
       if [[ -f "$R" ]]; then
-        if ! validate_artifact "$R" "$S"; then
+        if ! p1_gate_ok "$R"; then
           if [[ "$AUTO" -eq 1 ]] && run_agent web-domain-architect "$(p1_prompt)"; then
-            validate_artifact "$R" "$S" || { echo "orkestratör: domain-report.json şemaya uymuyor" >&2; exit 1; }
+            p1_gate_ok "$R" || { echo "orkestratör: domain-report.json P1 kapısını geçemedi — $S + domain-check.py" >&2; exit 1; }
           else
-            echo "orkestratör: domain-report.json şemaya uymuyor — $S" >&2
+            echo "orkestratör: domain-report.json P1 kapısını geçemedi — $S + domain-check.py" >&2
             exit 1
           fi
         fi
@@ -247,7 +256,7 @@ while true; do
         if [[ "$AUTO" -eq 1 ]]; then
           run_agent web-domain-architect "$(p1_prompt)" || wait_for "P1: web-domain-architect çalıştırılamadı"
           [[ -f "$R" ]] || wait_for "P1: $R üretilmedi"
-          validate_artifact "$R" "$S" || { echo "orkestratör: domain-report.json şemaya uymuyor — $S" >&2; exit 1; }
+          p1_gate_ok "$R" || { echo "orkestratör: domain-report.json P1 kapısını geçemedi — $S + domain-check.py" >&2; exit 1; }
         else
           wait_for "P1: eksik artefakt .factory/domain-report.json (web-domain-architect)"
         fi

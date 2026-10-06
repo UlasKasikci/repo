@@ -5,8 +5,9 @@ set -euo pipefail
 # Senaryolar: syntax → araç ön-şartı → pozitif QA (statik 3'lü PASS) →
 # paketleme + exclusion → state graph (qa-pass / 3 retry / 4. fail HALT) →
 # negatif RBAC → negatif sepet → --allow-no-cart kaçışı → QA'sız paketleme reddi →
-# orkestratör E2E (bekleme/bozuk rapor/DONE) → statik SKIPPED eşiği (2/3 ve 3/3) →
-# semantik P1 kapısı (hollow module_matrix → domain_report FAIL)
+# orkestratör E2E (bekleme/bozuk rapor/DONE) → asimetrik statik çekirdek
+# (yalnız eslint SKIPPED PASS; phpstan/phpunit eksik FAIL) →
+# semantik P1 kapısı (hollow + fs'de olmayan kanıt → domain_report FAIL)
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FIX="$ROOT/tests/fixtures/web-sample"
@@ -29,11 +30,13 @@ run_rc() {
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-step "0) bash -n söz dizimi"
+step "0) bash -n söz dizimi + python söz dizimi"
 for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh; do
   bash -n "$ROOT/scripts/web/$s" || die "bash -n: $s"
   echo "    OK: $s"
 done
+python3 -m py_compile "$ROOT/scripts/web/domain-check.py" || die "py_compile: domain-check.py"
+echo "    OK: domain-check.py"
 
 if [[ ! -d "$FIX" ]]; then
   echo
@@ -255,19 +258,50 @@ rc="$(run_rc bash "$ORCH" "$PROJ")"
 [[ "$rc" == "0" ]] || die "ikinci çalıştırma (zaten DONE) exit 0 beklenir, gelen $rc"
 echo "    E2E: 3 → 1 → 0 · P1..P5 → DONE · idempotent · domain_report=PASS"
 
-step "11) statik garanti eşiği: 2/3 SKIPPED → FAIL, 3/3 SKIPPED → FAIL"
-NOSTAT="$TMP/nostat"
-cp -R "$FIX" "$NOSTAT"
-rm -f "$NOSTAT/phpstan.neon.dist" "$NOSTAT/phpunit.xml"
-rc="$(run_rc bash "$QA" "$NOSTAT")"
-[[ "$rc" == "1" ]] || die "2/3 SKIPPED eşiği FAIL (1) beklenir, gelen $rc"
-grep -q 'static_coverage' "$NOSTAT/qa-report.json" || die "qa-report'ta static_coverage kontrolü yok"
-echo "    2/3 SKIPPED (yalnız eslint kaldı) → static_coverage FAIL"
-rm -f "$NOSTAT/.eslintrc.json"
-rm -rf "$NOSTAT/tests"
-rc="$(run_rc bash "$QA" "$NOSTAT")"
-[[ "$rc" == "1" ]] || die "3/3 SKIPPED eşiği FAIL (1) beklenir, gelen $rc"
-echo "    3/3 SKIPPED → static_coverage FAIL (en fazla 1 SKIPPED tolere edilir)"
+step "11) asimetrik statik çekirdek: yalnız eslint SKIPPED → PASS; phpstan/phpunit eksik → FAIL"
+NOESLINT="$TMP/noeslint"
+cp -R "$FIX" "$NOESLINT"
+rm -f "$NOESLINT/.eslintrc.json"
+rc="$(run_rc bash "$QA" "$NOESLINT")"
+[[ "$rc" == "0" ]] || { cat "$NOESLINT/qa-report.json" 2>/dev/null; die "yalnız eslint SKIPPED PASS (0) beklenir, gelen $rc"; }
+python3 - "$NOESLINT/qa-report.json" <<'PY' || die "asimetrik eşik A durumu"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+c = r["checks"]
+assert c.get("eslint") == "SKIPPED", c
+assert c.get("phpstan") == "PASS", c
+assert c.get("phpunit") == "PASS", c
+assert c.get("static_coverage") == "PASS", c
+PY
+echo "    yalnız eslint SKIPPED → PASS (static_coverage=PASS)"
+
+NOPHPSTAN="$TMP/nophpstan"
+cp -R "$FIX" "$NOPHPSTAN"
+rm -f "$NOPHPSTAN/phpstan.neon.dist"
+rc="$(run_rc bash "$QA" "$NOPHPSTAN")"
+[[ "$rc" == "1" ]] || die "phpstan yapılandırması yok → FAIL (1) beklenir, gelen $rc"
+python3 - "$NOPHPSTAN/qa-report.json" <<'PY' || die "asimetrik eşik B durumu"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["checks"].get("phpstan") == "FAIL", r["checks"]
+assert r["checks"].get("static_coverage") == "FAIL", r["checks"]
+assert any("phpstan yapılandırması yok" in e for e in r["errors"]), r["errors"]
+PY
+echo "    phpstan yapılandırması yok → FAIL + static_coverage=FAIL"
+
+NOPHPUNIT="$TMP/nophpunit"
+cp -R "$FIX" "$NOPHPUNIT"
+rm -f "$NOPHPUNIT/phpunit.xml"
+rc="$(run_rc bash "$QA" "$NOPHPUNIT")"
+[[ "$rc" == "1" ]] || die "phpunit yapılandırması yok → FAIL (1) beklenir, gelen $rc"
+python3 - "$NOPHPUNIT/qa-report.json" <<'PY' || die "asimetrik eşik C durumu"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["checks"].get("phpunit") == "FAIL", r["checks"]
+assert r["checks"].get("static_coverage") == "FAIL", r["checks"]
+assert any("phpunit yapılandırması yok" in e for e in r["errors"]), r["errors"]
+PY
+echo "    phpunit yapılandırması yok → FAIL + static_coverage=FAIL"
 
 step "12) semantik P1 kapısı: hollow module_matrix → domain_report FAIL"
 HOLLOW="$TMP/hollow"
@@ -305,6 +339,43 @@ assert "modül tekrarı" in joined, r["errors"]
 assert "kaynak referansı" in joined, r["errors"]
 PY
 echo "    hollow matrix: domain_report FAIL (şablon justification + modül tekrarı + kaynaksız evidence)"
+
+# fs-uydurma: şemaya uygun ama olmayan dosyaya atıf → hem qa-gate hem orkestratör reddi
+PHANTOM="$TMP/phantom"
+cp -R "$FIX" "$PHANTOM"
+mkdir -p "$PHANTOM/.factory"
+cat > "$PHANTOM/.factory/domain-report.json" <<'JSON'
+{
+  "schema_version": 1,
+  "project": "web-sample",
+  "entities": [{"name": "users"}],
+  "roles": ["user"],
+  "module_matrix": [
+    {"module": "rbac", "status": "present", "evidence": "SQL/veritabani.sql:users.role_id üzerinden doğrulandı", "justification": "users tablosunda role_id sütunu var ve roles tablosuna FK ile bağlı — rol katmanı şemada present"},
+    {"module": "cart", "status": "present", "evidence": "SQL/veritabani.sql:orders.user_id FK satırı", "justification": "orders tablosu user_id FK ile sipariş akışını karşılıyor — sepet/sipariş mekanizması present"},
+    {"module": "seo", "status": "present", "evidence": "robots.txt + sitemap.xml kök çıktıları", "justification": "robots.txt ve sitemap.xml dosyaları proje kökünde hazır — SEO modülü present"},
+    {"module": "kvkk", "status": "present", "evidence": "docs/KVKK-Aydinlatma.md aydınlatma metni", "justification": "KVKK aydınlatma metni docs/KVKK-Aydinlatma.md dosyasında yayımlanmış durumda"}
+  ],
+  "injected_modules": [],
+  "approvals": [],
+  "edge_cases": ["x"],
+  "security_context": ["y"],
+  "sql_draft": {"tables": ["users", "orders", "products", "roles"]},
+  "result": "requirements-frozen"
+}
+JSON
+rc="$(run_rc bash "$QA" "$PHANTOM")"
+[[ "$rc" == "1" ]] || die "fs-uydurma evidence FAIL (1) beklenir, gelen $rc"
+python3 - "$PHANTOM/qa-report.json" <<'PY' || die "fs-uydurma tespiti raporda yok"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["checks"].get("domain_report") == "FAIL", r["checks"]
+assert any("kaynak dosyası bulunamadı" in e and "KVKK-Aydinlatma" in e for e in r["errors"]), r["errors"]
+PY
+echo "    fs-uydurma: qa-gate domain_report FAIL (olmayan dosyaya atıf)"
+rc="$(run_rc bash "$ORCH" "$PHANTOM")"
+[[ "$rc" == "1" ]] || die "orkestratör fs-uydurma P1 reddi (1) beklenir, gelen $rc"
+echo "    fs-uydurma: orkestratör P1 → exit 1 (domain-check.py fs katmanı)"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

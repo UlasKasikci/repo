@@ -21,9 +21,10 @@ cat <proje>/qa-report.json
 
 Kontroller: `php -l` (tüm dosyalar) · yapı · SQL (UTF-8/FK/seed/RBAC/sepet) · OWASP grep
 (eval, mysql_*, superglobal-in-query, ham md5, LFI) · CSRF/HttpOnly/password_hash politikası
-· `domain_report` (P1 artefaktı varsa: module_matrix ≥4, dolu evidence/justification —
-şablon matrix FAIL) · phpstan (Level 8) + eslint + phpunit: yapılandırma var ama araç
-yoksa **FAIL**; **≥2'si SKIPPED** olursa `static_coverage` **FAIL** (§6/§8 garanti eşiği).
+· `domain_report` (P1 artefaktı varsa: module_matrix ≥4, dolu evidence/justification,
+adı geçen dosyalar fs'de var — şablon/uydurma matrix FAIL) · **asimetrik statik çekirdek**:
+phpstan (Level 8) + phpunit **zorunlu** (yapılandırma/araç yoksa o kontrol FAIL),
+yalnız eslint SKIPPED olabilir; `static_coverage` = phpstan ∧ phpunit PASS (§6/§8).
 
 ## Karar semantiği
 

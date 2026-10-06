@@ -20,10 +20,11 @@ Checks: `php -l` on every file, structure (index.php, .htaccess, robots.txt, sit
 core/, views/), SQL (UTF-8, CREATE TABLE, FOREIGN KEY, seed, RBAC role_id/permissions,
 catalog→cart), OWASP static greps (eval, mysql_*, superglobal-in-query, md5/sha1, LFI),
 CSRF, HttpOnly session, password_hash/password_verify, `domain_report` (if the P1
-artifact exists: module_matrix ≥4 with substantive evidence/justification — template
-output = FAIL), and the static trio (phpstan level 8, eslint, phpunit): config declared
-but tool missing = FAIL; two or more SKIPPED = `static_coverage` FAIL (guarantee
-threshold).
+artifact exists: module_matrix ≥4 with substantive evidence/justification AND every
+file named in evidence must exist in the project — template/phantom evidence = FAIL),
+and the ASYMMETRIC static core: phpstan (level 8) and phpunit are MANDATORY (missing
+config or tool = that check FAILs); only eslint may be SKIPPED;
+`static_coverage` = phpstan PASS ∧ phpunit PASS, else FAIL.
 
 Decision: exit 0 = `Check: PASS` (0 errors AND 0 warnings) → P5; exit 1 = FAIL with
 `debug_report.json` (retry 1–3 → P4); exit 2 = HALT (4th failure, max_retries: 3).

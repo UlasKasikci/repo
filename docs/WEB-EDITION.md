@@ -95,11 +95,14 @@ Bu denetimler `scripts/web/qa-gate.sh` içinde deterministik olarak uygulanır.
 her hücrede `status ∈ present|missing|injected|proposed` **zorunlu** olmanın yanında
 `evidence` (≥10 karakter, kaynak referansı: dosya/satır veya tablo kanıtı) ve
 `justification` (≥20 karakter, gerçek gerekçe) dolu olmalıdır — şablon/boş/tekrar
-değerler semantik olarak reddedilir. Denetim iki katmanda uygulanır: `orchestrate.sh`
-JSON şemasıyla (P1→P2 kapısı) ve `qa-gate.sh` `domain_report` kontrolü (hollow matrix →
-FAIL). Bu dosya yoksa veya uymuyorsa `orchestrate.sh` P2'ye geçmez (exit 1/3);
-`state.sh advance` P1→P2'yi yalnız geçiş anında hücresel olarak değil, artefakt
-varlığını orkestratör katmanında doğrular.
+değerler semantik olarak reddedilir. **`evidence` filesystem doğrulanır:** metinde
+geçen dosya adları (uzantı whitelist'i) proje kökünde gerçekten var olmalı; uydurma
+kaynak referansı FAIL. Denetim iki katmanda uygulanır: `orchestrate.sh` P1'de şema +
+`scripts/web/domain-check.py` (semantik + fs), `qa-gate.sh` `domain_report`
+kontrolünde aynı tek doğruluk kaynağı (hollow/uydurma matrix → FAIL). Bu dosya yoksa
+veya uymuyorsa `orchestrate.sh` P2'ye geçmez (exit 1/3); `state.sh advance` P1→P2'yi
+yalnız geçiş anında hücresel olarak değil, artefakt varlığını orkestratör katmanında
+doğrular.
 
 ## 4. Faz 2/3 — Mimari & Kod Standartları
 
@@ -143,10 +146,10 @@ Kontroller: `php -l` (tüm PHP dosyaları) · yapısal dosya denetimi · SQL şe
 
 - Çıktılar: `qa-report.json` (her koşuda), `debug_report.json` (yalnız FAIL).
 - `0 Error, 0 Warning` → `Check: PASS` → yalnız o zaman P5.
-- **Statik garanti eşiği:** `phpstan`/`eslint`/`phpunit` yapılandırması var ama araç
-  kurulmamışsa o kontrol **FAIL**; üç kontrolden **≥2'si SKIPPED** olursa (eşik: ≥2;
-  en fazla 1 SKIPPED tolere edilir) `static_coverage` kontrolü FAIL — araçsız QA kabul
-  edilmez.
+- **Statik garantici çekirdek (asimetrik):** `phpstan` ve `phpunit` **zorunludur** —
+  yapılandırması yoksa o kontrol doğrudan **FAIL**; yapılandırma var ama araç kurulu
+  değilse de FAIL. Yalnız `eslint` SKIPPED olabilir (ör. JS'siz proje).
+  `static_coverage` = `phpstan=PASS ∧ phpunit=PASS`; aksi her koşulda FAIL.
 - **max_retries: 3** — 3 başarısızlık P4'e döner; **4. başarısızlıkta** `state.sh` HALT
   (exit 2) + `debug_report.json`.
 
@@ -186,9 +189,10 @@ Yukleme/
 | Adım | Araç | Yoksa |
 |------|------|-------|
 | Syntax | `php -l` | QA FAIL (php-cli zorunlu) |
-| Statik analiz | `phpstan` (Level 8), `eslint` | yapılandırma varsa kurulmamışsa **FAIL**; yoksa SKIPPED |
-| Birim test | `phpunit` (`phpunit.xml` varsa) | yapılandırma varsa kurulmamışsa **FAIL**; yoksa SKIPPED |
-| Statik eşik | 3 kontrolün ≥2'si SKIPPED | `static_coverage` **FAIL** (§6; en fazla 1 SKIPPED) |
+| Statik analiz | `phpstan` (Level 8) | yapılandırma/araç yoksa **FAIL** (zorunlu çekirdek) |
+| Birim test | `phpunit` (`phpunit.xml`) | yapılandırma/araç yoksa **FAIL** (zorunlu çekirdek) |
+| Frontend lint | `eslint` | yapılandırma yoksa SKIPPED (tek tolerans); varsa araç zorunlu |
+| Statik eşik | `static_coverage` = phpstan ∧ phpunit PASS | aksi **FAIL** (§6) |
 | Paketleme | `bash`, `python3`, `shasum` | zorunlu |
 | Kontrat doğrulama | `python3 -m pip install jsonschema` | yoksa zorunlu-alan/const yedeği |
 | Minify | `npx --no-install terser/csso` | `minify: skipped` notu |
