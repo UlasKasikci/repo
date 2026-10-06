@@ -41,6 +41,7 @@ knowledge/evidence/*/raw/
 
 # OS
 Thumbs.db
+._*
 
 # Factory — yerel test/ klasörü commit dışı (Stitch lab vb. yerelde)
 test/
@@ -101,3 +102,10 @@ docs/02-ARCHITECTURE/OEM_TEST_REPORT.md
 # Fabrika template reposu — canonical mimari belgeleri commit edilir
 !docs/02-ARCHITECTURE/MODULE_MAP.md
 !docs/02-ARCHITECTURE/DATA_FLOW.md
+
+# Web Edition — build/runtime artifact'ları (asla commit etme)
+Yukleme/
+.factory/web-state.json
+qa-report.json
+debug_report.json
+packaging-report.json

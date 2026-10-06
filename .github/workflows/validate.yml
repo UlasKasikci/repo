@@ -1,7 +1,7 @@
-# Ulas Autonomous Android APP Factory v3.1.0-intelligence-operational
+# App-Fabrika Web Edition — CI validation
 # Copyright (c) 2026 Ulaş Kaşıkcı — MIT License
 
-name: Factory Validation v3.1.0
+name: Web Edition Validation
 
 on:
   push:
@@ -9,64 +9,37 @@ on:
   pull_request:
     branches: [main, master]
 
-env:
-  FACTORY_VERSION: "3.1.0-intelligence-operational"
-
 jobs:
-  validate:
+  web-validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify factory version alignment
-        run: bash scripts/validate-factory-version.sh
-
-      - name: Run code validation
-        run: bash scripts/validate-code.sh
-
-      - name: Run 33-layer audit
-        run: bash scripts/audit-layers.sh
-
-      - name: Run layer component audit
-        run: bash scripts/audit-layer-components.sh
-
-      - name: Run OEM compatibility audit
-        run: bash scripts/audit-oem-compat.sh
-
-      - name: Run security audit
-        run: bash scripts/audit-security.sh
-
-      - name: Validate Android template quality
-        run: bash scripts/validate-android-template.sh
-
-      - name: Validate factory governance tree
-        run: bash scripts/governance/validate-factory-governance.sh
-
-      - name: Validate audit chain
-        run: python3 scripts/governance/validate-audit-chain.py
-
-      - name: Validate YAPILACAKLAR template
-        run: |
-          cp templates/YAPILACAKLAR.template.md YAPILACAKLAR.md
-          sed -i "s/{{FACTORY_VERSION}}/${FACTORY_VERSION}/g" YAPILACAKLAR.md
-          python3 scripts/governance/validate-yapilacaklar.py
-
-      - name: Factory health score
-        run: bash scripts/factory-health.sh
-
-  smoke-build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - name: Set up PHP 8.1
+        uses: shivammathur/setup-php@v2
         with:
-          distribution: temurin
-          java-version: "17"
+          php-version: "8.1"
+          coverage: none
 
-      - name: Reasoning transcript parser (v2.2)
-        run: bash scripts/validate-reasoning-transcript.sh
+      - name: Shell syntax (bash -n)
+        run: |
+          for f in scripts/web/*.sh; do
+            bash -n "$f"
+            echo "OK: $f"
+          done
 
-      - name: CI template build (assembleDebug)
-        run: bash scripts/ci-template-build.sh
+      - name: JSON lint (config matrisi + state kontratı)
+        run: |
+          for f in opencode.json .factory/*.json .cursor/mcp*.json*; do
+            [ -f "$f" ] || continue
+            python3 -m json.tool "$f" > /dev/null
+            echo "OK: $f"
+          done
+
+      - name: YAML lint (antigravity.yaml)
+        run: |
+          python3 -m pip install --quiet pyyaml
+          python3 -c "import yaml; yaml.safe_load(open('antigravity.yaml', encoding='utf-8')); print('OK: antigravity.yaml')"
+
+      - name: State Graph + QA + Packaging self-test
+        run: bash scripts/web/self-test.sh

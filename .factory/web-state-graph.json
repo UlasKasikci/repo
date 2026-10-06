@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "graph": "app-fabrika-web-edition",
+  "version": "1.0.0",
+  "mode": "deterministic",
+  "max_retries": 3,
+  "phases": [
+    {
+      "id": "P1",
+      "key": "domain",
+      "name": "Domain & Scope Validation",
+      "owner_agent": "web-domain-architect",
+      "gate": "requirements-frozen",
+      "checks": ["missing-module-audit", "rbac-audit", "schema-analysis", "security-context"]
+    },
+    {
+      "id": "P2",
+      "key": "code",
+      "name": "Code Generation Engine",
+      "owner_agent": "web-core-engineer",
+      "support_agent": "web-frontend-specialist",
+      "gate": "code-complete"
+    },
+    {
+      "id": "P3",
+      "key": "qa",
+      "name": "QA & Automated Test Pool",
+      "owner_agent": "web-qa-gatekeeper",
+      "gate": "qa-pass",
+      "command": "bash scripts/web/qa-gate.sh"
+    },
+    {
+      "id": "P4",
+      "key": "revision",
+      "name": "Revision Loop",
+      "owner_agent": "web-core-engineer",
+      "gate": "fix-applied",
+      "retry_phase": true
+    },
+    {
+      "id": "P5",
+      "key": "packaging",
+      "name": "Packaging & Deployment Gate",
+      "owner_agent": "web-deploy-packager",
+      "gate": "yukleme-ready",
+      "command": "bash scripts/web/package-yukleme.sh"
+    }
+  ],
+  "transitions": [
+    { "from": "START", "to": "P1", "condition": "intent-locked" },
+    { "from": "P1", "to": "P2", "condition": "requirements-frozen" },
+    { "from": "P2", "to": "P3", "condition": "code-complete" },
+    { "from": "P3", "to": "P5", "condition": "qa-pass" },
+    { "from": "P3", "to": "P4", "condition": "qa-fail", "until": "max_retries" },
+    { "from": "P4", "to": "P3", "condition": "fix-applied" },
+    { "from": "P4", "to": "HALT", "condition": "retries-exhausted", "artifact": "debug_report.json" },
+    { "from": "P5", "to": "DONE", "condition": "yukleme-verified" }
+  ],
+  "exit_codes": { "0": "PASS", "1": "FAIL_OR_INVALID", "2": "HALT" },
+  "artifacts": {
+    "state": ".factory/web-state.json",
+    "graph_contract": ".factory/web-state-graph.json",
+    "qa_report": "qa-report.json",
+    "debug_report": "debug_report.json",
+    "packaging_report": "packaging-report.json",
+    "output_dir": "Yukleme/",
+    "sql_dump": "Yukleme/SQL/veritabani.sql"
+  },
+  "scripts": {
+    "state": "scripts/web/state.sh",
+    "qa_gate": "scripts/web/qa-gate.sh",
+    "packager": "scripts/web/package-yukleme.sh",
+    "self_test": "scripts/web/self-test.sh"
+  }
+}

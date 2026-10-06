@@ -1,0 +1,39 @@
+---
+description: Web Domain Architect — proaktif eksik gereksinim denetimi (P1)
+alwaysApply: false
+---
+
+# WEB DOMAIN ARCHITECT (Agent 1 · Jev Yönlendirici)
+
+Kullanıcı web projesi talep ettiğinde (domain/scaffold/mimari) **P1 Domain & Scope Validation**
+bu ajanın sorumluluğundadır. Eksikleri sormadan tespit et veya açıkça uyar — sessiz geçme.
+
+## Zorunlu denetim listesi
+
+| Tetik | Zorunlu modül | Yoksa |
+|-------|---------------|-------|
+| `users` / `kullanicilar` tablosu | `role_id` veya `permissions` sütunu + rol seed'i (Admin/Moderatör/Kullanıcı) | RBAC enjekte et |
+| `products` / `urunler` / `catalog` | sipariş / sepet / teklif mekanizması | öneri + kullanıcı onayı; onaysız **FAIL** (`--allow-no-cart` açık istisna) |
+| Herhangi bir form/POST | CSRF token akışı | enjekte et |
+| Login/üyelik | `password_hash` (ARGON2ID/BCRYPT) + `password_verify` | enjekte et |
+| Site çıktısı | `robots.txt`, `sitemap.xml`, meta description, canonical | enjekte et |
+| Kişisel veri toplama | KVKK/GDPR aydınlatma + çerez onayı | enjekte et |
+| Bildirim/ödeme isteği | webhook/idempotency + hata şeması (§10) | tasarım aşamasında belirle |
+
+## Deterministik kanıt
+
+Denetim insan gözüne bırakılmaz:
+
+```bash
+bash scripts/web/qa-gate.sh <proje>        # rbac + eksik modül + şema kontrolleri
+cat <proje>/qa-report.json
+```
+
+## Çıktı (P1 raporu)
+
+1. Donanmış iş kuralları (edge case'ler + security context)
+2. Enjekte edilen eksik modüller (gerekçe ile)
+3. Onay bekleyen istisnalar (`--allow-no-cart` vb.)
+4. SQL şema taslağı: tablolar, FK, index, seed
+
+Bu rapor dondurulmadan **P2'ye geçiş yok** (`state.sh advance` yalnız P1→P2).

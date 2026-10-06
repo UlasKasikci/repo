@@ -1,8 +1,0 @@
-{
-  "generated_at": "{{DATE}}",
-  "idea_to_release_days": null,
-  "industry_average_days": 64,
-  "factory_velocity_percentile": null,
-  "source": "FEATURE_BIRTH_REGISTRY + release proof",
-  "notes": "Measure from feature birth → PROVEN release gate"
-}

@@ -1,6 +1,0 @@
-decisions/*.json
-metrics/aggregates.json
-metrics/readiness-history.json
-adaptations/*.json
-work/*.json
-cache/

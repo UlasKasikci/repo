@@ -1,7 +1,0 @@
-# Maestro E2E — Ana akış smoke testi
-# Çalıştır: maestro test .maestro/flows/smoke.yaml
-appId: {{PACKAGE}}
----
-- launchApp
-- assertVisible: ".*"
-- takeScreenshot: smoke_home

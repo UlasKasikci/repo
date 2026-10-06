@@ -1,7 +1,0 @@
-{
-  "platform": "android",
-  "description": "Default Gradle tasks for Android Factory scaffold — override per venture in venture.json build block",
-  "build_task": ":app:assembleDebug",
-  "unit_test_task": ":app:testDebugUnitTest",
-  "junit_results_variant": "testDebugUnitTest"
-}

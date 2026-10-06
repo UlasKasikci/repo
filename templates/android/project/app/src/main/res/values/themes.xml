@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- Window theme until Compose {{APP_CLASS}}Theme takes over in MainActivity -->
-    <style name="Theme.{{APP_CLASS}}" parent="android:Theme.Material.Light.NoActionBar" />
-</resources>

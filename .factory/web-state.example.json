@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "project": "ornek-web-projesi",
+  "current_phase": "P1",
+  "status": "in_progress",
+  "retry_count": 0,
+  "max_retries": 3,
+  "last_error": null,
+  "history": [
+    { "at": "2026-10-07T00:00:00Z", "event": "start", "phase": "P1" }
+  ]
+}

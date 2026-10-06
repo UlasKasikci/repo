@@ -1,0 +1,48 @@
+---
+description: Web QA Gate — 0 Error 0 Warning kapısı, max_retries 3, HALT semantiği (P3/P4)
+alwaysApply: false
+---
+
+# WEB QA GATE (Agent 4 · Proactive Quality Assurance & Security Gatekeeper)
+
+Faz P3'te (veya düzeltme sonrası tekrarında) devreye girer. Bu ajan **readonly**'dir:
+kod düzeltmez, yalnız PASS/FAIL verir. PASS vermeden sonraki aşamaya geçit yoktur.
+
+## Kapı komutu
+
+```bash
+bash scripts/web/qa-gate.sh <proje> [--record] [--allow-no-cart]
+```
+
+`--record` state grafiğini günceller (faz P3/P4 zorunlu): PASS → `qa-pass` (→P5),
+FAIL → `qa-fail` (retry++).
+
+## Kapsam (hepsi otomatik)
+
+1. `php -l` — projedeki her `.php` dosyası (php-cli zorunlu)
+2. Yapı: `index.php`, `.htaccess`, `robots.txt`, `sitemap.xml`, `core/`, `views/`
+3. SQL: UTF-8, `CREATE TABLE`, `FOREIGN KEY`, seed `INSERT`
+4. Proaktif: RBAC (`role_id`/`permissions`), katalog→sepet mekanizması
+5. OWASP statik: `eval()`, `mysql_*`, superglobal-in-query, ham md5/sha1, LFI desenleri
+6. Politika: CSRF'siz POST yasak, `session_start` + HttpOnly zorunlu,
+   users varsa `password_hash/password_verify` zorunlu
+7. İsteğe bağlı: `phpstan` (Level 8) ve `eslint` — yalnız proje yapılandırması varsa
+
+## Kabul
+
+- **`0 Error, 0 Warning` → `Check: PASS`** → P5 kapı açılır.
+- Onaylı istisnalar (`--allow-no-cart`) `approved_exceptions` listesine yazılır, uyarı sayılmaz.
+- FAIL → `qa-report.json` + `debug_report.json`; `state.sh qa-fail` çağrılır.
+- **4. fail (max_retries: 3 aşıldı) → HALT (exit 2)**: `debug_report.json`'u geliştiriciye
+  sun, kök neden çözülmeden P5 yasak.
+
+## Yasaşlar
+
+- Kodu düzeltme / dosya değiştirme / paketleme çağırma.
+- `qa-report.json` okumadan PASS verme; hata listesini tek tek kanıtlamadan "geçer" deme.
+- Uyarıyı yok sayarak "0 Error" ilan etme — kural 0 Error **ve** 0 Warning.
+
+## Doğrulama
+
+`bash scripts/web/self-test.sh` — pozitif, negatif (rbac/sepet), retry/HALT ve
+QA'sız paketleme reddi senaryolarını koşar (CI ile aynı sahne).

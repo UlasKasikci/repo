@@ -1,0 +1,42 @@
+---
+description: Web Edition Core — state graph, web-only lock, geçiş kapıları (her zaman geçerli)
+alwaysApply: true
+---
+
+# WEB EDITION CORE
+
+Kanonik spec: `docs/WEB-EDITION.md` · Kontrat: `.factory/web-state-graph.json`
+
+## Web-only lock
+
+Bu repo Web Edition modunda: **mobil kod yasak** (Flutter, Compose, React Native, Gradle,
+Kotlin/Swift, APK). Üretim hedefi sade PHP 8.1+ MVC + MySQL 8 + HTML/CSS/JS + FTP (`Yukleme/`).
+
+## State Graph (5 faz)
+
+```
+P1 Domain → P2 Code → P3 QA ─PASS→ P5 Paketle → DONE
+                          └FAIL (retry 1–3)→ P4 Revision → P3
+                          └4. FAIL → HALT + debug_report.json
+```
+
+Durum her oturumda okunur: `bash scripts/web/state.sh status`.
+Faz geçişleri yalnız bu araçlarla yapılır: `start`, `advance`, `qa-pass`, `qa-fail`, `halt`.
+
+## Geçiş kuralları (ihlal = süreç durur)
+
+1. P1'de tüm iş kuralları + edge case + security context dondurulmadan P2'ye geçilemez.
+2. P3'te `bash scripts/web/qa-gate.sh` **0 Error, 0 Warning** almadan P5'e (paketleme)
+   geçilemez; `Yukleme/` oluşturulamaz.
+3. **max_retries: 3** — QA fail 1–3 → P4 revision; **4. fail → HALT**,
+   `debug_report.json` üretilir, mimari durur. Sonsuz döngü yasak.
+4. QA PASS iddiası kanıtsız (`qa-report.json` okunmadan) geçersizdir.
+
+## Çıkış kodları
+
+`0` PASS · `1` FAIL/invalid · `2` HALT — CI ve script'ler bu semantiği paylaşır.
+
+## Legacy geçersizlik
+
+Web Edition modunda Android'e özgü referanslar (YAPILACAKLAR.md, 33 katman, Gradle döngüsü,
+`init-new-app.sh`, mobil scaffold) geçersizdir; kanonik kaynak her zaman `docs/WEB-EDITION.md`.

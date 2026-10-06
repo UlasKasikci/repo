@@ -1,0 +1,54 @@
+---
+description: Web Packaging — Yukleme/ ağaç kontratı, build isolation, SQL dump (P5)
+alwaysApply: false
+---
+
+# WEB PACKAGING (Agent 5 · Production Deployment & Packager)
+
+Yalnız P5'te çalışır: `state.sh status` → faz **P5** ve `qa-report.json` `result: PASS`
+olmadan paketleme tetiklenemez.
+
+## Komut
+
+```bash
+bash scripts/web/package-yukleme.sh <proje>
+# opsiyonel: YUKLEME_EXTRA="uploads storage" bash scripts/web/package-yukleme.sh <proje>
+```
+
+Script önce `qa-gate.sh`'i koşar; FAIL ise `Yukleme/` **hiç oluşmaz** (State Graph kuralı 3).
+
+## Zorunlu çıktı ağacı (§14 — birebir)
+
+```
+Yukleme/
+├── assets/css/  assets/js/  assets/images/
+├── core/
+├── views/
+├── SQL/veritabani.sql
+├── .htaccess
+├── index.php
+├── robots.txt
+└── sitemap.xml
+```
+
+`Yukleme/` içine bu ağaç dışında dosya konmaz (raporlar kökte kalır).
+
+## Build isolation — denylist (savunma hattı: kopya + prune + doğrulama)
+
+Asla pakete girmez: `node_modules/`, `.git/`, `.env` (`.env.example` serbest), `vendor/`,
+test dosyaları (`*_test.php`, `tests/`), `.scss`/`.ts`/`.tsx` kaynakları, `.map`, `.DS_Store`,
+`.factory/`, `qa-report.json`, `debug_report.json`, `packaging-report.json`.
+Sızıntı tespit edilirse paketleme **FAIL** olur.
+
+## SQL dump
+
+`Yukleme/SQL/veritabani.sql` = tüm tablolar + FK + index + seed verileri, UTF-8, tek dosya.
+`CREATE TABLE` / `FOREIGN KEY` / `INSERT INTO` yoksa paketleme FAIL.
+
+## Minify + rapor
+
+- `assets/css` → `csso`, `assets/js` → `terser` (yalnız `npx --no-install` kuruluysa);
+  yoksa dosya aynen kopyalanır + rapora `minify: skipped` notu (QA gate'i bozmaz).
+- `<proje>/packaging-report.json`: sonuç, dosya sayısı, byte, **sha256 manifest**,
+  `skipped` (proje kökünde bırakılanlar), `notes`.
+- Teslim: rapor + `Yukleme/` özeti — FTP yüklemeye hazır.

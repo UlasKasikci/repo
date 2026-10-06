@@ -1,7 +1,0 @@
-{
-  "generated_at": "{{DATE}}",
-  "factory_score": null,
-  "factory_percentile": null,
-  "source": "factory-health.sh + factory-quality-gate.sh",
-  "reference": "open_source_android_factory_benchmark_v1"
-}
