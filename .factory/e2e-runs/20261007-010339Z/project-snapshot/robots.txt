@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /giris
+Disallow: /cikis
+
+Sitemap: https://e2e-iletisim.example.com/sitemap.xml

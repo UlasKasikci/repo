@@ -1,0 +1,31 @@
+# App-Fabrika Web Edition — e2e-iletisim
+# Front controller: tüm istekler index.php'ye yönlendirilir (php -S rewrite
+# uygulamaz — canlı sunucuda doğrulanır).
+
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Uygulama iç dizinlerine doğrudan erişim yasak (kaynak kodu/SQL sızması)
+    RewriteRule ^(core|SQL|tests|views|docs|scripts)(/|$) - [F,L]
+
+    # Mevcut dosya/dizinleri doğrudan sun (robots.txt, sitemap.xml, assets)
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Front controller
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Gizli dosyalar
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>

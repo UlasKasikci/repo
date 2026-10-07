@@ -1,0 +1,14 @@
+{
+  "root": true,
+  "env": { "browser": true, "es2022": true },
+  "parserOptions": { "ecmaVersion": 2022, "sourceType": "script" },
+  "ignorePatterns": ["node_modules/", "vendor/", ".opencode/", ".factory/", "Yukleme/", "tests/"],
+  "rules": {
+    "eqeqeq": "error",
+    "no-undef": "error",
+    "no-unused-vars": "error",
+    "no-var": "error",
+    "prefer-const": "error",
+    "no-eval": "error"
+  }
+}

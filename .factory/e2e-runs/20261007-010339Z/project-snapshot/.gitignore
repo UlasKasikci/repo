@@ -1,0 +1,117 @@
+# Android
+*.iml
+.gradle/
+build/
+local.properties
+.cxx/
+.externalNativeBuild/
+captures/
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# IDE
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Secrets — asla commit etme
+.env
+.env.*
+*.keystore
+*.jks
+google-services.json
+secrets.properties
+
+# Cursor local state
+.cursor/chat/
+.cursor/plans/
+.cursor/mcp.json
+.factory/context/SESSION_CONTEXT.md
+knowledge/evidence/*/raw/
+**/.cursor/snapshots/build/
+**/.cursor/snapshots/maestro/
+**/.cursor/snapshots/mcp/
+**/.cursor/snapshots/recovery/
+!.cursor/snapshots/README.md
+!.cursor/snapshots/HANDOFF.template.json
+!.cursor/snapshots/RECOVERY.template.json
+
+# OS
+Thumbs.db
+._*
+
+# Factory — yerel test/ klasörü commit dışı (Stitch lab vb. yerelde)
+test/
+
+# Factory — V3.1 consolidated runtime (proje bazlı; template repo şişmesin)
+/runtime/
+factory/runtime/
+
+docs/AUDIT_REPORT.md
+
+.factory/project.json
+.factory/project-intent.json
+.factory/bootstrap_manifest.json
+.factory/sync.json
+
+# Python
+__pycache__/
+*.py[cod]
+governance/project.config.json
+governance/executive/SPRINT_LOCK.json
+governance/executive/APPROVAL_QUEUE.md
+governance/product_decision/roadmap_priorities.json
+governance/product_decision/rejected_features.json
+governance/product_decision/decision_log.json
+governance/product_decision/evidence_links.json
+governance/product_decision/feature_ranking.json
+governance/product_decision/priority_matrix.json
+governance/product_decision/quarterly_decisions.json
+governance/reality/PRODUCT_REALITY_SCORE.json
+governance/reality/*.json
+!governance/reality/NO_NEW_P0_RULE.json
+governance/execution/*.json
+governance/cao/*.json
+governance/egc/*.json
+governance/cdid/GENERATED_WORK_PACKAGES.json
+governance/memory/*.json
+governance/analytics/SPRINT_P_ACTIVATION_GATE.json
+governance/analytics/SPRINT_P_EVENT_CATALOG.json
+governance/analytics/SPRINT_P_SCHEMA.json
+governance/analytics/output/
+governance/blue_ocean/project_index.json
+governance/market/competitor_catalog.json
+governance/market/demand_intelligence_catalog.json
+governance/market/forum_query_catalog.json
+governance/market/USER_INTENT_SIGNALS.json
+governance/market/PLAY_STORE_BENCHMARKS.json
+governance/linguistic/LOCALE_MARKET_REGISTRY.json
+governance/linguistic/exercise_scope_targets.json
+governance/linguistic/output_catalog.json
+governance/trends/*.json
+docs/01-VISION/PRODUCT_BRIEF.md
+docs/01-VISION/MARKET_ANALYSIS.md
+docs/01-VISION/MONETIZATION.md
+docs/02-ARCHITECTURE/MODULE_MAP.md
+docs/02-ARCHITECTURE/DATA_FLOW.md
+docs/02-ARCHITECTURE/SECURITY.md
+docs/02-ARCHITECTURE/OEM_TEST_REPORT.md
+# Fabrika template reposu — canonical mimari belgeleri commit edilir
+!docs/02-ARCHITECTURE/MODULE_MAP.md
+!docs/02-ARCHITECTURE/DATA_FLOW.md
+
+# Web Edition — build/runtime artifact'ları (asla commit etme)
+Yukleme/
+.factory/web-state.json
+.factory/project-intent.json
+.factory/yukleme-staging/
+.factory/yukleme-archive/
+.factory/yukleme-failed/
+qa-report.json
+debug_report.json
+packaging-report.json
+smoke-report.json
+metrics.jsonl

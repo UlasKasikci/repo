@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "project": "project",
+  "current_phase": "DONE",
+  "status": "done",
+  "retry_count": 0,
+  "max_retries": 3,
+  "last_error": null,
+  "history": [
+    {
+      "at": "2026-10-07T01:04:04Z",
+      "event": "start",
+      "phase": "P1"
+    },
+    {
+      "at": "2026-10-07T01:29:52Z",
+      "event": "advance",
+      "from": "P1",
+      "to": "P2"
+    },
+    {
+      "at": "2026-10-07T03:33:49Z",
+      "event": "advance",
+      "from": "P2",
+      "to": "P3"
+    },
+    {
+      "at": "2026-10-07T03:33:53Z",
+      "event": "qa-pass",
+      "from": "P3",
+      "to": "P5"
+    },
+    {
+      "at": "2026-10-07T03:34:01Z",
+      "event": "advance",
+      "from": "P5",
+      "to": "DONE",
+      "condition": "yukleme-verified"
+    }
+  ]
+}

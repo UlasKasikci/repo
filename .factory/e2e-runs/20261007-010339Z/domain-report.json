@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "project": "e2e-iletisim",
+  "compliance": "kvkk",
+  "analyzer": "Agent 1 — Requirement & Domain Architect (App-Fabrika Web Edition)",
+  "generated_at": "2026-10-07",
+  "intent_source": ".factory/project-intent.json",
+  "entities": [
+    {
+      "name": "roles",
+      "fields": [
+        "id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY",
+        "name VARCHAR(50) NOT NULL UNIQUE (admin|moderator|user)",
+        "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
+      ]
+    },
+    {
+      "name": "users",
+      "fields": [
+        "id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY",
+        "role_id INT UNSIGNED NOT NULL (FK -> roles.id, ON DELETE RESTRICT)",
+        "email VARCHAR(190) NOT NULL UNIQUE",
+        "password_hash VARCHAR(255) NOT NULL",
+        "full_name VARCHAR(120) NOT NULL",
+        "is_active TINYINT(1) NOT NULL DEFAULT 1",
+        "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
+      ]
+    },
+    {
+      "name": "messages",
+      "fields": [
+        "id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY",
+        "full_name VARCHAR(120) NOT NULL",
+        "email VARCHAR(190) NOT NULL",
+        "phone VARCHAR(32) NULL",
+        "subject VARCHAR(150) NOT NULL",
+        "body TEXT NOT NULL",
+        "ip_hash CHAR(64) NULL (SHA-256; ham IP saklanmaz)",
+        "status ENUM('new','read','archived') NOT NULL DEFAULT 'new'",
+        "consent_given TINYINT(1) NOT NULL DEFAULT 0",
+        "consent_at DATETIME NULL",
+        "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
+      ]
+    },
+    {
+      "name": "user_consents",
+      "fields": [
+        "id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY",
+        "user_id INT UNSIGNED NULL (FK -> users.id, ON DELETE CASCADE)",
+        "purpose VARCHAR(100) NOT NULL",
+        "granted TINYINT(1) NOT NULL DEFAULT 0",
+        "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
+      ]
+    },
+    {
+      "name": "anonymization_log",
+      "fields": [
+        "id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY",
+        "user_id INT UNSIGNED NULL (FK -> users.id, ON DELETE SET NULL)",
+        "action VARCHAR(50) NOT NULL",
+        "basis VARCHAR(190) NOT NULL",
+        "performed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
+      ]
+    }
+  ],
+  "roles": [
+    "admin",
+    "moderator",
+    "user"
+  ],
+  "module_matrix": [
+    {
+      "module": "iletisim-formu",
+      "status": "injected",
+      "evidence": ".factory/project-intent.json:notes — iletisim (contact) formu POST -> messages akışı",
+      "justification": "Kullanıcı niyetinin temel modülü: anonim ziyaretçi iletişim formu PDO prepared statement ile messages tablosuna yazar; XSS/CSRF/honeypot gereksinimleriyle P2 kodlama öncesi donduruldu."
+    },
+    {
+      "module": "rbac",
+      "status": "injected",
+      "evidence": ".factory/project-intent.json:notes + scripts/web/qa-gate.sh:132 (role_id/permissions zorunlu)",
+      "justification": "users tablosu tanımlanacağı için şartname kuralı gereği rol katmanı zorunlu; admin/moderator/user rolleri roles tablosu ve yetki kontrolüyle enjekte edildi."
+    },
+    {
+      "module": "kvkk",
+      "status": "injected",
+      "evidence": ".factory/project-intent.json:compliance=kvkk + docs/WEB-EDITION.md:§3",
+      "justification": "intent compliance değeri kvkk olduğundan yasal aydınlatma/gizlilik/çerez view'ları, çerez onay banner'ı, user_consents ve anonymization_log tabloları P2 KVKK bloğunda zorunlu; qa-gate kvkk kanalı bunları denetler."
+    },
+    {
+      "module": "seo",
+      "status": "injected",
+      "evidence": "docs/WEB-EDITION.md:§7 — paketleme ağacında SEO çıktıları (robots ve sitemap üretimi) zorunlu",
+      "justification": "Yükleme kontratı arama motoru dosyalarını ve semantik HTML5 meta/og etiketlerini zorunlu kılar; P2 view katmanında canonical/description/title gereksinimleri donduruldu."
+    },
+    {
+      "module": "sepet-siparis",
+      "status": "missing",
+      "evidence": ".factory/project-intent.json:notes — 'Katalog yok (sepet kurali tetiklenmemeli)'",
+      "justification": "Projede ürün/katalog tablosu tanımlı değil; şartnamedeki sepet/sipariş tetikleyici kuralı çalışmadı, e-ticaret genişlemesi olmadıkça modül kapsama alınmayacak."
+    },
+    {
+      "module": "kimlik-dogrulama",
+      "status": "injected",
+      "evidence": "docs/WEB-EDITION.md:§5 PASSWORD_ARGON2ID + CLAUDE.md:PASSWORD_ARGON2ID",
+      "justification": "Admin paneli girişi için Argon2id hash, password_verify ve oturum sertleştirme (HttpOnly/Secure/SameSite, fixation koruması) gereksinimleri donduruldu; md5 ve mysql_* kullanımı qa-gate'te reddedilir."
+    },
+    {
+      "module": "admin-paneli",
+      "status": "injected",
+      "evidence": ".factory/project-intent.json:notes — admin paneli (mesaj/kullanici listesi, rol korumali)",
+      "justification": "Rol korumalı yönetim paneli mesaj ve kullanıcı listelerini sunacak; yetki katmanı rbac modülüne bağlanır ve user rolüne 403 döner, P2'de view altında kodlanır."
+    }
+  ],
+  "injected_modules": [
+    "rbac: roles tablosu + users.role_id (FK) + yetki kontrolü",
+    "kvkk: yasal view'lar (aydinlatma/gizlilik/cerez), çerez onay banner'ı, user_consents + anonymization_log tabloları",
+    "seo: robots.txt + sitemap.xml + semantik HTML5 meta/og/canonical",
+    "iletisim: form rıza kaydı (messages.consent_given/consent_at) + honeypot + IP hash",
+    "kimlik-dogrulama: Argon2id + oturum sertleştirme (session fixation koruması)"
+  ],
+  "approvals": [
+    "sepet/sipariş: katalog tablosu yok — kural tetiklenmedi, onay gerekmedi (şartname §3)",
+    "ödeme/bildirim/yorum modülleri: minimal kurumsal kapsam gereği eklenmedi; kullanıcı talebiyle P2'de eklenebilir"
+  ],
+  "edge_cases": [
+    "İletişim formu: honeypot alanı + IP hash başına dakikada en fazla 5 gönderim (spam koruması)",
+    "Form doğrulama: UTF-8 temizleme, alan uzunluk sınırları, e-posta formatı; hata VALIDATION_FAILED/422 şemasıyla döner",
+    "users.email UNIQUE: aynı e-posta ile ikinci kayıt denemesi 422 döner",
+    "Rol silinemez: users.role_id FK RESTRICT — rolü bağlı kullanıcı varken roles satırı silinemez",
+    "Anonimleştirme: kullanıcı silindiğinde user_consents cascade olur, anonymization_log SET NULL ile iz bırakır",
+    "Oturum fixation: girişte session_regenerate_id(true); çerez HttpOnly/Secure/SameSite",
+    "CSRF: iletişim formu ve tüm admin POST işlemlerinde benzersiz token doğrulanır",
+    "user rolündeki kullanıcı admin rotasına girerse 403; oturumsuz erişim 401",
+    "Çerez onayı reddedilirse isteğe bağlı/üçüncü taraf çerezler yüklenmez, yalnız zorunlu oturum çerezi çalışır"
+  ],
+  "security_context": [
+    "Tüm veritabanı sorguları PDO prepared statements; string birleştirme yasak (SQL injection)",
+    "Tüm çıktılar htmlspecialchars(ENT_QUOTES, 'UTF-8') ile kaçırılır (XSS)",
+    "POST/PUT/DELETE isteklerinde benzersiz CSRF token doğrulaması",
+    "Şifreler PASSWORD_ARGON2ID ile hash'lenir, password_verify ile doğrulanır",
+    "Oturum çerezi HttpOnly, Secure, SameSite=Lax/Strict; session fixation koruması",
+    "KVKK/GDPR: ham IP saklanmaz (SHA-256 ip_hash), form rıza metni gösterilir ve kaydı tutulur",
+    "Hata yanıtları standart şemayla döner; üretimde display_errors=0, hassas bilgi sızmaz"
+  ],
+  "sql_draft": {
+    "tables": [
+      "roles",
+      "users",
+      "messages",
+      "user_consents",
+      "anonymization_log"
+    ],
+    "seed_rows": 4,
+    "engine": "InnoDB",
+    "charset": "utf8mb4",
+    "notes": "FK kısıtlamaları (RESTRICT/CASCADE/SET NULL) + B-Tree index (users.role_id, users.email UNIQUE, messages.status, messages.created_at); seed: 3 rol + 1 örnek admin; şema/seed kaynakları migrations/{schema,seed} altında tutulur, dağıtım dump'ı sql-dump.sh ile deterministik üretilir"
+  },
+  "result": "requirements-frozen"
+}
