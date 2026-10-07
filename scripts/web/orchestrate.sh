@@ -4,7 +4,11 @@ set -euo pipefail
 # App-Fabrika Web Edition — Orkestratör (State Graph faz sürücüsü)
 # Kontrat: .factory/web-state-graph.json · Şemalar: .factory/contracts/*.schema.json
 # Kullanım: bash scripts/web/orchestrate.sh <proje_dizini> [--auto]
-#   --auto   eksik LLM adımlarını `opencode run --agent ...` ile çalıştırır
+#   --auto   eksik LLM adımlarını `opencode run --format json --agent ...` ile
+#            çalıştırır; her çalıştırmadan sonra .factory/metrics.jsonl'a
+#            reporter-only metrik satırı eklenir (ts, phase, agent, rc,
+#            latency_ms, tokens, events, session, parse_error) — metrik asla
+#            exit kodu/gate değiştirmez; parse edilemezse parse_error=true.
 # Exit: 0 = DONE · 1 = hata/geçersiz artefakt · 2 = HALT · 3 = bekleme (LLM adımı gerekli)
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -156,14 +160,132 @@ p1_gate_ok() {
   validate_artifact "$1" "$CONTRACTS/p1-domain-report.schema.json" && semantic_domain "$1"
 }
 
-run_agent() {
-  local agent="$1" prompt="$2"
+record_agent_metrics() { # $1=agent $2=phase $3=rc $4=start_ms $5=end_ms $6=event dosyası
+  # reporter-only: text çıktısını stdout'a basar, metrik satırını append eder;
+  # hiçbir koşulda non-zero çıkış üretmez (gate değişmez).
+  METRICS_FILE="$PROJECT/.factory/metrics.jsonl" \
+  MET_AGENT="$1" MET_PHASE="$2" MET_RC="$3" MET_START="$4" MET_END="$5" MET_EV="$6" python3 - <<'PY'
+import datetime
+import json
+import os
+import sys
+
+path = os.environ["MET_EV"]
+out_path = os.environ["METRICS_FILE"]
+events = 0
+malformed = 0
+tokens = {"input": 0, "output": 0, "total": 0, "reasoning": 0,
+          "cache_read": 0, "cache_write": 0}
+steps = 0
+text_parts = 0
+text_chars = 0
+session = None
+span_first = None
+span_last = None
+cost = 0.0
+parse_error = None
+texts = []
+
+try:
+    with open(path, encoding="utf-8", errors="replace") as fh:
+        for ln in fh:
+            ln = ln.strip()
+            if not ln:
+                continue
+            try:
+                ev = json.loads(ln)
+            except Exception:
+                malformed += 1
+                continue
+            if not isinstance(ev, dict):
+                malformed += 1
+                continue
+            events += 1
+            session = ev.get("sessionID") or session
+            ts = ev.get("timestamp")
+            if isinstance(ts, (int, float)):
+                span_first = ts if span_first is None else min(span_first, ts)
+                span_last = ts if span_last is None else max(span_last, ts)
+            if ev.get("type") == "text":
+                part = ev.get("part") or {}
+                if isinstance(part.get("text"), str):
+                    text_parts += 1
+                    text_chars += len(part["text"])
+                    texts.append(part["text"])
+            elif ev.get("type") == "step_finish":
+                steps += 1
+                part = ev.get("part") or {}
+                tok = part.get("tokens") or {}
+                if isinstance(tok, dict):
+                    tokens["input"] += int(tok.get("input") or 0)
+                    tokens["output"] += int(tok.get("output") or 0)
+                    tokens["total"] += int(tok.get("total") or 0)
+                    tokens["reasoning"] += int(tok.get("reasoning") or 0)
+                    cache = tok.get("cache") or {}
+                    tokens["cache_read"] += int(cache.get("read") or 0)
+                    tokens["cache_write"] += int(cache.get("write") or 0)
+                try:
+                    cost += float(part.get("cost") or 0)
+                except (TypeError, ValueError):
+                    pass
+except Exception as exc:  # dosya yok/okunamadı
+    parse_error = str(exc)
+
+if events == 0 and parse_error is None:
+    parse_error = "no JSON events (stdout boş veya format tanınmadı)"
+
+record = {
+    "ts": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "phase": os.environ["MET_PHASE"],
+    "agent": os.environ["MET_AGENT"],
+    "rc": int(os.environ["MET_RC"]),
+    "latency_ms": max(0, int(os.environ["MET_END"]) - int(os.environ["MET_START"])),
+    "parse_error": parse_error is not None,
+}
+if parse_error is None:
+    record.update({
+        "events": events,
+        "steps": steps,
+        "session": session,
+        "event_span_ms": (int(span_last - span_first)
+                          if span_first is not None and span_last is not None else None),
+        "tokens": tokens,
+        "text_parts": text_parts,
+        "text_chars": text_chars,
+        "cost": round(cost, 6),
+    })
+else:
+    record["error"] = parse_error
+if malformed:
+    record["malformed_lines"] = malformed
+
+try:
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(out_path, "a", encoding="utf-8") as fh:
+        fh.write(json.dumps(record, ensure_ascii=False) + "\n")
+except Exception:
+    pass  # metrik asla gate'i etkilemez
+
+for t in texts:
+    sys.stdout.write(t if t.endswith("\n") else t + "\n")
+PY
+}
+
+run_agent() { # $1=agent $2=prompt $3=phase(P1|P2|P4)
+  local agent="$1" prompt="$2" phase="${3:-unknown}"
   if ! command -v opencode >/dev/null 2>&1; then
     echo "orkestratör: opencode CLI yok — --auto kullanılamaz" >&2
     return 1
   fi
-  echo "==> opencode agent: $agent"
-  (cd "$PROJECT" && opencode run --agent "$agent" "$prompt")
+  echo "==> opencode agent: $agent ($phase)"
+  local ev rc=0 start_ms end_ms
+  ev="$(mktemp)"
+  start_ms="$(python3 -c 'import time; print(int(time.time() * 1000))')"
+  (cd "$PROJECT" && opencode run --format json --agent "$agent" "$prompt") > "$ev" || rc=$?
+  end_ms="$(python3 -c 'import time; print(int(time.time() * 1000))')"
+  record_agent_metrics "$agent" "$phase" "$rc" "$start_ms" "$end_ms" "$ev" || true
+  rm -f "$ev"
+  return "$rc"
 }
 
 scaffold_ok() {
@@ -248,7 +370,7 @@ while true; do
       S="$CONTRACTS/p1-domain-report.schema.json"
       if [[ -f "$R" ]]; then
         if ! p1_gate_ok "$R"; then
-          if [[ "$AUTO" -eq 1 ]] && run_agent web-domain-architect "$(p1_prompt)"; then
+          if [[ "$AUTO" -eq 1 ]] && run_agent web-domain-architect "$(p1_prompt)" P1; then
             p1_gate_ok "$R" || { echo "orkestratör: domain-report.json P1 kapısını geçemedi — $S + domain-check.py" >&2; exit 1; }
           else
             echo "orkestratör: domain-report.json P1 kapısını geçemedi — $S + domain-check.py" >&2
@@ -257,7 +379,7 @@ while true; do
         fi
       else
         if [[ "$AUTO" -eq 1 ]]; then
-          run_agent web-domain-architect "$(p1_prompt)" || wait_for "P1: web-domain-architect çalıştırılamadı"
+          run_agent web-domain-architect "$(p1_prompt)" P1 || wait_for "P1: web-domain-architect çalıştırılamadı"
           [[ -f "$R" ]] || wait_for "P1: $R üretilmedi"
           p1_gate_ok "$R" || { echo "orkestratör: domain-report.json P1 kapısını geçemedi — $S + domain-check.py" >&2; exit 1; }
         else
@@ -271,7 +393,7 @@ while true; do
     P2)
       if ! scaffold_ok; then
         if [[ "$AUTO" -eq 1 ]]; then
-          run_agent web-core-engineer "$(p2_prompt)" || wait_for "P2: web-core-engineer çalıştırılamadı"
+          run_agent web-core-engineer "$(p2_prompt)" P2 || wait_for "P2: web-core-engineer çalıştırılamadı"
           scaffold_ok || wait_for "P2: MVC iskeleti eksik (index.php, core/, views/, SQL/veritabani.sql)"
         else
           wait_for "P2: MVC iskeleti eksik (web-core-engineer)"
@@ -284,7 +406,7 @@ while true; do
     P3|P4)
       if [[ "$PHASE" == "P4" ]]; then
         if [[ "$AUTO" -eq 1 ]]; then
-          run_agent web-core-engineer "$(p4_prompt)" || wait_for "P4: web-core-engineer düzeltme yapamadı"
+          run_agent web-core-engineer "$(p4_prompt)" P4 || wait_for "P4: web-core-engineer düzeltme yapamadı"
         else
           wait_for "P4: revision bekleniyor (retry $(get_retry)/3 — web-core-engineer)"
         fi

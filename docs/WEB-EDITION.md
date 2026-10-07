@@ -61,6 +61,15 @@ Eksik faz artefaktını (P1 raporu, P2 iskeleti, P4 düzeltmesi) **bekletir**; h
 işler, HALT'ı aynadan geçirir. Çıktı raporları `.factory/contracts/*.schema.json` ile
 doğrulanır (`jsonschema` varsa tam, yoksa zorunlu-alan/const yedeği).
 
+**Metrik raporlayıcı (`--auto`, reporter-only):** her `opencode run` çağrısı
+`--format json` ile NDJSON event akışı (`step_start`/`text`/`step_finish`) olarak
+alınır ve agent metni stdout'a basılır; ardından `<proje>/.factory/metrics.jsonl`'a
+tek satır eklenir: `ts, phase, agent, rc, latency_ms, event_span_ms, session,
+events, steps, tokens{input,output,total,reasoning,cache_*}, text_parts, cost,
+parse_error`. Bozuk/boş çıktıda satır `parse_error: true` + `error` ile yazılır
+(rc ve latency yine kaydedilir). **Metrik asla exit kodu/QA/state değiştirmez**
+(yazım hatası yutulur); bütçe alarmı (`--strict`) sonraki sürüme ertelendi.
+
 ### State komutları
 
 ```bash
@@ -246,6 +255,7 @@ npm install -g eslint
 |-------|--------|-------------|----------|
 | Başlat (P1 + intent) | `/web-baslat` | `bash scripts/web/state.sh start` | `/web-baslat` |
 | Orkestratör (faz sürücüsü) | `/web-baslat` | `bash scripts/web/orchestrate.sh .` | `/web-baslat` |
+| — (`--auto` metrikleri) | — | `<proje>/.factory/metrics.jsonl` (reporter-only) | — |
 | QA kapısı | `/web-denetle` | `bash scripts/web/qa-gate.sh .` | `/web-denetle` |
 | Paketle | `/web-yukle` | `bash scripts/web/package-yukleme.sh .` | `/web-yukle` |
 | Faz durumu | `/web-faz` | `bash scripts/web/state.sh status` | `/web-faz` |
@@ -272,6 +282,8 @@ ve `debug config` öncesi `find . -name '._*' -delete` ile temizle.
 - Artefakt şemaları: `.factory/contracts/{p1-domain-report,p3-qa-report,p5-packaging-report}.schema.json`
 - Örnek state: `.factory/web-state.example.json`
 - Orkestratör: `bash scripts/web/orchestrate.sh <proje> [--auto]`
+- Agent metrikleri: `<proje>/.factory/metrics.jsonl` (`--auto` reporter-only; parse
+  edilemezse `parse_error: true` — gate/exit kodu değişmez)
 - SQL dump üretici: `bash scripts/web/sql-dump.sh <proje> [--output <path>]`
 - Lighthouse (raporlayıcı): `bash scripts/web/lighthouse-verify.sh <proje> [--serve] [--strict]`
 - Temiz bootstrap: `bash scripts/web/bootstrap-project.sh <hedef> [--yes] [--force]`

@@ -115,6 +115,7 @@ PRUNE_FILES = {
     "domain-report.json",
     "lighthouse-report.json",
     "smoke-report.json",
+    "metrics.jsonl",
     "qa-report.json",
     "debug_report.json",
     "packaging-report.json",

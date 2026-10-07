@@ -12,7 +12,9 @@ set -euo pipefail
 # lighthouse raporlayıcı faz (SKIPPED/PASS/WARN/strict + --serve) →
 # temiz bootstrap (dry-run dokunmaz, --yes kopyalar, hariçler + git izi) →
 # staging paketleme + katmanlı smoke (blocker/raporlayıcı/force-fail guard) +
-# arşiv MANIFEST + atomik takas + force-fail geri alma + KEEP prune
+# arşiv MANIFEST + atomik takas + force-fail geri alma + KEEP prune →
+# --auto metrik raporlayıcısı (NDJSON event → metrics.jsonl, parse fallback,
+# reporter-only: gate/exit değişmez)
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FIX="$ROOT/tests/fixtures/web-sample"
@@ -717,6 +719,75 @@ C="$(ls -1 "$ARC" | wc -l | tr -d ' ')"
 [[ "$C" == "2" ]] || die "KEEP=2 prune → 2 beklenir, gelen $C"
 grep -q 'rev4' "$ROLL/Yukleme/views/home.php" || die "en yeni paket rev4 içermeli"
 echo "    YUKLEME_ARCHIVE_KEEP=2: arşiv 3 → prune → 2 (en yeniler kaldı)"
+
+step "18) orchestrate --auto metrik raporlayıcısı: event → metrics.jsonl + parse fallback"
+STUB2="$TMP/ocbin"
+mkdir -p "$STUB2"
+cat > "$STUB2/opencode" <<'STUB'
+#!/usr/bin/env bash
+if [[ "${STUB_MODE:-ok}" == "garbage" ]]; then
+  echo "opencode: plain log line, not json"
+  exit 0
+fi
+python3 - <<'PYF'
+import json
+import time
+
+now = int(time.time() * 1000)
+evs = [
+    {"type": "step_start", "timestamp": now, "sessionID": "ses_stub0001",
+     "part": {"type": "step-start"}},
+    {"type": "text", "timestamp": now + 5, "sessionID": "ses_stub0001",
+     "part": {"type": "text", "text": "PONG (stub)",
+              "time": {"start": now, "end": now + 5}}},
+    {"type": "step_finish", "timestamp": now + 6, "sessionID": "ses_stub0001",
+     "part": {"type": "step-finish", "reason": "stop",
+              "tokens": {"total": 123, "input": 100, "output": 23, "reasoning": 7,
+                         "cache": {"write": 0, "read": 0}},
+              "cost": 0}},
+]
+for e in evs:
+    print(json.dumps(e))
+PYF
+STUB
+chmod +x "$STUB2/opencode"
+
+MP="$TMP/mp18"
+cp -R "$FIX" "$MP"
+rm -f "$MP/.factory/domain-report.json"
+rc=0
+AUTO_OUT="$(env PATH="$STUB2:$PATH" STUB_MODE=ok bash "$ORCH" "$MP" --auto 2>&1)" || rc=$?
+[[ "$rc" == "3" ]] || die "auto+stub bekleme rc3 beklenir, gelen $rc"
+grep -q 'PONG (stub)' <<<"$AUTO_OUT" || die "agent metni stdout'a basılmadı: $AUTO_OUT"
+[[ -f "$MP/.factory/metrics.jsonl" ]] || die "metrics.jsonl üretilmedi"
+python3 - "$MP/.factory/metrics.jsonl" <<'PY' || die "metrik satırı (ok modu)"
+import json, sys
+lines = [json.loads(l) for l in open(sys.argv[1], encoding="utf-8") if l.strip()]
+assert len(lines) == 1, lines
+m = lines[0]
+assert m["parse_error"] is False, m
+assert m["phase"] == "P1" and m["agent"] == "web-domain-architect", m
+assert m["rc"] == 0, m
+assert isinstance(m["latency_ms"], int) and m["latency_ms"] >= 0, m
+assert m["events"] == 3 and m["steps"] == 1 and m["text_parts"] == 1, m
+assert m["tokens"]["total"] == 123 and m["tokens"]["input"] == 100, m
+assert m["tokens"]["cache_read"] == 0, m
+assert m["session"] and m["session"].startswith("ses_"), m
+assert m["event_span_ms"] == 6, m
+PY
+echo "    ok modu: NDJSON → 1 satır metrik (tokens/session/span) + agent metni basıldı; P1 bekleme rc3 KORUNDU"
+
+rc="$(run_rc env PATH="$STUB2:$PATH" STUB_MODE=garbage bash "$ORCH" "$MP" --auto)"
+[[ "$rc" == "3" ]] || die "garbage modunda da rc3 beklenir, gelen $rc"
+python3 - "$MP/.factory/metrics.jsonl" <<'PY' || die "parse_error satırı"
+import json, sys
+lines = [json.loads(l) for l in open(sys.argv[1], encoding="utf-8") if l.strip()]
+assert len(lines) == 2, lines
+m = lines[1]
+assert m["parse_error"] is True and m.get("error"), m
+assert "rc" in m and "latency_ms" in m and "phase" in m, m
+PY
+echo "    garbage modu: parse_error=true (+rc/latency yine yazıldı), gate yine rc3"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

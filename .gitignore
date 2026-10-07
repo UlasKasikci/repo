@@ -113,3 +113,4 @@ qa-report.json
 debug_report.json
 packaging-report.json
 smoke-report.json
+metrics.jsonl
