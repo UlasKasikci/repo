@@ -93,6 +93,7 @@ COPY_FILES = [
 PRUNE_DIRS = {".git", "node_modules", "Yukleme", "__pycache__", ".DS_Store"}
 PRUNE_REL_DIRS = {
     os.path.join(".factory", "context"),
+    os.path.join(".factory", "e2e-runs"),
     os.path.join(".factory", "yukleme-staging"),
     os.path.join(".factory", "yukleme-archive"),
     os.path.join(".factory", "yukleme-failed"),

@@ -333,6 +333,11 @@ scaffold_ok() {
   return 0
 }
 
+# B2 (E2E-1/2, write SchemaError: Expected string, got {...}) — tüm üretim ajanlarına
+# aynı açık kural; opencode sürümü değil model parametre tipi sorunu.
+WRITE_RULE="Araç kuralı: write tool çağrısında content parametresi DÜZ STRING olmalı
+(JSON objesi/array DEĞİL); JSON içeriğini string olarak gömün — aksi SchemaError."
+
 p1_prompt() {
   local c
   c="$(compliance_mode)"
@@ -341,6 +346,7 @@ P1 (Domain & Scope) analizini uygula — App-Fabrika Web Edition.
 Proje dizini: $PROJECT
 Kanonik şartname: $ROOT/docs/WEB-EDITION.md (§3 proaktif domain denetimi: RBAC, sepet/sipariş, SEO/KVKK).
 Çıktıyı MUTLAKA UTF-8 JSON olarak şu dosyaya yaz: $PROJECT/.factory/domain-report.json
+$WRITE_RULE
 Şema: $CONTRACTS/p1-domain-report.schema.json
 Zorunlu alanlar: schema_version=1, project, entities, roles,
 module_matrix (≥4 modül; her hücre: {module, status: present|missing|injected|proposed,
@@ -362,6 +368,10 @@ p2_prompt() {
   cat <<EOF
 P2 (Code Generation) — App-Fabrika Web Edition MVC iskeletini tamamla.
 Proje dizini: $PROJECT
+$WRITE_RULE
+Girdi kontratı: $PROJECT/.factory/domain-report.json (P1 çıktısı) — entities[] tablo
+adları ve module_matrix kararları (present|injected|missing|proposed) P2 şemasına,
+SQL migrations/ ve views/ akışına bağlayıcıdır; görmezden gelme.
 Zorunlu yapı: index.php (front-controller), core/ (App, Database, CSRF), views/,
 SQL/veritabani.sql (FK + index + seed, UTF-8), assets/css, assets/js.
 SQL kaynakları SQL/migrations/{schema,seed}/*.sql altında olsun; dump'ı
@@ -390,6 +400,7 @@ p4_prompt() {
   cat <<EOF
 P4 (Revision) — QA hatalarını düzelt.
 Proje dizini: $PROJECT
+$WRITE_RULE
 Girdi: $PROJECT/qa-report.json ve $PROJECT/debug_report.json (errors[] listesi).
 Hedef: bash scripts/web/qa-gate.sh ile 0 Error, 0 Warning.
 Yalnız proje dosyalarını düzenle; scripts/web/* betiklerine ve .factory/ kontratlarına dokunma.

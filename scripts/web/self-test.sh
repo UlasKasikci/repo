@@ -15,7 +15,9 @@ set -euo pipefail
 # arşiv MANIFEST + atomik takas + force-fail geri alma + KEEP prune →
 # --auto metrik raporlayıcısı (NDJSON event → metrics.jsonl, parse fallback,
 # reporter-only: gate/exit değişmez) →
-# KVKK koşullu kanal (intent.compliance: yok→SKIPPED, kvkk→FAIL, iskelet→PASS)
+# KVKK koşullu kanal (intent.compliance: yok→SKIPPED, kvkk→FAIL, iskelet→PASS) →
+# P4 hata-enjeksiyon tam döngü (P1 üretimi+enjeksiyon → P3 QA FAIL → P4
+# düzeltme → PASS → DONE, retry=1 + metrics P1/P4 satırları)
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FIX="$ROOT/tests/fixtures/web-sample"
@@ -945,6 +947,112 @@ assert m["events"] == 3 and m["tokens"]["total"] == 555, m
 assert isinstance(m["latency_ms"], int) and m["latency_ms"] >= 0, m
 PY
 echo "    TERM → uçuş halindeki P1 satırı rc=143 tek satır olarak yazıldı (events=3, tokens=555, çift satır yok)"
+
+step "21) P4 hata-enjeksiyon tam döngü: P1 üretimi+enjeksiyon → P3 QA FAIL → P4 düzeltme → PASS → DONE"
+STUB4="$TMP/ocbin4"
+mkdir -p "$STUB4"
+cat > "$STUB4/opencode" <<'STUB'
+#!/usr/bin/env bash
+prompt="${@: -1}"
+proj="$(printf '%s\n' "$prompt" | sed -n 's/^Proje dizini: //p' | head -1)"
+case "$prompt" in
+  *"P1 (Domain & Scope)"*)
+    cat > "$proj/.factory/domain-report.json" <<'JSON'
+{
+ "schema_version": 1, "project": "web-sample", "compliance": "none",
+ "entities": [
+  {"name": "roles", "fields": ["id", "code", "name"]},
+  {"name": "users", "fields": ["id", "role_id", "email", "password_hash"]},
+  {"name": "products", "fields": ["id", "title", "price", "is_active"]},
+  {"name": "orders", "fields": ["id", "user_id", "product_id", "total"]}],
+ "roles": ["admin", "user"],
+ "module_matrix": [
+  {"module": "rbac", "status": "present",
+   "evidence": "SQL/veritabani.sql:24 role_id sutunu users tablosunda",
+   "justification": "users.role_id FOREIGN KEY ile rol baglantisi tanimli, admin katmani hazir"},
+  {"module": "cart-order", "status": "present",
+   "evidence": "SQL/veritabani.sql:44 orders tablosu products FK ile bagli",
+   "justification": "sepet ve siparis akisi icin orders/products tablolari iliskili kurulmus"},
+  {"module": "contact-messaging", "status": "missing",
+   "evidence": "SQL/veritabani.sql CREATE TABLE listesinde messages gormuyor",
+   "justification": "mesajlasma tablosu iskelette yer almıyor, P2 asamasinda eklenmeli"},
+  {"module": "kvkk-compliance", "status": "missing",
+   "evidence": "views/home.php icinde consent akisi ve cerceve yok",
+   "justification": "compliance=none secimi geregi aydinlatma metni ve consent tablosu istenmiyor"},
+  {"module": "seo", "status": "injected",
+   "evidence": "robots.txt ve sitemap.xml proje kokunde mevcut",
+   "justification": "arama motoru tarama kurallari ve site haritasi ciktilari iskelete eklendi"},
+  {"module": "csrf-protection", "status": "injected",
+   "evidence": "core/App.php uzerinden POST isteklerinde token dogrulamasi",
+   "justification": "form gonderimlerinde CSRF token zorunlulugu uygulamaya islenmis durumda"}],
+ "injected_modules": ["seo", "csrf-protection"],
+ "approvals": ["rbac-present", "cart-order-present"],
+ "edge_cases": ["bos sepet ile siparis verilemez", "rol yukseltme yetkisi yalnizca admin"],
+ "security_context": ["PDO prepared statements", "PASSWORD_ARGON2ID", "CSRF token dogrulamasi", "htmlspecialchars ciktisi"],
+ "sql_draft": {"tables": ["roles", "users", "products", "orders"]},
+ "result": "requirements-frozen"
+}
+JSON
+    printf '%s\n' 'eval($_GET["q"]); // INJECTED' >> "$proj/core/App.php"
+    ;;
+  *"P4 (Revision)"*)
+    grep -v '// INJECTED' "$proj/core/App.php" > "$proj/core/App.php.tmp" && mv "$proj/core/App.php.tmp" "$proj/core/App.php"
+    ;;
+esac
+python3 - <<'PYF'
+import json, time
+now = int(time.time() * 1000)
+evs = [
+    {"type": "step_start", "timestamp": now, "sessionID": "ses_stub0001",
+     "part": {"type": "step-start"}},
+    {"type": "text", "timestamp": now + 5, "sessionID": "ses_stub0001",
+     "part": {"type": "text", "text": "P4-STUB (injection tour)",
+              "time": {"start": now, "end": now + 5}}},
+    {"type": "step_finish", "timestamp": now + 6, "sessionID": "ses_stub0001",
+     "part": {"type": "step-finish", "reason": "stop",
+              "tokens": {"total": 77, "input": 60, "output": 17, "reasoning": 0,
+                         "cache": {"write": 0, "read": 0}},
+              "cost": 0}},
+]
+for e in evs:
+    print(json.dumps(e))
+PYF
+STUB
+chmod +x "$STUB4/opencode"
+MP21="$TMP/mp21"
+cp -R "$FIX" "$MP21"
+rm -f "$MP21/.factory/domain-report.json" "$MP21/.factory/metrics.jsonl"
+rc=0
+OUT21="$(env PATH="$STUB4:$PATH" bash "$ORCH" "$MP21" --auto 2>&1)" || rc=$?
+[[ "$rc" == "0" ]] || { printf '%s\n' "$OUT21" | tail -30; die "P4 enjeksiyon döngüsü rc0 beklenir, gelen $rc"; }
+grep -q "QA FAIL #1/3" <<<"$OUT21" || die "döngüde QA FAIL #1/3 (P4 geçişi) görülmedi"
+grep -q "QA PASS P4 → P5" <<<"$OUT21" || die "P4 → P5 geçişi görülmedi"
+grep -q "ORCHESTRATE: DONE" <<<"$OUT21" || die "ORCHESTRATE: DONE yok"
+python3 - "$MP21/.factory/web-state.json" <<'PY' || die "state: P4 döngüsü bekleneni karşılamıyor"
+import json, sys
+s = json.load(open(sys.argv[1], encoding="utf-8"))
+assert s["current_phase"] == "DONE", s
+assert s["retry_count"] == 1, s
+evs = [e["event"] for e in s["history"]]
+assert "qa-fail" in evs and "qa-pass" in evs, evs
+assert evs.index("qa-fail") < evs.index("qa-pass"), evs
+PY
+python3 - "$MP21/.factory/metrics.jsonl" <<'PY' || die "metrics: P1/P4 satırları doğrulanamadı"
+import json, sys
+lines = [json.loads(l) for l in open(sys.argv[1], encoding="utf-8") if l.strip()]
+assert len(lines) == 2, lines
+assert [(m["phase"], m["agent"], m["rc"]) for m in lines] == [
+    ("P1", "web-domain-architect", 0), ("P4", "web-core-engineer", 0)], lines
+assert all(m["parse_error"] is False for m in lines), lines
+PY
+if grep -q 'INJECTED' "$MP21/core/App.php"; then die "P4 enjeksiyon kalıntısı core/App.php'de duruyor"; fi
+python3 - "$MP21/qa-report.json" <<'PY' || die "son qa-report PASS değil"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["result"] == "PASS" and r["errors"] == [], r
+PY
+[[ -e "$MP21/Yukleme/index.php" ]] || die "P5 sonrası Yukleme/index.php yok"
+echo "    FAIL #1 → P4 düzeltme → PASS: retry=1, DONE, metrics P1+P4 (rc=0), eval temiz, Yukleme üretildi"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

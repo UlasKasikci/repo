@@ -325,8 +325,13 @@ if [[ -f "$PROJECT/phpunit.xml" || -f "$PROJECT/phpunit.xml.dist" ]]; then
   fi
   if [[ -n "$PU" ]]; then
     check_begin
-    (cd "$PROJECT" && "$PU" --configuration phpunit.xml >/dev/null 2>&1) \
-      || err "test: phpunit birim testleri başarısız"
+    if ! (cd "$PROJECT" && "$PU" --configuration phpunit.xml >/dev/null 2>&1); then
+      _hint=""
+      if find "$PROJECT" -type f -name '._*Test.php' -not -path '*/node_modules/*' 2>/dev/null | grep -q .; then
+        _hint=" — AppleDouble ikizi (._*Test.php) PHPUnit tarayıcısını bozar; find . -name '._*' -delete (exFAT)"
+      fi
+      err "test: phpunit birim testleri başarısız${_hint}"
+    fi
     check_end phpunit
   else
     check_begin
