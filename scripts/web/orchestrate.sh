@@ -156,6 +156,25 @@ semantic_domain() {
   python3 "$ROOT/scripts/web/domain-check.py" "$1" "$PROJECT"
 }
 
+compliance_mode() { # intent.compliance → kvkk|gdpr|none (tek doğruluk kaynağı .factory/project-intent.json)
+  if [[ -f "$PROJECT/.factory/project-intent.json" ]]; then
+    COMPLIANCE="$(python3 - "$PROJECT/.factory/project-intent.json" <<'PY'
+import json
+import sys
+
+try:
+    v = json.load(open(sys.argv[1], encoding="utf-8")).get("compliance")
+except Exception:
+    v = None
+print(v if v in ("kvkk", "gdpr") else "none")
+PY
+    )" || COMPLIANCE="none"
+    printf '%s' "$COMPLIANCE"
+  else
+    printf 'none'
+  fi
+}
+
 p1_gate_ok() {
   validate_artifact "$1" "$CONTRACTS/p1-domain-report.schema.json" && semantic_domain "$1"
 }
@@ -297,6 +316,8 @@ scaffold_ok() {
 }
 
 p1_prompt() {
+  local c
+  c="$(compliance_mode)"
   cat <<EOF
 P1 (Domain & Scope) analizini uygula — App-Fabrika Web Edition.
 Proje dizini: $PROJECT
@@ -311,10 +332,15 @@ justification: ≥20 karakter gerçek gerekçe} — şablon/boş değer yasak,
 qa-gate domain_report denetimini geçirmez),
 injected_modules, approvals, edge_cases, security_context,
 sql_draft.tables, result="requirements-frozen".
+compliance: $c — intent.compliance (enum kvkk|gdpr|none; şemada opsiyonel alan) —
+domain-report.compliance alanına aynen yaz; kvkk/gdpr ise module_matrix'te
+kvkk modülünü present/injected olarak gerekçelendir.
 EOF
 }
 
 p2_prompt() {
+  local c
+  c="$(compliance_mode)"
   cat <<EOF
 P2 (Code Generation) — App-Fabrika Web Edition MVC iskeletini tamamla.
 Proje dizini: $PROJECT
@@ -327,6 +353,19 @@ Araç yapılandırmaları: phpstan.neon.dist (level 8), .eslintrc.json, phpunit.
 Güvenlik: PDO prepared statement, htmlspecialchars çıktı, CSRF, PASSWORD_ARGON2ID.
 Yalnız $PROJECT dizinine yaz; QA betiklerine dokunma.
 EOF
+  if [[ "$c" != "none" ]]; then
+    cat <<EOF
+
+KVKK/GDPR bloğu (intent.compliance=$c — zorunlu, qa-gate kvkk kanalı denetler):
+- views/legal/aydinlatma.php, views/legal/gizlilik.php, views/legal/cerez.php —
+  gerçek yasal metinler (yer tutucu değil; KVKK maddeleri/KVKK-GDPR referanslı)
+- views/partials/cookie-consent.php + assets/js/cookie-consent.js — çerez onay
+  banner'ı: açık rıza, red/onay tercihi, tercih saklama ve tekrar açılma
+- SQL/migrations/schema/*_kvkk.sql: user_consents (id, user_id FK cascade, purpose,
+  granted, created_at) + anonymization_log (id, user_id, action, basis, performed_at);
+  ardından \`bash scripts/web/sql-dump.sh .\` ile dump'ı yeniden üret (drift FAIL)
+EOF
+  fi
 }
 
 p4_prompt() {

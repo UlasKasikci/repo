@@ -14,7 +14,8 @@ set -euo pipefail
 # staging paketleme + katmanlı smoke (blocker/raporlayıcı/force-fail guard) +
 # arşiv MANIFEST + atomik takas + force-fail geri alma + KEEP prune →
 # --auto metrik raporlayıcısı (NDJSON event → metrics.jsonl, parse fallback,
-# reporter-only: gate/exit değişmez)
+# reporter-only: gate/exit değişmez) →
+# KVKK koşullu kanal (intent.compliance: yok→SKIPPED, kvkk→FAIL, iskelet→PASS)
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FIX="$ROOT/tests/fixtures/web-sample"
@@ -788,6 +789,95 @@ assert m["parse_error"] is True and m.get("error"), m
 assert "rc" in m and "latency_ms" in m and "phase" in m, m
 PY
 echo "    garbage modu: parse_error=true (+rc/latency yine yazıldı), gate yine rc3"
+
+step "19) KVKK koşullu kanal: intent.compliance — yok→SKIPPED, kvkk→FAIL, iskelet→PASS"
+K1="$TMP/kv1"
+cp -R "$FIX" "$K1"
+rc="$(run_rc bash "$QA" "$K1")"
+[[ "$rc" == "0" ]] || { cat "$K1/qa-report.json" 2>/dev/null; die "intent yoksa QA PASS"; }
+python3 - "$K1/qa-report.json" <<'PY' || die "kvkk SKIPPED"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["checks"].get("kvkk") == "SKIPPED", r["checks"]
+PY
+echo "    intent yok → kvkk SKIPPED (QA PASS — ayrı kanal, bütçesiz)"
+
+K2="$TMP/kv2"
+cp -R "$FIX" "$K2"
+printf '{"schema_version": 1, "compliance": "kvkk"}\n' > "$K2/.factory/project-intent.json"
+rc="$(run_rc bash "$QA" "$K2")"
+[[ "$rc" == "1" ]] || die "kvkk iskelet eksikken QA FAIL (1) beklenir, gelen $rc"
+python3 - "$K2/qa-report.json" <<'PY' || die "kvkk FAIL kanıtı"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["checks"].get("kvkk") == "FAIL", r["checks"]
+assert any(e.startswith("kvkk: views/legal/") for e in r["errors"]), r["errors"]
+assert any("user_consents" in e for e in r["errors"]), r["errors"]
+PY
+echo "    compliance=kvkk + iskelet yok → kvkk FAIL (legal view + rıza tablosu hataları)"
+
+mkdir -p "$K2/views/legal" "$K2/views/partials" "$K2/assets/js" "$K2/SQL/migrations/schema"
+for v in aydinlatma gizlilik cerez; do
+  cat > "$K2/views/legal/$v.php" <<'PHPV'
+<?php
+declare(strict_types=1);
+$title = 'KVKK / Çerez Bilgilendirmesi';
+?>
+<section class="legal">
+  <h1><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></h1>
+  <p>6698 sayılı KVKK ve GDPR aydınlatma metni — tam hukuki metin proje kapsamında doldurulur.</p>
+</section>
+PHPV
+done
+cat > "$K2/views/partials/cookie-consent.php" <<'PHPV'
+<?php
+declare(strict_types=1);
+$mesaj = 'Deneyimi iyileştirmek icin bu site zorunlu ve istatistik cerezleri kullanir.';
+?>
+<div id="cookie-consent" class="cookie-banner" hidden data-consent="pending">
+  <p><?= htmlspecialchars($mesaj, ENT_QUOTES, 'UTF-8') ?></p>
+  <button type="button" data-action="accept">Kabul</button>
+  <button type="button" data-action="reject">Reddet</button>
+</div>
+PHPV
+cat > "$K2/assets/js/cookie-consent.js" <<'JSV'
+document.addEventListener('DOMContentLoaded', function () {
+  // cookie consent banner controller (acik riza)
+});
+JSV
+cat > "$K2/SQL/migrations/schema/002_kvkk.sql" <<'SQLV'
+CREATE TABLE user_consents (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    user_id INT UNSIGNED NOT NULL,
+    purpose VARCHAR(64) NOT NULL,
+    granted TINYINT(1) NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_consents_user (user_id),
+    CONSTRAINT fk_user_consents_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE anonymization_log (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    user_id INT UNSIGNED NOT NULL,
+    action VARCHAR(64) NOT NULL,
+    basis VARCHAR(64) NOT NULL,
+    performed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_anon_user (user_id),
+    CONSTRAINT fk_anonymization_log_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+SQLV
+bash "$ROOT/scripts/web/sql-dump.sh" "$K2" >/dev/null || die "kvkk dump üretilemedi"
+rc="$(run_rc bash "$QA" "$K2")"
+[[ "$rc" == "0" ]] || { cat "$K2/qa-report.json" 2>/dev/null; die "iskelet tamken QA PASS"; }
+python3 - "$K2/qa-report.json" <<'PY' || die "kvkk PASS kanıtı"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["checks"].get("kvkk") == "PASS", r["checks"]
+assert r["checks"].get("sql_dump") in ("PASS", "SKIPPED"), r["checks"]
+assert r["checks"].get("php_lint") == "PASS", r["checks"]
+PY
+echo "    iskelet (3 legal + consent bileşeni + user_consents/anonymization_log + dump) → kvkk PASS"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

@@ -112,6 +112,7 @@ PRUNE_FILES = {
     "package-lock.json",
     "freeze.json",
     "web-state.json",
+    "project-intent.json",
     "domain-report.json",
     "lighthouse-report.json",
     "smoke-report.json",

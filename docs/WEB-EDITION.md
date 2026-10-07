@@ -113,6 +113,19 @@ veya uymuyorsa `orchestrate.sh` P2'ye geçmez (exit 1/3); `state.sh advance` P1�
 yalnız geçiş anında hücresel olarak değil, artefakt varlığını orkestratör katmanında
 doğrular.
 
+**Compliance (KVKK/GDPR) — koşullu modül (#9):** tek doğruluk kaynağı
+`<proje>/.factory/project-intent.json` → `compliance ∈ {kvkk, gdpr, none}`
+(alan yoksa/bozuksa `none`; example'da `null`). Seçim:
+- **`kvkk|gdpr`:** P1 prompt'u `compliance` alanını domain-report'a dondurur (şemada
+  **opsiyonel** — `additionalProperties: true`, `schema_version` 1'de kalır, majör bump
+  yok). P2 prompt'u KVKK bloğunu **zorunlu** kılar: `views/legal/{aydinlatma,gizlilik,
+  cerez}.php` (gerçek yasal metin), `views/partials/cookie-consent.php` +
+  `assets/js/cookie-consent.js` (açık rıza banner'ı), `SQL/migrations/schema/*_kvkk.sql`
+  → `user_consents` + `anonymization_log` (boş şema, seed değil) ve dump yeniden üretimi.
+  `qa-gate.sh` `kvkk` kanalı bunları + iki tabloyu denetler → eksik FAIL.
+- **`none`/alan yok:** P2 prompt'u bloğu yazmaz, `kvkk` kanalı **SKIPPED** kalır
+  (ayrı kanal — SKIPPED bütçesine girmez, PASS'i etkilemez; iç panel/B2B intranet muaf).
+
 ## 4. Faz 2/3 — Mimari & Kod Standartları
 
 - **Backend:** Sade PHP 8.1+, MVC (`core/`, `views/`, `index.php` front-controller), stateless,
@@ -155,7 +168,9 @@ bash scripts/web/qa-gate.sh <proje_dizini>
 
 Kontroller: `php -l` (tüm PHP dosyaları) · yapısal dosya denetimi · SQL şema denetimi
 (FK/index/seed/RBAC/sepet) · OWASP grep'leri · **`domain_report` semantik denetimi**
-(P1 artefaktı varsa: module_matrix ≥4, dolu evidence/justification) · **statik/test
+(P1 artefaktı varsa: module_matrix ≥4, dolu evidence/justification) · **`kvkk`
+kanalı** (intent.compliance=kvkk|gdpr → legal view + consent bileşeni + `user_consents`
+/`anonymization_log`; none/yok → SKIPPED, ayrı kanal) · **statik/test
 üçlüsü** · raporlar.
 
 - Çıktılar: `qa-report.json` (her koşuda), `debug_report.json` (yalnız FAIL).

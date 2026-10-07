@@ -8,5 +8,6 @@
   "confirmed_by": "user",
   "confirmed_at": "2026-07-02T00:00:00Z",
   "source": "explicit-user-confirmation",
+  "compliance": null,
   "notes": "Old conversation context must not be treated as active project intent."
 }

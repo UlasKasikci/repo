@@ -241,6 +241,40 @@ if [[ -f "$DOMAIN_REPORT" ]]; then
   check_end domain_report
 fi
 
+# --- 5c) KVKK/GDPR kanalı (intent.compliance; koşullu — §3) ---
+# compliance = kvkk|gdpr ise P2 KVKK bloğu zorunlu: legal view'lar, çerez onay
+# bileşeni ve rıza/anonimleştirme tabloları. none/alan yoksa bu kanal SKIPPED
+# kalır (ayrı kanal — SKIPPED bütçesine girmez, PASS'i etkilemez).
+set_check kvkk SKIPPED
+COMPLIANCE="none"
+if [[ -f "$PROJECT/.factory/project-intent.json" ]]; then
+  COMPLIANCE="$(python3 - "$PROJECT/.factory/project-intent.json" <<'PY'
+import json
+import sys
+
+try:
+    v = json.load(open(sys.argv[1], encoding="utf-8")).get("compliance")
+except Exception:
+    v = None
+print(v if v in ("kvkk", "gdpr") else "none")
+PY
+  )" || COMPLIANCE="none"
+fi
+if [[ "$COMPLIANCE" != "none" ]]; then
+  check_begin
+  for f in views/legal/aydinlatma.php views/legal/gizlilik.php views/legal/cerez.php \
+           views/partials/cookie-consent.php assets/js/cookie-consent.js; do
+    [[ -f "$PROJECT/$f" ]] || err "kvkk: $f eksik (compliance=$COMPLIANCE — P2 KVKK bloğu zorunlu)"
+  done
+  if [[ -f "$PROJECT/SQL/veritabani.sql" ]]; then
+    grep -Eiq 'CREATE TABLE[[:space:]]+`?user_consents' "$PROJECT/SQL/veritabani.sql" \
+      || err "kvkk: user_consents tablosu yok (açık rıza kaydı — SQL/veritabani.sql)"
+    grep -Eiq 'CREATE TABLE[[:space:]]+`?anonymization_log' "$PROJECT/SQL/veritabani.sql" \
+      || err "kvkk: anonymization_log tablosu yok (anonimleştirme izi — SQL/veritabani.sql)"
+  fi
+  check_end kvkk
+fi
+
 # --- 6) Statik analiz + birim test (garantici çekirdek — asimetrik kural) ---
 # phpstan + phpunit ZORUNLUDUR: yapılandırması yoksa o kontrol doğrudan FAIL.
 # Yalnız eslint SKIPPED olabilir (ör. JS'siz proje).
