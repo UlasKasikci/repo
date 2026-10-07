@@ -1,0 +1,30 @@
+{
+  "tool": "lighthouse-verify",
+  "result": "WARN",
+  "url": "http://127.0.0.1:24549/",
+  "strict": false,
+  "scores": {
+    "performance": 100,
+    "accessibility": 55,
+    "best-practices": 89,
+    "seo": 82
+  },
+  "metrics": {
+    "lcp_ms": 756,
+    "cls": 0.0
+  },
+  "thresholds": {
+    "category_min": 90,
+    "lcp_max_ms": 2500,
+    "cls_max": 0.1
+  },
+  "violations": [
+    "accessibility 55 < 90",
+    "best-practices 89 < 90",
+    "seo 82 < 90"
+  ],
+  "nots": [
+    "--serve: php -S 127.0.0.1:24549 (geçici)",
+    "eşik altı: accessibility 55 < 90, best-practices 89 < 90, seo 82 < 90"
+  ]
+}

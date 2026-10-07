@@ -145,9 +145,18 @@ done
 rc="$(run_rc bash "$STATE" qa-fail "$PROJ")"
 [[ "$rc" == "2" ]] || die "4. qa-fail HALT (2) beklenir, gelen $rc"
 grep -q '"status": "halted"' "$PROJ/.factory/web-state.json" || die "status=halted bekleniyordu"
+[[ -f "$PROJ/debug_report.json" ]] || die "HALT debug_report.json üretildi"
+python3 - "$PROJ/debug_report.json" <<'PY' || die "HALT debug_report içeriği"
+import json, sys
+d = json.load(open(sys.argv[1], encoding="utf-8"))
+assert d["kind"] == "debug_report" and d["halted"] is True, d
+assert d["retry_count"] == 4 and d["max_retries"] == 3, d
+assert any("max_retries" in e for e in d["errors"]), d
+assert d["next_actions"], d
+PY
 rc="$(run_rc bash "$STATE" advance "$PROJ")"
 [[ "$rc" == "2" ]] || die "halted state'te advance 2 dönmeli, gelen $rc"
-echo "    HALT: 4. başarısızlıkta döngü durdu (max_retries=3)"
+echo "    HALT: 4. başarısızlıkta döngü durdu (max_retries=3) + debug_report.json (halted=true)"
 
 step "6) negatif: RBAC eksik (role_id yok)"
 NEG="$TMP/rbac"
@@ -475,8 +484,8 @@ if [[ -z "$OUT" ]]; then echo "fake lighthouse 1.0"; exit 0; fi
 python3 - "$OUT" "${LH_FAKE_SCORE:-0.96}" <<'PYF'
 import json, sys
 json.dump({
- "categories": {"performance": {"value": float(sys.argv[2])}, "accessibility": {"value": 1.0},
-                "best-practices": {"value": 1.0}, "seo": {"value": 0.93}},
+ "categories": {"performance": {"score": float(sys.argv[2])}, "accessibility": {"score": 1.0},
+                "best-practices": {"score": 1.0}, "seo": {"score": 0.93}},
  "audits": {"largest-contentful-paint": {"numericValue": 1800},
             "cumulative-layout-shift": {"numericValue": 0.02}}
 }, open(sys.argv[1], "w"))

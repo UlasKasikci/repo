@@ -95,8 +95,9 @@ if lh_path and os.path.isfile(lh_path):
     try:
         with open(lh_path, encoding="utf-8") as fh:
             data = json.load(fh)
+        # gerçek LH şeması: categories.<id>.score (0..1) — .value DEĞİL
         scores = {
-            key: round(float(cat.get("value", 0)) * 100)
+            key: round(float(cat.get("score") or 0) * 100)
             for key, cat in data.get("categories", {}).items()
         }
         metrics = {}

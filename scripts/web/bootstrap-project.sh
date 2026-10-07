@@ -200,3 +200,16 @@ if command -v git >/dev/null 2>&1; then
 else
   echo "  git: kurulu değil — iz bırakılmadı" >&2
 fi
+
+cat <<EOF
+
+Sonraki adımlar (iskelet henüz boş — bu normal):
+  1) cd $PROJECT
+  2) bash scripts/web/state.sh start .   # P1
+  3) domain raporunu yaz (docs/WEB-EDITION.md §3) → bash scripts/web/orchestrate.sh .
+     P2'de web-core-engineer index.php, core/, views/ VE phpstan.neon.dist,
+     .eslintrc.json, phpunit.xml + tests/ iskeletini üretir.
+NOT: P2 öncesi ilk \`qa-gate.sh\` koşusu KASITLI FAIL verir — yapısal dosyalar
+(index.php, .htaccess, ...) + asimetrik çekirdek (phpstan/phpunit yapılandırması)
+zorunludur; config'leri elle kurmak yerine P2 iskeletini bekleyin.
+EOF

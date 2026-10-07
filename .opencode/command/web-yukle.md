@@ -12,5 +12,10 @@ Proje dizini: `$ARGUMENTS` (boşsa `.`).
 4. Doğrula: `Yukleme/` §14 ağacı birebir; `node_modules`, `.env`, `.git`, `*_test.php`,
    `.scss`/`.ts` sızmamış; `Yukleme/SQL/veritabani.sql` UTF-8 + FK + seed içeriyor.
 5. Teslim raporu sun: dosya sayısı, byte, SQL durumu, minify notları, FTP hedefi `Yukleme/`.
+6. (Opsiyonel, P5 sonrası raporlayıcı) Canlı doğrulama: `LIGHTHOUSE_URL` tanımlıysa
+   `bash scripts/web/lighthouse-verify.sh $ARGUMENTS` → `.factory/lighthouse-report.json`
+   (PASS/WARN/SKIPPED; v1 bloklayıcı değil, eşik altı WARN'de exit 0; `--strict` ile exit 1;
+   geçici sunucu için `--serve`). State graph'a girmez, `Yukleme/`'ye (.factory denylist)
+   girmez; URL yoksa SKIPPED exit 0 ile biter.
 
 `Yukleme/` asla commit edilmez; rapor proje kökünde kalır, ağaca ek dosya konmaz.

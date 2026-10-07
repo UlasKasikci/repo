@@ -38,3 +38,13 @@ grep -c 'FOREIGN KEY' Yukleme/SQL/veritabani.sql
 dosya sayısı, byte, SQL durumu, minify notları, FTP hedefi `Yukleme/`.
 
 `Yukleme/` asla commit edilmez (build artifact, `.gitignore`'da).
+
+## Canlı doğrulama (P5 sonrası — raporlayıcı, opsiyonel)
+
+```bash
+LIGHTHOUSE_URL=<çalışan_url> bash scripts/web/lighthouse-verify.sh .   # veya --serve
+```
+
+`.factory/lighthouse-report.json` üretir: `PASS` / `WARN` (eşik altı — v1'de exit 0,
+CI'ı kirletmez) / `SKIPPED` (URL/araç yok). `--strict` sonraki sıkılaştırma için
+WARN'i exit 1 yapar. State graph'a girmez, paketleme (`.factory` denylist) girmez.

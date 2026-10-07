@@ -173,6 +173,32 @@ if op == "qa-fail":
         state["last_error"] = f"max_retries aşıldı ({state['retry_count']} > {max_retries})"
         log(state, "halt", retry_count=state["retry_count"], max_retries=max_retries)
         save_state(state)
+        # HALT kanıtı: qa-gate ile aynı şemada debug_report.json üret (mesajla söz
+        # verilen dosyayı gerçekten yaz)
+        debug_report = {
+            "schema_version": 1,
+            "tool": "state.sh",
+            "kind": "debug_report",
+            "project": project,
+            "phase": "P4",
+            "halted": True,
+            "retry_count": state["retry_count"],
+            "max_retries": max_retries,
+            "errors": [f"max_retries aşıldı ({state['retry_count']} > {max_retries})"],
+            "warnings": [],
+            "approved_exceptions": [],
+            "checks": {},
+            "next_actions": [
+                "HALT: max_retries aşıldı — mimari durdu",
+                "debug_report.json dosyasını geliştiriciye sun",
+                "Kök nedeni çözmeden P5 (paketleme) yasak",
+            ],
+            "at": now(),
+        }
+        dr_path = os.path.join(project, "debug_report.json")
+        with open(dr_path, "w", encoding="utf-8") as fh:
+            json.dump(debug_report, fh, ensure_ascii=False, indent=2)
+            fh.write("\n")
         print(
             f"state: HALT — {state['retry_count']}. başarısızlık, max_retries={max_retries} aşıldı; "
             f"debug_report.json üretildi ve mimari durdu",
