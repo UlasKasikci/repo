@@ -71,10 +71,12 @@ parse_error`. Bozuk/boş çıktıda satır `parse_error: true` + `error` ile yaz
 (rc ve latency yine kaydedilir). **Metrik asla exit kodu/QA/state değiştirmez**
 (yazım hatası yutulur).
 
-**Bütçe alarmı (`--strict`, reporter-only):** metrics toplamı eşikleri aşarsa
-`STRICT bütçe:` uyarısı basılır — **exit/gate asla değişmez**. Varsayılan eşikler
-n=2 emprik zeminden (E2E-1/2): toplam **8M** / P2-P4 tek faz **6M** / P1 **1.5M**
-token, duvar **10800s**; env ile override: `STRICT_TOTAL_TOKENS`,
+**Bütçe alarmı (`--strict`):** metrics toplamı 1× eşikleri aşarsa
+`STRICT bütçe:` uyarısı basılır — **exit/gate değişmez** (reporter-only).
+**2× sert katman:** eşiklerin ikikatını aşan durumda `SERT AŞIM` satırı +
+**exit 1** (duraklatılmış fazdan `orchestrate.sh` yeniden çalıştırılarak devam).
+Varsayılan 1× eşikler n=2 emprik zeminden (E2E-1/2): toplam **8M** / P2-P4 tek faz
+**6M** / P1 **1.5M** token, duvar **10800s**; env ile override: `STRICT_TOTAL_TOKENS`,
 `STRICT_PHASE_TOKENS`, `STRICT_P1_TOKENS`, `STRICT_WALL_MS`.
 
 ### State komutları

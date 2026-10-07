@@ -9,8 +9,10 @@ set -euo pipefail
 #            reporter-only metrik satırı eklenir (ts, phase, agent, rc,
 #            latency_ms, tokens, events, session, parse_error) — metrik asla
 #            exit kodu/gate değiştirmez; parse edilemezse parse_error=true.
-#   --strict bütçe alarmı (reporter-only): metrics toplamı STRICT_* eşiklerini
-#            aşarsa "STRICT bütçe:" uyarısı basılır — exit/gate DEĞİŞMEZ.
+#   --strict bütçe alarmı: metrics toplamı STRICT_* eşiklerini (1×) aşarsa
+#            "STRICT bütçe:" uyarısı basılır — exit/gate DEĞİŞMEZ (reporter-only).
+#            2× sert katman: eşiklerin ikikatını aşan durumda "SERT AŞIM" satırı
+#            + exit 1 (duraklatılmış fazdan yeniden çalıştırarak devam edilir).
 #            Eşikler env ile override edilebilir (aşağıda varsayılanlar).
 # Exit: 0 = DONE · 1 = hata/geçersiz artefakt · 2 = HALT · 3 = bekleme (LLM adımı gerekli)
 
@@ -60,15 +62,15 @@ STRICT_P1_TOKENS="${STRICT_P1_TOKENS:-1500000}"
 STRICT_PHASE_TOKENS="${STRICT_PHASE_TOKENS:-6000000}"
 STRICT_WALL_MS="${STRICT_WALL_MS:-10800000}"
 
-budget_check() { # reporter-only: her koşulda return 0
-  [[ "$STRICT" -eq 1 ]] || return 0
-  local out line
-  out="$(METRICS_FILE="$PROJECT/.factory/metrics.jsonl" \
-    STRICT_TOTAL_TOKENS="$STRICT_TOTAL_TOKENS" \
-    STRICT_P1_TOKENS="$STRICT_P1_TOKENS" \
-    STRICT_PHASE_TOKENS="$STRICT_PHASE_TOKENS" \
-    STRICT_WALL_MS="$STRICT_WALL_MS" \
-    ORCH_START_MS="$ORCH_START_MS" python3 - 2>/dev/null <<'PY'
+# NOT: python gövdesi AYRI top-level fonksiyonda — `$( ... <<'PY' )` içinde bash
+# $() lexeri heredoc içindeki kesme işareti'yi kaçırıp quote dengesini bozabiliyor.
+budget_lines() { # stdout: bütçe satırları (1× uyarı / 2× SERT AŞIM)
+  METRICS_FILE="$PROJECT/.factory/metrics.jsonl" \
+  STRICT_TOTAL_TOKENS="$STRICT_TOTAL_TOKENS" \
+  STRICT_P1_TOKENS="$STRICT_P1_TOKENS" \
+  STRICT_PHASE_TOKENS="$STRICT_PHASE_TOKENS" \
+  STRICT_WALL_MS="$STRICT_WALL_MS" \
+  ORCH_START_MS="$ORCH_START_MS" python3 - <<'PY'
 import json
 import os
 import time
@@ -92,32 +94,39 @@ def mil(n):
     return "%.2fM" % (n / 1000000.0)
 
 
-tot_limit = int(os.environ["STRICT_TOTAL_TOKENS"])
-p1_limit = int(os.environ["STRICT_P1_TOKENS"])
-ph_limit = int(os.environ["STRICT_PHASE_TOKENS"])
-wall_limit = int(os.environ["STRICT_WALL_MS"])
-start_ms = int(os.environ["ORCH_START_MS"])
-lines = []
+def emit(label, value, limit, extra=""):
+    # 2x → SERT AŞIM (exit 1'e giden sinyal); 1x → yalnız uyarı
+    is_token = "token" in label
+    fmt = mil if is_token else (lambda v: "%ds" % (v // 1000))
+    if value > 2 * limit:
+        print("==> STRICT bütçe: %s %s > %s (2x sert sınır) — SERT AŞIM: exit 1%s"
+              % (label, fmt(value), fmt(limit), extra))
+    elif value > limit:
+        print("==> STRICT bütçe: %s %s > %s eşiği — uyarı; gate/exit değişmez%s"
+              % (label, fmt(value), fmt(limit), extra))
+
+
 for r in rows:
     ph = r.get("phase")
     t = int((r.get("tokens") or {}).get("total") or 0)
-    if ph == "P1" and t > p1_limit:
-        lines.append("==> STRICT bütçe: P1 token %s > %s (agent=%s) — uyarı; gate/exit değişmez"
-                     % (mil(t), mil(p1_limit), r.get("agent")))
-    if ph in ("P2", "P4") and t > ph_limit:
-        lines.append("==> STRICT bütçe: %s token %s > %s (agent=%s) — uyarı; gate/exit değişmez"
-                     % (ph, mil(t), mil(ph_limit), r.get("agent")))
+    if ph == "P1":
+        emit("P1 token", t, int(os.environ["STRICT_P1_TOKENS"]),
+             " (agent=%s)" % r.get("agent"))
+    if ph in ("P2", "P4"):
+        emit("%s token" % ph, t, int(os.environ["STRICT_PHASE_TOKENS"]),
+             " (agent=%s)" % r.get("agent"))
 total = sum(int((r.get("tokens") or {}).get("total") or 0) for r in rows)
-if total > tot_limit:
-    lines.append("==> STRICT bütçe: toplam token %s > %s (%d satır) — uyarı; gate/exit değişmez"
-                 % (mil(total), mil(tot_limit), len(rows)))
-wall = int(time.time() * 1000) - start_ms
-if wall > wall_limit:
-    lines.append("==> STRICT bütçe: duvar süresi %ds > %ds — uyarı; gate/exit değişmez"
-                 % (wall // 1000, wall_limit // 1000))
-print("\n".join(lines))
+emit("toplam token", total, int(os.environ["STRICT_TOTAL_TOKENS"]),
+     " (%d satır)" % len(rows))
+wall = int(time.time() * 1000) - int(os.environ["ORCH_START_MS"])
+emit("duvar süresi", wall, int(os.environ["STRICT_WALL_MS"]))
 PY
-)" || out=""
+}
+
+budget_check() { # 1× = WARN (return 0), 2× = SERT AŞIM (return 1); asla exit etmez
+  [[ "$STRICT" -eq 1 ]] || return 0
+  local out line hard=0
+  out="$(budget_lines)" || out=""
   while IFS= read -r line; do
     [[ -n "$line" ]] || continue
     case "$STRICT_WARNED" in
@@ -125,7 +134,11 @@ PY
     esac
     STRICT_WARNED="${STRICT_WARNED}|$line"
     echo "$line" >&2
+    case "$line" in
+      *"SERT AŞIM"*) hard=1 ;;
+    esac
   done <<< "$out"
+  [[ "$hard" -eq 0 ]] || return 1
   return 0
 }
 
@@ -388,7 +401,10 @@ run_agent() { # $1=agent $2=prompt $3=phase(P1|P2|P4)
   (cd "$PROJECT" && opencode run --format json --agent "$agent" "$prompt") > "$ev" || rc=$?
   end_ms="$(python3 -c 'import time; print(int(time.time() * 1000))')"
   record_agent_metrics "$agent" "$phase" "$rc" "$start_ms" "$end_ms" "$ev" || true
-  budget_check || true
+  if ! budget_check; then
+    echo "orkestratör: STRICT bütçe sert aşıldı (2×) — duraklatıldı; yeniden çalıştırarak devam edebilirsin" >&2
+    exit 1
+  fi
   CURRENT_EV=""
   rm -f "$ev"
   return "$rc"
@@ -500,7 +516,10 @@ while true; do
     echo "orkestratör: döngü sınırı aşıldı (32) — mimari durduruldu" >&2
     exit 1
   fi
-  budget_check || true
+  if ! budget_check; then
+    echo "orkestratör: STRICT bütçe sert aşıldı (2×) — duraklatıldı; yeniden çalıştırarak devam edebilirsin" >&2
+    exit 1
+  fi
 
   if [[ ! -f "$STATE_FILE" ]]; then
     bash "$STATE_SH" start "$PROJECT" >/dev/null

@@ -18,10 +18,13 @@ set -euo pipefail
 # KVKK koşullu kanal (intent.compliance: yok→SKIPPED, kvkk→FAIL, iskelet→PASS) →
 # P4 hata-enjeksiyon tam döngü (P1 üretimi+enjeksiyon → P3 QA FAIL → P4
 # düzeltme → PASS → DONE, retry=1 + metrics P1/P4 satırları) →
-# --strict bütçe alarmı (uyarı eşik aşımda, exit/gate değişmez)
+# --strict bütçe alarmı (1× uyarı, exit/gate değişmez; 2× sert katman → exit 1)
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FIX="$ROOT/tests/fixtures/web-sample"
+# exFAT/Finder anlık üretebilir: AppleDouble ikizleri phpunit'i bozar (APFS tmp'ye
+# kopyalasak da KAYNAK temiz olmalı) — okuma sınırında tek temizlik noktası.
+find "$FIX" -name '._*' -delete 2>/dev/null || true
 QA="$ROOT/scripts/web/qa-gate.sh"
 PKG="$ROOT/scripts/web/package-yukleme.sh"
 STATE="$ROOT/scripts/web/state.sh"
@@ -1055,7 +1058,10 @@ PY
 [[ -e "$MP21/Yukleme/index.php" ]] || die "P5 sonrası Yukleme/index.php yok"
 echo "    FAIL #1 → P4 düzeltme → PASS: retry=1, DONE, metrics P1+P4 (rc=0), eval temiz, Yukleme üretildi"
 
-step "22) --strict bütçe alarmı: aşımda WARN, exit/gate değişmez (reporter-only)"
+step "22) --strict bütçe alarmı: 1× uyarı (exit0) + 2× sert katman (exit 1)"
+# metric'ler koşullar arası birikir; her açılışta taze başla ki 1×/2× sınırları
+# deterministik kalsın (123 token/stub satırı).
+: > "$MP/.factory/metrics.jsonl"
 rc=0
 OUT22="$(env PATH="$STUB2:$PATH" STRICT_TOTAL_TOKENS=100 STRICT_WALL_MS=999999999 \
   bash "$ORCH" "$MP" --auto --strict 2>&1)" || rc=$?
@@ -1072,7 +1078,13 @@ OUT22c="$(env PATH="$STUB2:$PATH" STRICT_TOTAL_TOKENS=100 \
   bash "$ORCH" "$MP" --auto 2>&1)" || rc=$?
 [[ "$rc" == "3" ]] || die "strict kapalıyken rc3 korunmalı, gelen $rc"
 if grep -q "STRICT bütçe" <<<"$OUT22c"; then die "--strict yokken uyarı çıktı"; fi
-echo "    uyarı eşik aşıldığında tekil basıldı; eşik içi/sıfır bayrakta yok; üç koşulda da rc=3 (gate değişmedi)"
+rc=0
+OUT22d="$(env PATH="$STUB2:$PATH" STRICT_TOTAL_TOKENS=50 STRICT_WALL_MS=999999999 \
+  bash "$ORCH" "$MP" --auto --strict 2>&1)" || rc=$?
+[[ "$rc" == "1" ]] || die "2× sert aşımda exit 1 beklenir, gelen $rc"
+grep -q "SERT AŞIM: exit 1" <<<"$OUT22d" || die "SERT AŞIM satırı basılmadı"
+grep -q "STRICT bütçe sert aşıldı" <<<"$OUT22d" || die "sert aşımda duraklatma mesajı yok"
+echo "    1× uyarı eşik aşıldığında tekil basıldı (rc=3); eşik içi/sıfır bayrakta yok; 2× sert katman → exit 1"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"
