@@ -1,6 +1,6 @@
 ---
 description: App-Fabrika Requirement & Domain Architect (Agent 1) — P1'de eksik gereksinimleri (RBAC, sepet, ödeme, SEO, KVKK) proaktif enjekte eder; tek yazma yetkisi .factory/domain-report.json.
-mode: subagent
+mode: primary
 temperature: 0.1
 ---
 

@@ -300,12 +300,30 @@ run_agent() { # $1=agent $2=prompt $3=phase(P1|P2|P4)
   local ev rc=0 start_ms end_ms
   ev="$(mktemp)"
   start_ms="$(python3 -c 'import time; print(int(time.time() * 1000))')"
+  CURRENT_EV="$ev" CURRENT_AGENT="$agent" CURRENT_PHASE="$phase" CURRENT_START_MS="$start_ms"
   (cd "$PROJECT" && opencode run --format json --agent "$agent" "$prompt") > "$ev" || rc=$?
   end_ms="$(python3 -c 'import time; print(int(time.time() * 1000))')"
   record_agent_metrics "$agent" "$phase" "$rc" "$start_ms" "$end_ms" "$ev" || true
+  CURRENT_EV=""
   rm -f "$ev"
   return "$rc"
 }
+
+# B4: kill-safe metrik — TERM/INT ile öldürülürken uçuş halindeki çağrı
+# satırı metrics.jsonl'e rc=143 olarak düşer (watchdog kill_tree sırası:
+# çocuklar önce → trap opencode öldükten sonra koşar, çift satır olmaz).
+CURRENT_EV="" CURRENT_AGENT="" CURRENT_PHASE="" CURRENT_START_MS=""
+on_kill_metrics() {
+  if [[ -n "$CURRENT_EV" && -f "$CURRENT_EV" ]]; then
+    local now_ms
+    now_ms="$(python3 -c 'import time; print(int(time.time() * 1000))')"
+    record_agent_metrics "$CURRENT_AGENT" "$CURRENT_PHASE" 143 \
+      "${CURRENT_START_MS:-$now_ms}" "$now_ms" "$CURRENT_EV" || true
+    rm -f "$CURRENT_EV"
+  fi
+  exit 143
+}
+trap on_kill_metrics TERM INT
 
 scaffold_ok() {
   [[ -f "$PROJECT/index.php" ]] || return 1

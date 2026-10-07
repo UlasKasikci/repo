@@ -879,6 +879,73 @@ assert r["checks"].get("php_lint") == "PASS", r["checks"]
 PY
 echo "    iskelet (3 legal + consent bileşeni + user_consents/anonymization_log + dump) → kvkk PASS"
 
+step "20) kill-safe metrik (B4): TERM ile uçuş halindeyken rc=143 satırı düşer"
+STUB3="$TMP/ocbin3"
+mkdir -p "$STUB3"
+cat > "$STUB3/opencode" <<'STUB'
+#!/usr/bin/env bash
+# -u: kill edilince tampon kaybı olmasın (event'ler anında akmalı)
+python3 -u - <<'PYF'
+import json
+import time
+
+now = int(time.time() * 1000)
+evs = [
+    {"type": "step_start", "timestamp": now, "sessionID": "ses_kill0001",
+     "part": {"type": "step-start"}},
+    {"type": "text", "timestamp": now + 5, "sessionID": "ses_kill0001",
+     "part": {"type": "text", "text": "IN-FLIGHT (stub)",
+              "time": {"start": now, "end": now + 5}}},
+    {"type": "step_finish", "timestamp": now + 6, "sessionID": "ses_kill0001",
+     "part": {"type": "step-finish", "reason": "stop",
+              "tokens": {"total": 555, "input": 500, "output": 55, "reasoning": 0,
+                         "cache": {"write": 0, "read": 0}},
+              "cost": 0}},
+]
+for e in evs:
+    print(json.dumps(e))
+PYF
+sleep 30
+STUB
+chmod +x "$STUB3/opencode"
+MP20="$TMP/mp20"
+cp -R "$FIX" "$MP20"
+rm -f "$MP20/.factory/domain-report.json" "$MP20/.factory/metrics.jsonl"
+KILL_LOG="$TMP/mp20-orch.log"
+env PATH="$STUB3:$PATH" bash "$ORCH" "$MP20" --auto > "$KILL_LOG" 2>&1 &
+ORCH_PID=$!
+for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+  grep -q "opencode agent: web-domain-architect" "$KILL_LOG" 2>/dev/null && break
+  sleep 0.5
+done
+if ! grep -q "opencode agent" "$KILL_LOG" 2>/dev/null; then
+  kill -TERM "$ORCH_PID" 2>/dev/null || true
+  die "B4: orchestrate run_agent'a ulaşamadı"
+fi
+sleep 0.5
+# watchdog kill_tree sırası: önce çocuklar (stub), sonra orchestrate
+for c in $(pgrep -P "$ORCH_PID" || true); do
+  for g in $(pgrep -P "$c" || true); do kill -TERM "$g" 2>/dev/null || true; done
+  kill -TERM "$c" 2>/dev/null || true
+done
+kill -TERM "$ORCH_PID" 2>/dev/null || true
+rc=0
+wait "$ORCH_PID" || rc=$?
+[[ "$rc" == "143" ]] || die "B4: orchestrate TERM sonrası 143 beklenir, gelen $rc"
+[[ -f "$MP20/.factory/metrics.jsonl" ]] || die "B4: kill-safe metrics satırı düşmedi"
+python3 - "$MP20/.factory/metrics.jsonl" <<'PY' || die "B4: kill-safe metrik satırı doğrulaması"
+import json, sys
+lines = [json.loads(l) for l in open(sys.argv[1], encoding="utf-8") if l.strip()]
+assert len(lines) == 1, lines
+m = lines[0]
+assert m["rc"] == 143, m
+assert m["phase"] == "P1" and m["agent"] == "web-domain-architect", m
+assert m["parse_error"] is False, m
+assert m["events"] == 3 and m["tokens"]["total"] == 555, m
+assert isinstance(m["latency_ms"], int) and m["latency_ms"] >= 0, m
+PY
+echo "    TERM → uçuş halindeki P1 satırı rc=143 tek satır olarak yazıldı (events=3, tokens=555, çift satır yok)"
+
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"
 exit 0

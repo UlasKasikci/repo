@@ -1,6 +1,6 @@
 ---
 description: App-Fabrika Production Deployment & Packager (Agent 5) — QA PASS sonrası Yukleme/ üretir, build isolation uygular, sha256 manifestli teslim raporu çıkarır.
-mode: subagent
+mode: primary
 temperature: 0.1
 permission:
   edit: deny

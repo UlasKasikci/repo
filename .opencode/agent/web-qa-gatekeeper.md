@@ -1,6 +1,6 @@
 ---
 description: App-Fabrika QA & Security Gatekeeper — qa-gate.sh ile 0 Error 0 Warning doğrular; kod değiştirmez (readonly).
-mode: subagent
+mode: primary
 temperature: 0.1
 permission:
   edit: deny
