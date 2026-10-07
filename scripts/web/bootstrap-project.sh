@@ -19,7 +19,8 @@ set -euo pipefail
 # KOPYALANMAZ:
 #   tests/ (fabrika fixture), .github/ (fabrika CI), scripts/web/{self-test,bootstrap-project}.sh,
 #   .factory/{context,freeze.json} + runtime (web-state.json, domain-report.json,
-#   lighthouse-report.json, qa/debug/packaging-report.json), .cursor/{skills,snapshots,mcp.json},
+#   lighthouse-report.json, smoke-report.json, qa/debug/packaging-report.json,
+#   yukleme-{staging,archive,failed}/), .cursor/{skills,snapshots,mcp.json},
 #   .opencode/{plans,node_modules,package*.json}, .git/, node_modules/, Yukleme/, ._*, .DS_Store
 #
 # Git izi: hedefte taze `git init`; ilk commit
@@ -92,6 +93,9 @@ COPY_FILES = [
 PRUNE_DIRS = {".git", "node_modules", "Yukleme", "__pycache__", ".DS_Store"}
 PRUNE_REL_DIRS = {
     os.path.join(".factory", "context"),
+    os.path.join(".factory", "yukleme-staging"),
+    os.path.join(".factory", "yukleme-archive"),
+    os.path.join(".factory", "yukleme-failed"),
     ".cursor/skills",
     ".cursor/snapshots",
     ".opencode/plans",
@@ -110,6 +114,7 @@ PRUNE_FILES = {
     "web-state.json",
     "domain-report.json",
     "lighthouse-report.json",
+    "smoke-report.json",
     "qa-report.json",
     "debug_report.json",
     "packaging-report.json",

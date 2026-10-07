@@ -10,7 +10,9 @@ set -euo pipefail
 # semantik P1 kapısı (hollow + fs'de olmayan kanıt → domain_report FAIL) →
 # SQL dump otomasyonu (deterministik üretim + sql_dump drift kapısı) →
 # lighthouse raporlayıcı faz (SKIPPED/PASS/WARN/strict + --serve) →
-# temiz bootstrap (dry-run dokunmaz, --yes kopyalar, hariçler + git izi)
+# temiz bootstrap (dry-run dokunmaz, --yes kopyalar, hariçler + git izi) →
+# staging paketleme + katmanlı smoke (blocker/raporlayıcı/force-fail guard) +
+# arşiv MANIFEST + atomik takas + force-fail geri alma + KEEP prune
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FIX="$ROOT/tests/fixtures/web-sample"
@@ -20,6 +22,7 @@ STATE="$ROOT/scripts/web/state.sh"
 ORCH="$ROOT/scripts/web/orchestrate.sh"
 LHS="$ROOT/scripts/web/lighthouse-verify.sh"
 BOOTER="$ROOT/scripts/web/bootstrap-project.sh"
+SMOKE="$ROOT/scripts/web/smoke-test.sh"
 
 die() {
   echo "SELF-TEST FAIL: $*" >&2
@@ -36,7 +39,7 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 step "0) bash -n söz dizimi + python söz dizimi"
-for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh bootstrap-project.sh; do
+for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh bootstrap-project.sh smoke-test.sh; do
   bash -n "$ROOT/scripts/web/$s" || die "bash -n: $s"
   echo "    OK: $s"
 done
@@ -578,6 +581,142 @@ rc="$(run_rc bash "$BOOTER" "$BOOT" --yes --force)"
 COMMITS="$(git -C "$BOOT" rev-list --count HEAD)"
 [[ "$COMMITS" == "1" ]] || die "ikinci koşu commit atmamalı (toplam $COMMITS)"
 echo "    dolu hedef: --force'suz red, --force ile idempotent (commit atlandı)"
+
+step "16) smoke-test: lokal katmanlı kapı + canlı raporlayıcı + force-fail guard"
+GOOD="$TMP/smokegood"
+mkdir -p "$GOOD"
+cat > "$GOOD/index.php" <<'PHP'
+<?php
+header('Content-Type: text/html; charset=utf-8');
+echo '<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>smoke</title></head><body>ok</body></html>';
+PHP
+printf 'User-agent: *\nAllow: /\n' > "$GOOD/robots.txt"
+printf '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>\n' > "$GOOD/sitemap.xml"
+
+rc="$(run_rc bash "$SMOKE" "$GOOD")"
+[[ "$rc" == "0" ]] || die "smoke iyi dizin rc0 beklenir, gelen $rc"
+python3 - "$TMP/smoke-report.json" <<'PY' || die "smoke PASS raporu"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["result"] == "PASS", (r["result"], r["errors"], r["violations"])
+assert r["mode"] == "local" and r["strict"] is False, r
+assert r["errors"] == [] and r["violations"] == [], (r["errors"], r["violations"])
+assert any(".htaccess" in n for n in r["notes"]), r["notes"]
+names = [c["name"] for c in r["checks"]]
+for need in ("php_lint", "server_start", "root_transport", "robots_txt", "sitemap_xml"):
+    assert need in names, names
+assert all(c["ok"] for c in r["checks"]), [c for c in r["checks"] if not c["ok"]]
+PY
+echo "    iyi dizin: php -l + php -S + / ve robots/sitemap 200 → PASS (.htaccess notu raporda)"
+
+BAD="$TMP/smokebad"
+mkdir -p "$BAD"
+printf '<?php echo "x";\n' > "$BAD/index.php"
+rc="$(run_rc env SMOKE_REPORT="$TMP/smoke-bad-report.json" bash "$SMOKE" "$BAD")"
+[[ "$rc" == "1" ]] || die "smoke robots'suz FAIL rc1 beklenir, gelen $rc"
+python3 - "$TMP/smoke-bad-report.json" <<'PY' || die "smoke FAIL raporu"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["result"] == "FAIL", r
+assert any("robots.txt" in e for e in r["errors"]), r["errors"]
+PY
+echo "    robots/sitemap yok → blocker FAIL (rc1, hata raporda)"
+
+rc=0
+GUARD_OUT="$(env SMOKE_TEST_FORCE_FAIL=1 bash "$SMOKE" "$GOOD" 2>&1)" || rc=$?
+[[ "$rc" == "1" ]] || die "force-fail guard rc1 beklenir, gelen $rc"
+grep -q 'SELF_TEST' <<<"$GUARD_OUT" || die "guard mesajı SELF_TEST içermeli: $GUARD_OUT"
+echo "    SMOKE_TEST_FORCE_FAIL SELF_TEST'siz reddedildi (yalnız öz-test ortamı)"
+
+rc=0
+env SELF_TEST=1 SMOKE_TEST_FORCE_FAIL=1 SMOKE_REPORT="$TMP/smoke-forced.json" \
+  bash "$SMOKE" "$GOOD" >/dev/null 2>&1 || rc=$?
+[[ "$rc" == "1" ]] || die "SMOKE_TEST_FORCE_FAIL=1 rc1 beklenir, gelen $rc"
+python3 - "$TMP/smoke-forced.json" <<'PY' || die "forced FAIL raporu"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["result"] == "FAIL", r
+assert any("zorlanan" in e for e in r["errors"]), r["errors"]
+PY
+echo "    SELF_TEST=1 ile zorlanan hata → FAIL raporu (geri alma kancası çalışıyor)"
+
+rc="$(run_rc env SMOKE_REPORT="$TMP/smoke-live.json" bash "$SMOKE" --url "http://127.0.0.1:9/")"
+[[ "$rc" == "0" ]] || die "canlı kapalı port WARN rc0 beklenir, gelen $rc"
+python3 - "$TMP/smoke-live.json" <<'PY' || die "canlı WARN raporu"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["result"] == "WARN" and r["mode"] == "live", r
+assert any("ulaşılamadı" in v for v in r["violations"]), r["violations"]
+assert r["errors"] == [], r["errors"]
+PY
+rc="$(run_rc env SMOKE_REPORT="$TMP/smoke-live-strict.json" bash "$SMOKE" --url "http://127.0.0.1:9/" --strict)"
+[[ "$rc" == "1" ]] || die "canlı --strict WARN rc1 beklenir, gelen $rc"
+echo "    canlı: kapalı port → WARN rc0; --strict → rc1 (sıkılaştırma kapısı hazır)"
+
+step "17) staging paketleme: arşiv + MANIFEST + atomik takas + geri alma + KEEP prune"
+ROLL="$TMP/pkgroll"
+cp -R "$FIX" "$ROLL"
+ARC="$ROLL/.factory/yukleme-archive"
+
+rc="$(run_rc bash "$PKG" "$ROLL")"
+[[ "$rc" == "0" ]] || die "staging paketleme #1 rc0 beklenir, gelen $rc"
+[[ -d "$ROLL/Yukleme" ]] || die "Yukleme/ oluşmadı (staging takası)"
+if [[ -d "$ARC" ]]; then die "ilk koşuda arşiv olmamalı"; fi
+if [[ -d "$ROLL/.factory/yukleme-staging" ]]; then die "staging kalmamalı (takas sonrası)"; fi
+echo "    #1: staging build + smoke → ilk Yukleme/ (arşiv boş, staging taşındı)"
+
+printf '\n<!-- rev2 -->\n' >> "$ROLL/views/home.php"
+rc="$(run_rc bash "$PKG" "$ROLL")"
+[[ "$rc" == "0" ]] || die "staging paketleme #2 rc0 beklenir, gelen $rc"
+C="$(ls -1 "$ARC" | wc -l | tr -d ' ')"
+[[ "$C" == "1" ]] || die "arşiv 1 beklenir, gelen $C"
+ADIR="$ARC/$(ls -1 "$ARC" | head -1)"
+[[ -f "$ADIR/MANIFEST.json" ]] || die "arşiv MANIFEST.json yok"
+grep -q 'rev2' "$ROLL/Yukleme/views/home.php" || die "yeni paket rev2 içermeli"
+if grep -q 'rev2' "$ADIR/views/home.php" 2>/dev/null; then
+  die "arşiv rev2 içermemeli (eski paket arşivlenmedi)"
+fi
+python3 - "$ADIR/MANIFEST.json" <<'PY' || die "arşiv MANIFEST içeriği"
+import json, re, sys
+m = json.load(open(sys.argv[1], encoding="utf-8"))
+assert re.fullmatch(r"[0-9a-f]{64}", m["source_hash"] or ""), m
+assert re.fullmatch(r"[0-9a-f]{64}", m["sql_dump_hash"] or ""), m
+assert m["smoke_result"] == "PASS", m
+assert m["built_at"], m
+PY
+echo "    #2: eski Yukleme/ → arşiv/<ts>-<hash12> + MANIFEST (source/sql hash, PASS); takas rev2'li"
+
+H1="$(python3 -c 'import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$ROLL/Yukleme/index.php")"
+rc="$(run_rc env SELF_TEST=1 SMOKE_TEST_FORCE_FAIL=1 bash "$PKG" "$ROLL")"
+[[ "$rc" == "1" ]] || die "force-fail paketleme rc1 beklenir, gelen $rc"
+H2="$(python3 -c 'import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$ROLL/Yukleme/index.php")"
+[[ "$H1" == "$H2" ]] || die "Yukleme/ bozuldu — geri alma başarısız"
+if [[ -d "$ROLL/.factory/yukleme-staging" ]]; then die "FAIL sonrası staging kalmamalı"; fi
+[[ -f "$ROLL/.factory/yukleme-failed/MANIFEST.json" ]] || die "yukleme-failed/MANIFEST.json yok"
+C="$(ls -1 "$ARC" | wc -l | tr -d ' ')"
+[[ "$C" == "1" ]] || die "FAIL arşive dokunmamalı (arşiv=$C)"
+python3 - "$ROLL/packaging-report.json" "$ROLL/.factory/yukleme-failed/MANIFEST.json" <<'PY' || die "FAIL raporları"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["result"] == "FAIL", r
+assert any("smoke" in f for f in r["failures"]), r["failures"]
+m = json.load(open(sys.argv[2], encoding="utf-8"))
+assert m["smoke_result"] == "FAIL", m
+PY
+echo "    force-fail: staging → yukleme-failed + MANIFEST(FAIL); eski Yukleme/ bayt bayt korundu"
+
+printf '\n<!-- rev3 -->\n' >> "$ROLL/views/home.php"
+rc="$(run_rc env YUKLEME_ARCHIVE_KEEP=2 bash "$PKG" "$ROLL")"
+[[ "$rc" == "0" ]] || die "staging paketleme #4 rc0 beklenir, gelen $rc"
+C="$(ls -1 "$ARC" | wc -l | tr -d ' ')"
+[[ "$C" == "2" ]] || die "arşiv 2 beklenir (1+1), gelen $C"
+printf '\n<!-- rev4 -->\n' >> "$ROLL/views/home.php"
+rc="$(run_rc env YUKLEME_ARCHIVE_KEEP=2 bash "$PKG" "$ROLL")"
+[[ "$rc" == "0" ]] || die "staging paketleme #5 rc0 beklenir, gelen $rc"
+C="$(ls -1 "$ARC" | wc -l | tr -d ' ')"
+[[ "$C" == "2" ]] || die "KEEP=2 prune → 2 beklenir, gelen $C"
+grep -q 'rev4' "$ROLL/Yukleme/views/home.php" || die "en yeni paket rev4 içermeli"
+echo "    YUKLEME_ARCHIVE_KEEP=2: arşiv 3 → prune → 2 (en yeniler kaldı)"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

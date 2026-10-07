@@ -6,16 +6,22 @@ set -euo pipefail
 # Ön koşul: qa-gate.sh PASS (0 error, 0 warning) — aksi halde paketleme yasak.
 # Çıktı: <proje>/Yukleme/  (§14 ağaç) + <proje>/packaging-report.json
 # Opsiyonel: YUKLEME_EXTRA="uploads storage" ile ek üretim dizinleri
+# Akış: QA ön kontrol → staging (.factory/yukleme-staging) build → denylist/§14 →
+#   smoke-test.sh (lokal php -S, katmanlı) → rapor → PASS: eski Yukleme/ arşive
+#   (.factory/yukleme-archive/<ts>-<hash12> + MANIFEST.json; son YUKLEME_ARCHIVE_KEEP,
+#   varsayılan 3) taşınır, staging atomik takasla Yukleme/ olur; FAIL: staging →
+#   .factory/yukleme-failed (+ FAIL MANIFEST), mevcut Yukleme/ dokunulmadan korunur.
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 QA_GATE="$ROOT/scripts/web/qa-gate.sh"
+SMOKE="$ROOT/scripts/web/smoke-test.sh"
 YUKLEME_EXTRA="${YUKLEME_EXTRA:-}"
 
 PROJECT="${1:-.}"
 command -v python3 >/dev/null 2>&1 || { echo "packager: python3 gerekli" >&2; exit 1; }
 [[ -d "$PROJECT" ]] || { echo "packager: dizin yok: $PROJECT" >&2; exit 1; }
 PROJECT="$(cd "$PROJECT" && pwd)"
-OUT="$PROJECT/Yukleme"
+OUT="$PROJECT/.factory/yukleme-staging"
 
 if [[ "$OUT" == "$PROJECT" || "$OUT" == "/" || -z "$OUT" ]]; then
   echo "packager: güvensiz çıktı dizini: $OUT" >&2
@@ -32,6 +38,52 @@ skip() { printf '%s\n' "$1" >> "$SKIP_FILE"; }
 note() { printf '%s\n' "$1" >> "$NOTE_FILE"; }
 fail_count() { wc -l < "$FAIL_FILE" | tr -d ' '; }
 
+tree_hash() { # $1=dizin → içerik hash'i (ad + bayt, sıralı, deterministik)
+  python3 - "$1" <<'PY'
+import hashlib
+import os
+import sys
+
+root = sys.argv[1]
+h = hashlib.sha256()
+for dp, dns, fns in os.walk(root):
+    dns.sort()
+    for n in sorted(fns):
+        p = os.path.join(dp, n)
+        h.update(os.path.relpath(p, root).encode("utf-8") + b"\0")
+        with open(p, "rb") as fh:
+            h.update(fh.read())
+        h.update(b"\n")
+print(h.hexdigest())
+PY
+}
+
+write_provenance() { # $1=dizin $2=source_hash $3=smoke_result → MANIFEST.json
+  PROV_DIR="$1" PROV_HASH="$2" PROV_SMOKE="$3" python3 - <<'PY'
+import datetime
+import hashlib
+import json
+import os
+
+d = os.environ["PROV_DIR"]
+sql_p = os.path.join(d, "SQL", "veritabani.sql")
+sql_hash = None
+if os.path.isfile(sql_p):
+    with open(sql_p, "rb") as fh:
+        sql_hash = hashlib.sha256(fh.read()).hexdigest()
+m = {
+    "tool": "package-yukleme",
+    "source_hash": os.environ["PROV_HASH"],
+    "sql_dump_hash": sql_hash,
+    "built_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "smoke_result": os.environ["PROV_SMOKE"],
+}
+with open(os.path.join(d, "MANIFEST.json"), "w", encoding="utf-8") as fh:
+    json.dump(m, fh, ensure_ascii=False, indent=2)
+    fh.write("\n")
+PY
+}
+
 echo "==> QA ön kontrolü (paketleme kapısı): $PROJECT"
 rc=0
 bash "$QA_GATE" "$PROJECT" || rc=$?
@@ -40,7 +92,7 @@ if [[ "$rc" -ne 0 ]]; then
   exit "$rc"
 fi
 
-echo "==> Paketleme: $OUT"
+echo "==> Paketleme (staging): $OUT"
 rm -rf "$OUT"
 mkdir -p "$OUT"
 
@@ -88,7 +140,7 @@ if [[ -f "$PROJECT/SQL/veritabani.sql" ]]; then
   SQL_SRC="$PROJECT/SQL/veritabani.sql"
 else
   while IFS= read -r f; do SQL_SRC="$f"; break; done < <(
-    find "$PROJECT" \( -name node_modules -o -name vendor -o -name Yukleme -o -name .git -o -name '._*' \) -prune \
+    find "$PROJECT" \( -name node_modules -o -name vendor -o -name Yukleme -o -name .factory -o -name .git -o -name '._*' \) -prune \
       -o -type f -name '*.sql' -print | sort
   )
 fi
@@ -167,6 +219,33 @@ while IFS= read -r entry; do
   skip "$name"
 done < <(find "$PROJECT" -mindepth 1 -maxdepth 1 -not -name '.DS_Store' -not -name '._*' | sort)
 
+# --- Smoke test (staging lokal sunucuda, katmanlı) ---
+echo "==> Smoke test (lokal php -S): paket bütünlüğü"
+SMOKE_REPORT="$PROJECT/.factory/smoke-report.json"
+export SMOKE_REPORT
+smoke_rc=0
+bash "$SMOKE" "$OUT" || smoke_rc=$?
+SMOKE_RES="not-run"
+if [[ -f "$SMOKE_REPORT" ]]; then
+  SMOKE_RES="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1],encoding="utf-8")).get("result","not-run"))' "$SMOKE_REPORT" 2>/dev/null || echo "not-run")"
+  while IFS= read -r l; do
+    if [[ -n "$l" ]]; then note "$l"; fi
+  done < <(
+    python3 - "$SMOKE_REPORT" <<'PY'
+import json
+import sys
+
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+for key in ("violations", "notes"):
+    for v in r.get(key, []):
+        print("smoke: " + v)
+PY
+  )
+fi
+if [[ "$smoke_rc" -ne 0 ]]; then
+  fail "smoke: paket lokal sunucuda doğrulanamadı — detay: .factory/smoke-report.json"
+fi
+
 RESULT="PASS"
 if [[ "$(fail_count)" -gt 0 ]]; then RESULT="FAIL"; fi
 
@@ -205,7 +284,7 @@ report = {
     "tool": "package-yukleme",
     "version": "1.0.0",
     "project": project,
-    "output": out,
+    "output": os.path.join(project, "Yukleme"),
     "result": result,
     "files_count": len(files),
     "bytes_total": total,
@@ -222,15 +301,49 @@ with open(os.path.join(project, "packaging-report.json"), "w", encoding="utf-8")
     fh.write("\n")
 PY
 
+FINAL="$PROJECT/Yukleme"
 echo "==> Paketleme: $RESULT"
 if [[ "$RESULT" == "FAIL" ]]; then
+  # staging → .factory/yukleme-failed (rollback: mevcut Yukleme/ dokunulmadan korunur)
+  if [[ -d "$OUT" ]]; then
+    FHASH="$(tree_hash "$OUT")"
+    rm -rf "$PROJECT/.factory/yukleme-failed"
+    mv "$OUT" "$PROJECT/.factory/yukleme-failed"
+    write_provenance "$PROJECT/.factory/yukleme-failed" "$FHASH" "$SMOKE_RES"
+  fi
   while IFS= read -r line; do echo "    [hata] $line"; done < "$FAIL_FILE"
+  echo "==> Eski Yukleme/ korundu; hatalı paket: .factory/yukleme-failed"
   echo "==> Raporda: $PROJECT/packaging-report.json"
   exit 1
 fi
 
+# --- PASS: eski Yukleme/ → arşiv (MANIFEST ile), staging → atomik takas ---
+if [[ -d "$FINAL" ]]; then
+  AHASH="$(tree_hash "$FINAL")"
+  TS="$(date -u +%Y%m%d-%H%M%S)"
+  ARCH="$PROJECT/.factory/yukleme-archive/${TS}-${AHASH:0:12}"
+  mkdir -p "$PROJECT/.factory/yukleme-archive"
+  mv "$FINAL" "$ARCH"
+  write_provenance "$ARCH" "$AHASH" "PASS"
+  KEEP="${YUKLEME_ARCHIVE_KEEP:-3}"
+  if [[ "$KEEP" =~ ^[0-9]+$ ]]; then
+    # prune: en yeni KEEP paketi tut (locale bağımsız — head -n -N macOS'ta yok)
+    python3 - "$PROJECT/.factory/yukleme-archive" "$KEEP" <<'PY'
+import os
+import shutil
+import sys
+
+d, keep = sys.argv[1], int(sys.argv[2])
+entries = sorted(os.listdir(d))
+for old in (entries if keep <= 0 else entries[:-keep]):
+    shutil.rmtree(os.path.join(d, old), ignore_errors=True)
+PY
+  fi
+fi
+mv "$OUT" "$FINAL"
+
 echo "==> Yukleme/ ağacı:"
-(cd "$OUT" && find . -not -name '._*' | sort | sed 's/^/    /' | head -60) || true
+(cd "$FINAL" && find . -not -name '._*' | sort | sed 's/^/    /' | head -60) || true
 echo "==> Rapor: $PROJECT/packaging-report.json (sha256 manifest)"
-echo "==> FTP yüklemeye hazır: $OUT"
+echo "==> FTP yüklemeye hazır: $FINAL"
 exit 0

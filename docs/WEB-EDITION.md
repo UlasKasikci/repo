@@ -195,6 +195,25 @@ Yukleme/
 - Rapor: `<proje>/packaging-report.json` (sha256 manifest + skipped/nots listesi).
   `Yukleme/` içine ek dosya konmaz — ağaç §14'e birebir sadık kalır.
 
+**Staging + smoke + arşiv/geri alma (P5 iç akışı):** build `.factory/yukleme-staging`'e
+yapılır; `bash scripts/web/smoke-test.sh <dizin>` lokal modda **katmanlı** kapı işletir —
+*blocker* (FAIL → paket reddedilir): tüm `.php` dosyalarına `php -l`, `php -S` ayağa kalkması
+(port adayları `SMOKE_PORT`/`18000+RANDOM`, süreç ölürse sonraki port, yanıt-tekrar-dene
+15×200ms — sabit uyku yok), `GET /` transport yanıtı, `/robots.txt` + `/sitemap.xml` 200;
+*raporlayıcı* (yalnız WARN/not): `/` durum kodu, `<html>` marker'ı, PHP Fatal/Parse/Uncaught
+imzası, `SMOKE_PATHS` ek rotaları. `--url <canlı>` canlı mod = aynı raporlayıcı katman
+(`--strict` ile WARN → exit 1). Rapor `.factory/smoke-report.json`'a (`SMOKE_REPORT`
+yönlendirir; **asla** paket dizinine yazılmaz). Geçiş: rapor yazıldıktan sonra **PASS** →
+mevcut `Yukleme/` `.factory/yukleme-archive/<UTCts>-<hash12>`'ye taşınır (yanına
+`MANIFEST.json`: `source_hash`, `sql_dump_hash`, `built_at`, `smoke_result`; son
+`YUKLEME_ARCHIVE_KEEP` (varsayılan 3) paket tutulur), staging **atomik takas** ile
+`Yukleme/` olur; **FAIL** → staging `.factory/yukleme-failed`'a (+ FAIL `MANIFEST.json`)
+taşınır, mevcut `Yukleme/` dokunulmadan korunur (geri alma = eski paket yerinde durur).
+`php -S` `.htaccess` rewrite'larını uygulamaz — rewrite bağımlı rotalar canlıda (`--url`)
+doğrulanır (yalnızca rapor notu). Arşiv/staging/failed dizinleri `qa-gate` taramasından ve
+bootstrap kopyasından muaftır; final paketin §14 ağacı değişmez (`MANIFEST.json` yalnız
+arşiv/failed içine yazılır).
+
 ## 8. Ortam & Araç Sırası
 
 | Adım | Araç | Yoksa |
@@ -208,6 +227,7 @@ Yukleme/
 | Kontrat doğrulama | `python3 -m pip install jsonschema` | yoksa zorunlu-alan/const yedeği |
 | SQL dump | `sql-dump.sh` (python3) | migrations yoksa `sql_dump` SKIPPED; varsa drift **FAIL** |
 | Lighthouse | `lighthouse` (npm) + `LIGHTHOUSE_URL` | env/araç yoksa SKIPPED — **raporlayıcı faz** (§9) |
+| Smoke test | `php -S` + `curl` (+ `php -l`) | araç yoksa paketleme **FAIL** (paket doğrulanamaz — zorunlu) |
 | Minify | `npx --no-install terser/csso` | `minify: skipped` notu |
 
 Araç kurulumu (garantici teslimat):
@@ -257,5 +277,7 @@ ve `debug config` öncesi `find . -name '._*' -delete` ile temizle.
 - Temiz bootstrap: `bash scripts/web/bootstrap-project.sh <hedef> [--yes] [--force]`
   (dry-run default; kopya/hariç listesi betiğin baş yorumunda; ilk commit
   `bootstrap from app-fabrika@<12-hex>` — fabrika sürümü izlenebilir)
+- Smoke test: `bash scripts/web/smoke-test.sh <dizin> | --url <canlı> [--strict]`
+  (`SMOKE_PORT`/`SMOKE_PATHS`/`SMOKE_REPORT` env; paketleme içinde otomatik çağrılır)
 - Öz-test: `bash scripts/web/self-test.sh` (CI ile aynı sahne; phpstan+phpunit+eslint gerektirir)
 - CI: `.github/workflows/validate.yml`

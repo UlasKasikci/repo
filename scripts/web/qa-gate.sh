@@ -64,10 +64,10 @@ rel() { printf '%s' "${1#"$PROJECT"/}"; }
 
 echo "==> QA Gate: $PROJECT"
 
-# --- PHP dosya envanteri (node_modules/vendor/Yukleme/.git hariç) ---
+# --- PHP dosya envanteri (node_modules/vendor/Yukleme/.factory/.git hariç) ---
 PHP_FILES=()
 while IFS= read -r f; do PHP_FILES+=("$f"); done < <(
-  find "$PROJECT" \( -name node_modules -o -name vendor -o -name Yukleme -o -name .git -o -name '._*' \) -prune \
+  find "$PROJECT" \( -name node_modules -o -name vendor -o -name Yukleme -o -name .factory -o -name .git -o -name '._*' \) -prune \
     -o -type f -name '*.php' -print | sort
 )
 PHP_COUNT=${#PHP_FILES[@]}
@@ -110,7 +110,7 @@ if [[ -f "$PROJECT/SQL/veritabani.sql" ]]; then
   SQL_FILE="$PROJECT/SQL/veritabani.sql"
 else
   while IFS= read -r f; do SQL_FILE="$f"; break; done < <(
-    find "$PROJECT" \( -name node_modules -o -name vendor -o -name Yukleme -o -name .git -o -name '._*' \) -prune \
+    find "$PROJECT" \( -name node_modules -o -name vendor -o -name Yukleme -o -name .factory -o -name .git -o -name '._*' \) -prune \
       -o -type f -name '*.sql' -print | sort
   )
 fi

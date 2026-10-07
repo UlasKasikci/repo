@@ -106,6 +106,10 @@ docs/02-ARCHITECTURE/OEM_TEST_REPORT.md
 # Web Edition — build/runtime artifact'ları (asla commit etme)
 Yukleme/
 .factory/web-state.json
+.factory/yukleme-staging/
+.factory/yukleme-archive/
+.factory/yukleme-failed/
 qa-report.json
 debug_report.json
 packaging-report.json
+smoke-report.json
