@@ -3,12 +3,15 @@ set -euo pipefail
 
 # App-Fabrika Web Edition — Orkestratör (State Graph faz sürücüsü)
 # Kontrat: .factory/web-state-graph.json · Şemalar: .factory/contracts/*.schema.json
-# Kullanım: bash scripts/web/orchestrate.sh <proje_dizini> [--auto]
+# Kullanım: bash scripts/web/orchestrate.sh <proje_dizini> [--auto] [--strict]
 #   --auto   eksik LLM adımlarını `opencode run --format json --agent ...` ile
 #            çalıştırır; her çalıştırmadan sonra .factory/metrics.jsonl'a
 #            reporter-only metrik satırı eklenir (ts, phase, agent, rc,
 #            latency_ms, tokens, events, session, parse_error) — metrik asla
 #            exit kodu/gate değiştirmez; parse edilemezse parse_error=true.
+#   --strict bütçe alarmı (reporter-only): metrics toplamı STRICT_* eşiklerini
+#            aşarsa "STRICT bütçe:" uyarısı basılır — exit/gate DEĞİŞMEZ.
+#            Eşikler env ile override edilebilir (aşağıda varsayılanlar).
 # Exit: 0 = DONE · 1 = hata/geçersiz artefakt · 2 = HALT · 3 = bekleme (LLM adımı gerekli)
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -19,10 +22,12 @@ CONTRACTS="$ROOT/.factory/contracts"
 
 PROJECT="${1:-}"
 AUTO=0
+STRICT=0
 POSITIONAL=()
 for arg in "$@"; do
   case "$arg" in
     --auto) AUTO=1 ;;
+    --strict) STRICT=1 ;;
     -*) echo "orkestratör: bilinmeyen bayrak: $arg" >&2; exit 1 ;;
     *) POSITIONAL+=("$arg") ;;
   esac
@@ -34,7 +39,7 @@ if [[ "${#POSITIONAL[@]}" -gt 1 ]]; then
 fi
 
 usage() {
-  echo "kullanım: orchestrate.sh <proje_dizini> [--auto]" >&2
+  echo "kullanım: orchestrate.sh <proje_dizini> [--auto] [--strict]" >&2
   exit 1
 }
 
@@ -44,6 +49,85 @@ command -v python3 >/dev/null 2>&1 || { echo "orkestratör: python3 gerekli" >&2
 PROJECT="$(cd "$PROJECT" && pwd)"
 STATE_FILE="$PROJECT/.factory/web-state.json"
 GUARD=0
+
+# --strict bütçe alarmı (reporter-only — exit/gate asla değişmez).
+# Eşik varsayılanları n=2 emprik zeminden (E2E-1/2): P1 0.6–0.9M, P2 3.1–4.2M,
+# toplam 4.2–4.8M token, duvar ~2.5s;WD 3s/9M altında pay bırakılır. Env ile override.
+STRICT_WARNED=""
+ORCH_START_MS="$(python3 -c 'import time; print(int(time.time() * 1000))')"
+STRICT_TOTAL_TOKENS="${STRICT_TOTAL_TOKENS:-8000000}"
+STRICT_P1_TOKENS="${STRICT_P1_TOKENS:-1500000}"
+STRICT_PHASE_TOKENS="${STRICT_PHASE_TOKENS:-6000000}"
+STRICT_WALL_MS="${STRICT_WALL_MS:-10800000}"
+
+budget_check() { # reporter-only: her koşulda return 0
+  [[ "$STRICT" -eq 1 ]] || return 0
+  local out line
+  out="$(METRICS_FILE="$PROJECT/.factory/metrics.jsonl" \
+    STRICT_TOTAL_TOKENS="$STRICT_TOTAL_TOKENS" \
+    STRICT_P1_TOKENS="$STRICT_P1_TOKENS" \
+    STRICT_PHASE_TOKENS="$STRICT_PHASE_TOKENS" \
+    STRICT_WALL_MS="$STRICT_WALL_MS" \
+    ORCH_START_MS="$ORCH_START_MS" python3 - 2>/dev/null <<'PY'
+import json
+import os
+import time
+
+rows = []
+path = os.environ.get("METRICS_FILE", "")
+try:
+    with open(path, encoding="utf-8") as fh:
+        for ln in fh:
+            ln = ln.strip()
+            if ln:
+                try:
+                    rows.append(json.loads(ln))
+                except Exception:
+                    pass
+except OSError:
+    pass
+
+
+def mil(n):
+    return "%.2fM" % (n / 1000000.0)
+
+
+tot_limit = int(os.environ["STRICT_TOTAL_TOKENS"])
+p1_limit = int(os.environ["STRICT_P1_TOKENS"])
+ph_limit = int(os.environ["STRICT_PHASE_TOKENS"])
+wall_limit = int(os.environ["STRICT_WALL_MS"])
+start_ms = int(os.environ["ORCH_START_MS"])
+lines = []
+for r in rows:
+    ph = r.get("phase")
+    t = int((r.get("tokens") or {}).get("total") or 0)
+    if ph == "P1" and t > p1_limit:
+        lines.append("==> STRICT bütçe: P1 token %s > %s (agent=%s) — uyarı; gate/exit değişmez"
+                     % (mil(t), mil(p1_limit), r.get("agent")))
+    if ph in ("P2", "P4") and t > ph_limit:
+        lines.append("==> STRICT bütçe: %s token %s > %s (agent=%s) — uyarı; gate/exit değişmez"
+                     % (ph, mil(t), mil(ph_limit), r.get("agent")))
+total = sum(int((r.get("tokens") or {}).get("total") or 0) for r in rows)
+if total > tot_limit:
+    lines.append("==> STRICT bütçe: toplam token %s > %s (%d satır) — uyarı; gate/exit değişmez"
+                 % (mil(total), mil(tot_limit), len(rows)))
+wall = int(time.time() * 1000) - start_ms
+if wall > wall_limit:
+    lines.append("==> STRICT bütçe: duvar süresi %ds > %ds — uyarı; gate/exit değişmez"
+                 % (wall // 1000, wall_limit // 1000))
+print("\n".join(lines))
+PY
+)" || out=""
+  while IFS= read -r line; do
+    [[ -n "$line" ]] || continue
+    case "$STRICT_WARNED" in
+      *"|$line|"*) continue ;;
+    esac
+    STRICT_WARNED="${STRICT_WARNED}|$line"
+    echo "$line" >&2
+  done <<< "$out"
+  return 0
+}
 
 wait_for() {
   echo "==> BEKLEME (exit 3): $1" >&2
@@ -304,6 +388,7 @@ run_agent() { # $1=agent $2=prompt $3=phase(P1|P2|P4)
   (cd "$PROJECT" && opencode run --format json --agent "$agent" "$prompt") > "$ev" || rc=$?
   end_ms="$(python3 -c 'import time; print(int(time.time() * 1000))')"
   record_agent_metrics "$agent" "$phase" "$rc" "$start_ms" "$end_ms" "$ev" || true
+  budget_check || true
   CURRENT_EV=""
   rm -f "$ev"
   return "$rc"
@@ -415,6 +500,7 @@ while true; do
     echo "orkestratör: döngü sınırı aşıldı (32) — mimari durduruldu" >&2
     exit 1
   fi
+  budget_check || true
 
   if [[ ! -f "$STATE_FILE" ]]; then
     bash "$STATE_SH" start "$PROJECT" >/dev/null

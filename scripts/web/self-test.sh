@@ -17,7 +17,8 @@ set -euo pipefail
 # reporter-only: gate/exit değişmez) →
 # KVKK koşullu kanal (intent.compliance: yok→SKIPPED, kvkk→FAIL, iskelet→PASS) →
 # P4 hata-enjeksiyon tam döngü (P1 üretimi+enjeksiyon → P3 QA FAIL → P4
-# düzeltme → PASS → DONE, retry=1 + metrics P1/P4 satırları)
+# düzeltme → PASS → DONE, retry=1 + metrics P1/P4 satırları) →
+# --strict bütçe alarmı (uyarı eşik aşımda, exit/gate değişmez)
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FIX="$ROOT/tests/fixtures/web-sample"
@@ -1053,6 +1054,25 @@ assert r["result"] == "PASS" and r["errors"] == [], r
 PY
 [[ -e "$MP21/Yukleme/index.php" ]] || die "P5 sonrası Yukleme/index.php yok"
 echo "    FAIL #1 → P4 düzeltme → PASS: retry=1, DONE, metrics P1+P4 (rc=0), eval temiz, Yukleme üretildi"
+
+step "22) --strict bütçe alarmı: aşımda WARN, exit/gate değişmez (reporter-only)"
+rc=0
+OUT22="$(env PATH="$STUB2:$PATH" STRICT_TOTAL_TOKENS=100 STRICT_WALL_MS=999999999 \
+  bash "$ORCH" "$MP" --auto --strict 2>&1)" || rc=$?
+[[ "$rc" == "3" ]] || die "strict bütçe aşımında rc3 (P1 bekleme) korunmalı, gelen $rc"
+grep -q "STRICT bütçe: toplam token" <<<"$OUT22" || die "toplam token aşım uyarısı basılmadı"
+if grep -q "STRICT bütçe: duvar" <<<"$OUT22"; then die "duvar eşiği aşılmadı halde uyarı çıktı"; fi
+rc=0
+OUT22b="$(env PATH="$STUB2:$PATH" STRICT_TOTAL_TOKENS=999999999 STRICT_WALL_MS=999999999 \
+  bash "$ORCH" "$MP" --auto --strict 2>&1)" || rc=$?
+[[ "$rc" == "3" ]] || die "strict (eşik içi) rc3 beklenir, gelen $rc"
+if grep -q "STRICT bütçe" <<<"$OUT22b"; then die "eşikler aşılmadı halde uyarı çıktı"; fi
+rc=0
+OUT22c="$(env PATH="$STUB2:$PATH" STRICT_TOTAL_TOKENS=100 \
+  bash "$ORCH" "$MP" --auto 2>&1)" || rc=$?
+[[ "$rc" == "3" ]] || die "strict kapalıyken rc3 korunmalı, gelen $rc"
+if grep -q "STRICT bütçe" <<<"$OUT22c"; then die "--strict yokken uyarı çıktı"; fi
+echo "    uyarı eşik aşıldığında tekil basıldı; eşik içi/sıfır bayrakta yok; üç koşulda da rc=3 (gate değişmedi)"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

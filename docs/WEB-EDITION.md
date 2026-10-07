@@ -55,6 +55,7 @@ START → P1 (Domain & Scope) → P2 (Code Gen) → P3 (QA Pool) ──PASS─�
 ```bash
 bash scripts/web/orchestrate.sh <proje_dizini>          # deterministik faz sürüşü
 bash scripts/web/orchestrate.sh <proje_dizini> --auto   # eksik LLM adımları opencode run --agent ile
+bash scripts/web/orchestrate.sh <proje_dizini> --auto --strict   # + bütçe alarmı (uyarıcı)
 ```
 
 Eksik faz artefaktını (P1 raporu, P2 iskeleti, P4 düzeltmesi) **bekletir**; hazır olanı
@@ -68,7 +69,13 @@ tek satır eklenir: `ts, phase, agent, rc, latency_ms, event_span_ms, session,
 events, steps, tokens{input,output,total,reasoning,cache_*}, text_parts, cost,
 parse_error`. Bozuk/boş çıktıda satır `parse_error: true` + `error` ile yazılır
 (rc ve latency yine kaydedilir). **Metrik asla exit kodu/QA/state değiştirmez**
-(yazım hatası yutulur); bütçe alarmı (`--strict`) sonraki sürüme ertelendi.
+(yazım hatası yutulur).
+
+**Bütçe alarmı (`--strict`, reporter-only):** metrics toplamı eşikleri aşarsa
+`STRICT bütçe:` uyarısı basılır — **exit/gate asla değişmez**. Varsayılan eşikler
+n=2 emprik zeminden (E2E-1/2): toplam **8M** / P2-P4 tek faz **6M** / P1 **1.5M**
+token, duvar **10800s**; env ile override: `STRICT_TOTAL_TOKENS`,
+`STRICT_PHASE_TOKENS`, `STRICT_P1_TOKENS`, `STRICT_WALL_MS`.
 
 ### State komutları
 
@@ -296,7 +303,7 @@ ve `debug config` öncesi `find . -name '._*' -delete` ile temizle.
 - State kontratı: `.factory/web-state-graph.json`
 - Artefakt şemaları: `.factory/contracts/{p1-domain-report,p3-qa-report,p5-packaging-report}.schema.json`
 - Örnek state: `.factory/web-state.example.json`
-- Orkestratör: `bash scripts/web/orchestrate.sh <proje> [--auto]`
+- Orkestratör: `bash scripts/web/orchestrate.sh <proje> [--auto] [--strict]`
 - Agent metrikleri: `<proje>/.factory/metrics.jsonl` (`--auto` reporter-only; parse
   edilemezse `parse_error: true` — gate/exit kodu değişmez)
 - SQL dump üretici: `bash scripts/web/sql-dump.sh <proje> [--output <path>]`

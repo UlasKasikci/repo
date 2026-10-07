@@ -11,7 +11,7 @@
 2. **Validate scope:** run the proactive domain audit — missing RBAC (`role_id`/`permissions`),
    missing cart/order flow for catalogs, missing SEO/KVKK modules → inject or flag them.
 3. **Plan State Graph transitions:** Domain Analysis → Code → QA Check → Package.
-   Preferred driver: `bash scripts/web/orchestrate.sh <project> [--auto]` — artifact
+   Preferred driver: `bash scripts/web/orchestrate.sh <project> [--auto] [--strict]` — artifact
    gates via `.factory/domain-report.json` + `.factory/contracts/*.schema.json`
    (missing artifact = exit 3 wait, invalid = exit 1).
 4. **Code:** clean MVC (`core/`, `views/`, `index.php`), PDO prepared statements,
