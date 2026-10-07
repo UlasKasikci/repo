@@ -1,0 +1,29 @@
+# App-Fabrika Web Edition — front controller rewrite
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Çekirdek, SQL ve test dizinlerine doğrudan erişim yasak
+  RewriteRule ^(core|SQL|tests)(/|$) - [F,L]
+
+  # Var olan dosya/dizinler doğrudan sunulur (assets, robots.txt, sitemap.xml)
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Diğer tüm istekler front controller'a yönlendirilir
+  RewriteRule ^ index.php [L]
+</IfModule>
+
+# Güvenlik başlıkları
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "DENY"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Hassas dosyalar (dump, ortam, yapılandırma) erişime kapalı
+<FilesMatch "\.(sql|env|neon|ini|log)$">
+  Require all denied
+</FilesMatch>

@@ -1,0 +1,13 @@
+BOOTSTRAP @ d88cd10a7bf9: 151 dosya (369438 bayt) → /var/folders/nd/178klgxs675c7ntwdvw3nlyc0000gn/T/opencode/e2e-20261007-044306Z/project
+  hariç: tests/, .github/, scripts/web/{self-test,bootstrap-project}.sh, .factory/{context,freeze.json,runtime raporlar}, .cursor/{skills,snapshots,mcp.json}, .opencode/{plans,node_modules,package*.json}, .git/, node_modules/, Yukleme/, ._*, .DS_Store
+  git: ilk commit 'bootstrap from app-fabrika@d88cd10a7bf9' (main)
+
+Sonraki adımlar (iskelet henüz boş — bu normal):
+  1) cd /var/folders/nd/178klgxs675c7ntwdvw3nlyc0000gn/T/opencode/e2e-20261007-044306Z/project
+  2) bash scripts/web/state.sh start .   # P1
+  3) domain raporunu yaz (docs/WEB-EDITION.md §3) → bash scripts/web/orchestrate.sh .
+     P2'de web-core-engineer index.php, core/, views/ VE phpstan.neon.dist,
+     .eslintrc.json, phpunit.xml + tests/ iskeletini üretir.
+NOT: P2 öncesi ilk `qa-gate.sh` koşusu KASITLI FAIL verir — yapısal dosyalar
+(index.php, .htaccess, ...) + asimetrik çekirdek (phpstan/phpunit yapılandırması)
+zorunludur; config'leri elle kurmak yerine P2 iskeletini bekleyin.

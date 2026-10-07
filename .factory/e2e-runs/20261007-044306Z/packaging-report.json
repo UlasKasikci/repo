@@ -1,0 +1,192 @@
+{
+  "schema_version": 1,
+  "tool": "package-yukleme",
+  "version": "1.0.0",
+  "project": "/var/folders/nd/178klgxs675c7ntwdvw3nlyc0000gn/T/opencode/e2e-20261007-044306Z/project",
+  "output": "/var/folders/nd/178klgxs675c7ntwdvw3nlyc0000gn/T/opencode/e2e-20261007-044306Z/project/Yukleme",
+  "result": "PASS",
+  "files_count": 38,
+  "bytes_total": 82167,
+  "sql_source": "/var/folders/nd/178klgxs675c7ntwdvw3nlyc0000gn/T/opencode/e2e-20261007-044306Z/project/SQL/veritabani.sql",
+  "sql_output": "SQL/veritabani.sql",
+  "failures": [],
+  "skipped": [
+    ".cursor",
+    ".cursorrules",
+    ".eslintrc.json",
+    ".factory",
+    ".git",
+    ".gitignore",
+    ".opencode",
+    "CLAUDE.md",
+    "antigravity.yaml",
+    "debug_report.json",
+    "docs",
+    "opencode.json",
+    "phpstan.neon.dist",
+    "phpunit.xml",
+    "qa-report.json",
+    "scripts",
+    "tests"
+  ],
+  "notes": [
+    "minify: skipped (csso yok — assets/css aynen paketlendi)",
+    "minify: skipped (terser yok — assets/js aynen paketlendi)",
+    "smoke: .htaccess: php -S rewrite kurallarını uygulamaz; rewrite bağımlı rotalar canlıda (--url) doğrulanmalı"
+  ],
+  "manifest": {
+    ".htaccess": {
+      "sha256": "a7e284dbf9d474278be990192f7f1dfc343223ce4bb7120b52b4cdd01f229bd9",
+      "bytes": 861
+    },
+    "index.php": {
+      "sha256": "f0305a5b01e7ddd72237c571b44cd6db11ac205cb1e667fbf34aaef4af7f1c92",
+      "bytes": 3362
+    },
+    "robots.txt": {
+      "sha256": "05683e38487abcd62e3b875b6533b0f3fdc529feefbf6da8487964fb8133c7d5",
+      "bytes": 121
+    },
+    "sitemap.xml": {
+      "sha256": "c1509b4e5f13b4e89b261078a9755f58b86753240bdf9be7397fe23d1292014f",
+      "bytes": 940
+    },
+    "SQL/veritabani.sql": {
+      "sha256": "a1ee1119035b84610c775aeecdf787ef5de47881eb739dfcf355404fc7d140bd",
+      "bytes": 5944
+    },
+    "assets/css/style.css": {
+      "sha256": "9a472cc89631c2edf0af90af12811bd4aceeb725e228b3319a68041bf4933fb8",
+      "bytes": 9115
+    },
+    "assets/js/cookie-consent.js": {
+      "sha256": "9c2abbf3477d21ac44c5cecdb3c6388d415fd1def1b0e56fafbd47a36631d567",
+      "bytes": 3656
+    },
+    "assets/js/main.js": {
+      "sha256": "99599d3f9b20226fea7fedc9149679db6ea0a89a856493eda4d45279c658120a",
+      "bytes": 644
+    },
+    "core/AdminController.php": {
+      "sha256": "6ab7967c2f70d8d3635c5886b6adf644cffef475156a8ecb2f79304c030cdca4",
+      "bytes": 1640
+    },
+    "core/App.php": {
+      "sha256": "f9954c9e8df8a8ebd3249e9abbf427f9ce5c7b8ed0dc54ed45b0cc2185c05241",
+      "bytes": 2275
+    },
+    "core/Auth.php": {
+      "sha256": "05978c17a989dfd904e1ccdf065cef0f0289a4cfcd53cce3ef66622ed678c351",
+      "bytes": 2383
+    },
+    "core/AuthController.php": {
+      "sha256": "0874e6c21d9b193d791055b9bfd6f4ffc9929714444896df2b01b2402658e939",
+      "bytes": 1482
+    },
+    "core/ConsentRepository.php": {
+      "sha256": "22681f1abce32fd6e73c84fa37d4cf1e9c4898c5b9c201d522378271ece35b6d",
+      "bytes": 1738
+    },
+    "core/ContactController.php": {
+      "sha256": "c941ccf789d0ab0ed85f6b53f19f376506c1d278f14d01eb0a427d521298a15b",
+      "bytes": 2892
+    },
+    "core/Controller.php": {
+      "sha256": "35f1bba90a7f470e3bf6b9c3ee4a45c1868daab4b402dd9a9ba2eda72b1bc58a",
+      "bytes": 1664
+    },
+    "core/Csrf.php": {
+      "sha256": "ae7834850472d896cc1edeac910adac925b0ac45b5e4239b8fc5e928d04710c5",
+      "bytes": 1473
+    },
+    "core/Database.php": {
+      "sha256": "7f79c3488a4c6434a720f31e81bd8d3f38e57a8e512c695218e7a7aac371b89f",
+      "bytes": 966
+    },
+    "core/ErrorView.php": {
+      "sha256": "83a4172f234c5e07a81c536f75231b3609762924bf9c01f168cdbdb3542248ac",
+      "bytes": 532
+    },
+    "core/Flash.php": {
+      "sha256": "5c0778c44168468f68fc167adbea4e01760e5b3f93c4752a3fd1b6b75dba7620",
+      "bytes": 745
+    },
+    "core/Helpers.php": {
+      "sha256": "6ad24a37423ad91f53ce8cc357f7166d7ac3c10054e3e01196db2dd31eb06ca4",
+      "bytes": 1168
+    },
+    "core/HomeController.php": {
+      "sha256": "a6492739c857ad1e3ea8b59f2b8bba53086b6ac585e285aa611f89fab5fa0f68",
+      "bytes": 1532
+    },
+    "core/MessageRepository.php": {
+      "sha256": "2aa04d8b1936e0f3b2ad8b3ad409909c7b0d41ed29f9972c6d01ddc2a9e96283",
+      "bytes": 2593
+    },
+    "core/UserRepository.php": {
+      "sha256": "7d585ae9b0cbb47b21b05098536b1683cafa03c66714de231b732c1a16a68c9c",
+      "bytes": 1716
+    },
+    "core/Validator.php": {
+      "sha256": "9ea8d1d8880d04ef543f221a057794d54dde5fd7c9c4d98cd147dbf2b3902cf6",
+      "bytes": 2662
+    },
+    "views/contact.php": {
+      "sha256": "e2a01267d904fdd6c566040eab120babdaf3c90cfd0d35cffda06fccc61008c1",
+      "bytes": 5074
+    },
+    "views/home.php": {
+      "sha256": "79b00d1cb4e001ee700632a6c6ba8ac080347515b0ecf6eff2cccc5a43e57132",
+      "bytes": 1909
+    },
+    "views/login.php": {
+      "sha256": "07649d7be8b8c6c4bfb3538aca366682622fa9c756d2e0cfba83e01ccdd15f04",
+      "bytes": 1387
+    },
+    "views/admin/messages.php": {
+      "sha256": "e505162a5a4d2ecd5b1a6c822cadfde916df87c0935f8ffbb918aaaa3b25cd28",
+      "bytes": 2970
+    },
+    "views/admin/users.php": {
+      "sha256": "4c62bfd1d7a8d0ff4b971697b27323787ae9cefba99d9ac97c96e336668a7e0a",
+      "bytes": 1676
+    },
+    "views/errors/403.php": {
+      "sha256": "b63958c0e12cebbe422da8562a2e7a93c5d2d3d497ea7f3707e8b03b8621356b",
+      "bytes": 556
+    },
+    "views/errors/404.php": {
+      "sha256": "ce720fcd09c4de09bd5fb67d39c98d580b1def429f0aefc1178e264a1621ae95",
+      "bytes": 518
+    },
+    "views/errors/500.php": {
+      "sha256": "1028bd650f16a044f284baaca6f980c352b1a6972101efce0ca0319fee56920c",
+      "bytes": 494
+    },
+    "views/layout/footer.php": {
+      "sha256": "955ff4dfe54c58de9febad2f6b5db36a133645a031f42cde16438003a2282799",
+      "bytes": 1112
+    },
+    "views/layout/header.php": {
+      "sha256": "f84e174ffdf9420bf6b8a8d6b519ac816a3e289cf2e5cef71aca8c80c40285a1",
+      "bytes": 1988
+    },
+    "views/legal/aydinlatma.php": {
+      "sha256": "94bd91f3bed8251c8236455eca3d92ac47d3bef1c8aa9eac574db11da9b976c8",
+      "bytes": 4327
+    },
+    "views/legal/cerez.php": {
+      "sha256": "5930fd5221ab0aa1d3c196c917dcb29e2e8afaec98fe210e2c2065c971cc0b15",
+      "bytes": 3451
+    },
+    "views/legal/gizlilik.php": {
+      "sha256": "376c64da8a756974f0b0460a0c5e6975e8a3e8223273e6b73d9dc451dd542f6e",
+      "bytes": 3086
+    },
+    "views/partials/cookie-consent.php": {
+      "sha256": "ad41e845373f03e2409ef0d630a7179cf603cdb1f693d81c8ae9a564fc2a774c",
+      "bytes": 1515
+    }
+  },
+  "at": "2026-10-07T07:00:20Z"
+}

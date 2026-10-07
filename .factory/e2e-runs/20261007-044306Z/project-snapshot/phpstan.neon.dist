@@ -1,0 +1,9 @@
+parameters:
+    level: 8
+    paths:
+        - index.php
+        - core
+        - views
+    excludePaths:
+        analyze:
+            - views/partials/cookie-consent.php

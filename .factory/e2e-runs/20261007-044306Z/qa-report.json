@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "tool": "qa-gate",
+  "version": "1.0.0",
+  "project": "/var/folders/nd/178klgxs675c7ntwdvw3nlyc0000gn/T/opencode/e2e-20261007-044306Z/project",
+  "result": "PASS",
+  "checks": {
+    "php_lint": "PASS",
+    "structure": "PASS",
+    "sql_schema": "PASS",
+    "sql_dump": "PASS",
+    "security_grep": "PASS",
+    "security_policy": "PASS",
+    "password_policy": "PASS",
+    "domain_report": "PASS",
+    "kvkk": "PASS",
+    "phpstan": "PASS",
+    "eslint": "PASS",
+    "phpunit": "PASS",
+    "static_coverage": "PASS"
+  },
+  "errors": [],
+  "warnings": [],
+  "approved_exceptions": [],
+  "state": {
+    "current_phase": "P5",
+    "retry_count": 0,
+    "max_retries": 3,
+    "status": "in_progress"
+  },
+  "at": "2026-10-07T07:00:17Z"
+}
