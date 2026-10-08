@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "currency": "USD_per_mtok",
+  "checked_at": "2026-10-08",
+  "sources": {
+    "nvidia_api": "https://integrate.api.nvidia.com/v1/models — pricing/cost alanı YOK (80 model; anahtarlar: created/id/object/owned_by). NVIDIA faturalama/billing endpoint'i de yok.",
+    "opencode_event": "step_finish.cost = 0.0 (E2E-3 metrics, 3 satır) — opencode nvidia provider için maliyet hesaplamıyor.",
+    "models_dev": "https://models.dev/api.json (opencode'un kendi fiyat DB'si) — nvidia provider: z-ai/glm-5.3 ve z-ai/glm-5.3-flash EXPLICIT {input:0, output:0} = ücretsiz; bilinmeyen modeller null olur (ör. openai chatgpt-image-latest), gerçek fiyatlı örnekler: nvidia/nemotron-3-ultra-550b {0.5, 2.5}, anthropic/claude-haiku-4-5 {1, 5}."
+  },
+  "rates": {
+    "nvidia/z-ai/glm-5.3-flash": { "input": 0, "output": 0 },
+    "nvidia/z-ai/glm-5.3": { "input": 0, "output": 0 }
+  },
+  "phases": {
+    "P1": "nvidia/z-ai/glm-5.3-flash",
+    "P2": "nvidia/z-ai/glm-5.3",
+    "P4": "nvidia/z-ai/glm-5.3"
+  },
+  "notes": "NIM glm modelleri models.dev'de explicit 0/0 (ücretsiz tier) → cost_usd=0.0 gerçek orandan hesaplanır (uydurma değil, opencode event cost=0.0 ile tutarlı). models.dev null = bilinmeyen → rate kabul edilmez, cost_usd='not_available'. Fiyat değişirse rates güncellenir; record_agent_metrics: event cost>0 varsa onu, yoksa rates, yoksa not_available kullanır."
+}

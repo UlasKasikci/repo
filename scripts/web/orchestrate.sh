@@ -282,7 +282,7 @@ record_agent_metrics() { # $1=agent $2=phase $3=rc $4=start_ms $5=end_ms $6=even
   # Şema append-only: mevcut alanlar korunur, model_used eklenir; parse_error
   # satırında DA yazılır (fallback satır dahil).
   METRICS_FILE="$PROJECT/.factory/metrics.jsonl" \
-  MET_AGENT="$1" MET_PHASE="$2" MET_RC="$3" MET_START="$4" MET_END="$5" MET_EV="$6" MET_MODEL="${7:-}" python3 - <<'PY'
+  MET_AGENT="$1" MET_PHASE="$2" MET_RC="$3" MET_START="$4" MET_END="$5" MET_EV="$6" MET_MODEL="${7:-}" MET_ROOT="$ROOT" python3 - <<'PY'
 import datetime
 import json
 import os
@@ -352,13 +352,80 @@ except Exception as exc:  # dosya yok/okunamadı
 if events == 0 and parse_error is None:
     parse_error = "no JSON events (stdout boş veya format tanınmadı)"
 
+# Faz 1.2: cost_usd + input/output flatten + retry_count (append-only alanlar).
+# cost sırası: olay/üretici cost > 0 → model-pricing.json rate → not_available.
+model_used = os.environ.get("MET_MODEL") or None
+phase = os.environ["MET_PHASE"]
+
+
+def _pricing():
+    for cand in (os.path.join(os.path.dirname(out_path), "model-pricing.json"),
+                 os.path.join(os.environ.get("MET_ROOT") or "", ".factory",
+                              "model-pricing.json")):
+        if cand and os.path.isfile(cand):
+            try:
+                with open(cand, encoding="utf-8") as fh:
+                    v = json.load(fh)
+                if isinstance(v, dict):
+                    return v
+            except Exception:
+                pass
+    return None
+
+
+def _rate():
+    pr = _pricing()
+    if not pr:
+        return None
+    rates = pr.get("rates") or {}
+    key = model_used if isinstance(rates.get(model_used), dict) else None
+    if key is None:
+        key = (pr.get("phases") or {}).get(phase)
+    r = rates.get(key) if key else None
+    if isinstance(r, dict) and "input" in r and "output" in r:
+        return r
+    return None  # rate yok/unknown → uydurma
+
+
+def _cost_usd():
+    if parse_error is not None:
+        return "not_available"  # token yok → hesaplanamaz
+    if cost > 0:
+        return round(cost, 6)
+    r = _rate()
+    if r is None:
+        return "not_available"
+    try:
+        return round((tokens["input"] * float(r["input"])
+                      + tokens["output"] * float(r["output"])) / 1000000.0, 6)
+    except (TypeError, ValueError):
+        return "not_available"
+
+
+retry_count = 0  # aynı phase'den bu satırdan ÖNCE yazılmış satır sayısı (per-phase)
+try:
+    with open(out_path, encoding="utf-8", errors="replace") as fh:
+        for ln in fh:
+            ln = ln.strip()
+            if not ln:
+                continue
+            try:
+                if json.loads(ln).get("phase") == phase:
+                    retry_count += 1
+            except Exception:
+                continue
+except Exception:
+    pass
+
 record = {
     "ts": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-    "phase": os.environ["MET_PHASE"],
+    "phase": phase,
     "agent": os.environ["MET_AGENT"],
     "rc": int(os.environ["MET_RC"]),
     "latency_ms": max(0, int(os.environ["MET_END"]) - int(os.environ["MET_START"])),
-    "model_used": os.environ.get("MET_MODEL") or None,
+    "model_used": model_used,
+    "cost_usd": _cost_usd(),
+    "retry_count": retry_count,
     "parse_error": parse_error is not None,
 }
 if parse_error is None:
@@ -369,6 +436,8 @@ if parse_error is None:
         "event_span_ms": (int(span_last - span_first)
                           if span_first is not None and span_last is not None else None),
         "tokens": tokens,
+        "input_tokens": tokens["input"],
+        "output_tokens": tokens["output"],
         "text_parts": text_parts,
         "text_chars": text_chars,
         "cost": round(cost, 6),
