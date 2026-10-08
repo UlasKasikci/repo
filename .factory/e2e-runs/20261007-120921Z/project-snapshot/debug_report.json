@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "tool": "qa-gate",
+  "kind": "debug_report",
+  "project": "/var/folders/nd/178klgxs675c7ntwdvw3nlyc0000gn/T/opencode/e2e-20261007-120921Z/project",
+  "phase": "P3/P4",
+  "halted": false,
+  "retry_count": 0,
+  "max_retries": 3,
+  "errors": [
+    "php: hiç .php dosyası bulunamadı",
+    "yapı: index.php eksik",
+    "yapı: .htaccess eksik",
+    "yapı: robots.txt eksik",
+    "yapı: sitemap.xml eksik",
+    "yapı: core/ dizini eksik (MVC çekirdek)",
+    "yapı: views/ dizini eksik (şablonlar)",
+    "sql: SQL/veritabani.sql bulunamadı (tablolar, FK, index, seed tek dump'ta)",
+    "kvkk: views/legal/aydinlatma.php eksik (compliance=kvkk — P2 KVKK bloğu zorunlu)",
+    "kvkk: views/legal/gizlilik.php eksik (compliance=kvkk — P2 KVKK bloğu zorunlu)",
+    "kvkk: views/legal/cerez.php eksik (compliance=kvkk — P2 KVKK bloğu zorunlu)",
+    "kvkk: views/partials/cookie-consent.php eksik (compliance=kvkk — P2 KVKK bloğu zorunlu)",
+    "kvkk: assets/js/cookie-consent.js eksik (compliance=kvkk — P2 KVKK bloğu zorunlu)",
+    "statik: phpstan yapılandırması yok — phpstan.neon[.dist] zorunlu (§8 garantici çekirdek)",
+    "test: phpunit yapılandırması yok — phpunit.xml zorunlu (§8 garantici çekirdek)",
+    "statik/test: garantici çekirdek (phpstan + phpunit) PASS değil — yalnız eslint SKIPPED olabilir; phpstan/phpunit zorunlu"
+  ],
+  "warnings": [],
+  "approved_exceptions": [],
+  "checks": {
+    "php_lint": "FAIL",
+    "structure": "FAIL",
+    "sql_schema": "FAIL",
+    "sql_dump": "SKIPPED",
+    "security_grep": "PASS",
+    "security_policy": "PASS",
+    "password_policy": "SKIPPED",
+    "domain_report": "PASS",
+    "kvkk": "FAIL",
+    "phpstan": "FAIL",
+    "eslint": "SKIPPED",
+    "phpunit": "FAIL",
+    "static_coverage": "FAIL"
+  },
+  "next_actions": [
+    "Hataları düzelt ve `bash scripts/web/qa-gate.sh <proje>` tekrar çalıştır"
+  ],
+  "at": "2026-10-07T14:12:16Z"
+}

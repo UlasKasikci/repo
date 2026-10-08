@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "tool": "package-yukleme",
+  "version": "1.0.0",
+  "project": "/var/folders/nd/178klgxs675c7ntwdvw3nlyc0000gn/T/p4real.vpBGRb/proj",
+  "output": "/var/folders/nd/178klgxs675c7ntwdvw3nlyc0000gn/T/p4real.vpBGRb/proj/Yukleme",
+  "result": "PASS",
+  "files_count": 10,
+  "bytes_total": 9672,
+  "sql_source": "/var/folders/nd/178klgxs675c7ntwdvw3nlyc0000gn/T/p4real.vpBGRb/proj/SQL/veritabani.sql",
+  "sql_output": "SQL/veritabani.sql",
+  "failures": [],
+  "skipped": [
+    ".eslintrc.json",
+    ".factory",
+    ".phpunit.result.cache",
+    "debug_report.json",
+    "phpstan.neon.dist",
+    "phpunit.xml",
+    "qa-report.json",
+    "tests"
+  ],
+  "notes": [
+    "boş dizin üretildi: assets/images",
+    "minify: skipped (csso yok — assets/css aynen paketlendi)",
+    "minify: skipped (terser yok — assets/js aynen paketlendi)",
+    "smoke: yanıtta <html> marker'ı yok (lokal)",
+    "smoke: .htaccess: php -S rewrite kurallarını uygulamaz; rewrite bağımlı rotalar canlıda (--url) doğrulanmalı"
+  ],
+  "manifest": {
+    ".htaccess": {
+      "sha256": "b4b4a8a5cc6b0959fd5fd5b0faeb17f87504eab26c42fcc171976f35b409ee28",
+      "bytes": 577
+    },
+    "index.php": {
+      "sha256": "837e6a23b93db5fe2aa5088bf549237d22c1d41ab4740036110c19640e8d97e5",
+      "bytes": 386
+    },
+    "robots.txt": {
+      "sha256": "757386b6a4d2635edffa79e9647ca0e531d2ba3bc24f7022d0a7dc891db45240",
+      "bytes": 102
+    },
+    "sitemap.xml": {
+      "sha256": "7ad32fcb958ff0d8b2449e22769df8edca89ced85c82347dc592b147c94790e4",
+      "bytes": 232
+    },
+    "SQL/veritabani.sql": {
+      "sha256": "3fb949d869511c33d429e25cf2e1fbbbe4112f7e1bfec88c5c34d350a2b73769",
+      "bytes": 3148
+    },
+    "assets/css/app.css": {
+      "sha256": "2e8debdd156e3c0fb320749233c678fc33b27f4543c3e1670e0e5cd92ab7ce63",
+      "bytes": 494
+    },
+    "assets/js/app.js": {
+      "sha256": "fad9f8744fb7f94fd2e09a9d62ca8e9b66e51ae658a704992730fcc4ba89b0ab",
+      "bytes": 356
+    },
+    "core/App.php": {
+      "sha256": "8fc186cdfaf267fa31afab2fb9bff90284dd3097bf1cbe873e5781aaa892fc62",
+      "bytes": 2775
+    },
+    "core/Database.php": {
+      "sha256": "8fd34585f0ee3520af213bd2ed798016373051b413ad7c17044f4eea05e5ebd8",
+      "bytes": 538
+    },
+    "views/home.php": {
+      "sha256": "91f0e6601bea6a14932caa694f3f8aadcc783bdad493ebd48c9c53cd8e55e00a",
+      "bytes": 1064
+    }
+  },
+  "at": "2026-10-07T12:04:17Z"
+}

@@ -1,0 +1,10 @@
+# App-Fabrika Web Edition — e2e-iletisim (SEO modülü, P2 enjeksiyonu)
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /giris
+Disallow: /hesabim
+Disallow: /api
+
+# Sitemap konak alanı dağıtımda AF_BASE_URL ile eşleşecek şekilde güncellenmelidir.
+Sitemap: https://www.example.com/sitemap.xml

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- App-Fabrika Web Edition — e2e-iletisim site haritası (SEO modülü, P2 enjeksiyonu).
+     Konak alanı dağıtımda AF_BASE_URL ile eşleşecek şekilde güncellenmelidir. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+        <loc>https://www.example.com/</loc>
+        <changefreq>weekly</changefreq>
+        <priority>1.0</priority>
+    </url>
+    <url>
+        <loc>https://www.example.com/iletisim</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.9</priority>
+    </url>
+    <url>
+        <loc>https://www.example.com/kvkk/aydinlatma</loc>
+        <changefreq>yearly</changefreq>
+        <priority>0.5</priority>
+    </url>
+    <url>
+        <loc>https://www.example.com/kvkk/gizlilik</loc>
+        <changefreq>yearly</changefreq>
+        <priority>0.5</priority>
+    </url>
+    <url>
+        <loc>https://www.example.com/kvkk/cerez</loc>
+        <changefreq>yearly</changefreq>
+        <priority>0.4</priority>
+    </url>
+</urlset>

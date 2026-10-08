@@ -1,0 +1,41 @@
+engine: "Multi-Agent-State-Graph"
+context: "Web-Only-Production"
+version: "1.0.0"
+canonical_spec: "docs/WEB-EDITION.md"
+directives:
+  - "Scan missing dependencies and missing business features automatically."
+  - "Run local linter and PHP syntax checks before build step."
+  - "Execute packaging pipeline: Output folder -> ./Yukleme/ with subfolder ./Yukleme/SQL/veritabani.sql"
+  - "Prevent node_modules or vendor dev-dependencies from leaking into ./Yukleme/"
+  - "Never emit mobile code (Flutter/Compose/React Native/Gradle); PHP 8.1+ MVC + MySQL only."
+  - "QA gate must return 0 Error, 0 Warning before packaging is allowed."
+  - "Halt after max_retries: 3 QA failures (4th failure) and emit debug_report.json."
+pipeline:
+  phases:
+    - id: P1
+      name: "Domain & Scope Validation"
+      agent: web-domain-architect
+    - id: P2
+      name: "Code Generation Engine"
+      agent: web-core-engineer
+    - id: P3
+      name: "QA & Automated Test Pool"
+      agent: web-qa-gatekeeper
+      command: "bash scripts/web/qa-gate.sh <project>"
+    - id: P4
+      name: "Revision Loop"
+      agent: web-core-engineer
+    - id: P5
+      name: "Packaging & Deployment Gate"
+      agent: web-deploy-packager
+      command: "bash scripts/web/package-yukleme.sh <project>"
+  state: "bash scripts/web/state.sh status|start|advance|qa-pass|qa-fail|halt"
+  max_retries: 3
+  self_test: "bash scripts/web/self-test.sh"
+outputs:
+  deploy_dir: "./Yukleme"
+  sql_dump: "./Yukleme/SQL/veritabani.sql"
+  reports:
+    - "qa-report.json"
+    - "debug_report.json"
+    - "packaging-report.json"

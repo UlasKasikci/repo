@@ -1,0 +1,7 @@
+parameters:
+    level: 8
+    paths:
+        - core
+        - index.php
+    bootstrapFiles:
+        - core/bootstrap.php

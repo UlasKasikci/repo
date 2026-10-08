@@ -1,0 +1,23 @@
+# App-Fabrika Web Edition — Apache yapılandırması (front-controller rewrite)
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Uygulama kodu ve SQL dump'ı doğrudan erişime kapalı (yalnız public varlıklar sunulur)
+    RewriteRule ^(core|SQL)(/|$) - [F,L]
+
+    # Mevcut dosya/dizin varsa doğrudan sun (assets, robots.txt, sitemap.xml)
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Tüm diğer istekler front-controller'a
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "DENY"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
