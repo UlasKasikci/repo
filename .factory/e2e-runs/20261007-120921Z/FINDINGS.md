@@ -84,6 +84,9 @@ Anormallikler metrics satırını değiştirmez; sağlayıcı hatası model çı
   (retry'lar + 4.5s/7.5s fazlar), koşan model kaçak değil. Aday revizyon: P2/P4 faz eşiği
   6M → 8M (2×=16M) veya arıza-durumunda wall-clock'a dayalı muafiyet — **n=4 beklenmeden
   dokunulmayacak** (2× katmanı tasarımı gereği "uyarıcı + sert" çift; ilk eşik ihlali veri).
+- **Strict kalibrasyonu JEV routing sonrasına ertelendi. E2E-1 P2: 3.1M, E2E-3 P2: 12.23M —
+  varyans 4×, threshold tek nokta değil dağılım gerektirir.** (Kapanış C, JEV Faz 1.1 —
+  eşik bu turda DEĞİŞTİRİLMEDİ.)
 
 ## 7. P4 gerçek-model mini (tamamlandı — RUN3 dışı, `p4-mini/`)
 
@@ -120,7 +123,7 @@ Anormallikler metrics satırını değiştirmez; sağlayıcı hatası model çı
 |---|---|---|---|
 | P1 token / süre | 412.5k / 25dk | 623.8k / 24.6dk | 780.6k / 2s06dk |
 | P2 token / süre | ≥3.1M (WD kill) | 4194.6k / 112.5dk | 1.67M+12.23M / 12s05dk (att1 çöküş + att2) |
-| toplam token | ~4.5M | 4818.4k | **14,682,011** |
+| toplam token | ~3.5M (P2 satırı WD kill ile kayıp: P1 412.5k + P2 ≥3.1M oturum verisi) | 4818.4k | **14,682,011** |
 | toplam duvar | ~2.5s kesintili | 2s17dk temiz | **14s16dk (arıza)** |
 | attempts / kill | 2 / 1 (WD2) | 1 / 0 | **2 / 0** (exit-3 kurtarma ✓) |
 | write SchemaError | 5/55 = %9.1 | 6/56 = %10.7 | **4/59 = %6.8** |
@@ -130,5 +133,36 @@ Anormallikler metrics satırını değiştirmez; sağlayıcı hatası model çı
 
 1. B1 fix ✓ · 2. B4 trap ✓ · 3. İkinci E2E ✓ · 4. P1→P2 kontrat: **(A) doğrulandı (2/2)** ✓ ·
 5. **B2: E2E-3 verisi alındı — %6.8 (yönlü sinyal, kesin değil); kalıcı çözüm harness tarafı;
-   prompt adayı WRITE_RULE JSON-ön-ek kuralı** · 6. P4 hata-enjeksiyonu gerçek modelde ✓ ·
-7. `--strict` 1×/2× uygulandı ✓ (senaryo 22); **eşik kalibrasyonu §6 verisiyle ertelendi**.
+   prompt adayı WRITE_RULE JSON-ön-ek kuralı → uygulandı (§11 ③-A), ölçüm Faz 1.2'de** ✓ ·
+6. P4 hata-enjeksiyonu gerçek modelde ✓ ·
+7. `--strict` 1×/2× uygulandı ✓ (senaryo 22); **eşik kalibrasyonu §6'daki notla ertelendi
+   (JEV routing sonrasına — eşik DEĞİŞMEDİ)** ✓.
+
+## 11. JEV Faz 1.1 — Model Katmanlama + 3 küçük kapanış (aynı commit)
+
+① **Routing (`--model`):** `run_agent` içinde `MODEL_MAP` + `resolve_model()` —
+P1 `nvidia/z-ai/glm-5.3-flash` (en ucuz yetenekli), P2/P4 `nvidia/z-ai/glm-5.3` (güçlü),
+diğer fazlar mevcut opencode varsayılanı (dokunma). Env override: `MODEL_P1`/`MODEL_P2`/
+`MODEL_P4`. claude-* bu ortamda yok (`opencode auth list` → 0 credential) → brief'in
+"veya mevcut en ucuz yetenekli/en güçlü" yetkisiyle envanterden substitüte (docs §9);
+claude eklenince env override yeterli. `--model` prompt'tan ÖNCE (self-test stub son
+argümanı prompt sayar), boşta hiç verilmez. Log: `[model=…]`.
+
+② **Metrics `model_used`:** append-only — mevcut alanlar korunur, `model_used` eklendi;
+`parse_error` fallback satırında DA yazılır; kill-safe rc=143 satırı `CURRENT_MODEL` taşır.
+Örnek satır (gerçek `record_agent_metrics` ile üretildi):
+`{"ts":"…","phase":"P2","agent":"web-core-engineer","rc":0,"latency_ms":1500,"model_used":"nvidia/z-ai/glm-5.3","parse_error":false,…}`.
+
+③ **Üç kapanış:**
+- **(A) WRITE_RULE:** p1/p2/p4 prompt'larına JSON content **leading-newline** kuralı eklendi
+  (ilk karakter `{` değil, JSON ikinci satırdan) — **recovery speedup, prevention değil;
+  B2 harness-side, bkz. bu dosya §3** (yorum satırı `orchestrate.sh` WRITE_RULE üstünde).
+- **(B) P4 qa-gate yolu:** `bash scripts/web/qa-gate.sh` → **mutlak**
+  `bash $ROOT/scripts/web/qa-gate.sh .` (E2E-3 P4 mini'deki göreli-yol bulgusu §8 madde 5).
+- **(C) Strict eşiği DEĞİŞTİRİLMEDİ** — erteleme notu §6'ya eklendi (varyans 4×, dağılım
+  gerektirir; routing sonrası Faz 1.2 verisiyle yeniden değerlendirilecek).
+
+**Doğrulama (bu turda E2E YOK — token ölçümü Faz 1.2):** `bash -n` OK · self-test **22/22
+PASS** (yeni senaryo yok — ayrı tur) · metrics örnek satırı `model_used` görünür ·
+`grep MODEL_MAP|--model|model_used` konumları raporlandı · docs §9 eklendi (Route→§10,
+Referanslar→§11).

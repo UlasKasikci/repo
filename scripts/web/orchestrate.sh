@@ -276,11 +276,13 @@ p1_gate_ok() {
   validate_artifact "$1" "$CONTRACTS/p1-domain-report.schema.json" && semantic_domain "$1"
 }
 
-record_agent_metrics() { # $1=agent $2=phase $3=rc $4=start_ms $5=end_ms $6=event dosyası
+record_agent_metrics() { # $1=agent $2=phase $3=rc $4=start_ms $5=end_ms $6=event dosyası $7=model_used
   # reporter-only: text çıktısını stdout'a basar, metrik satırını append eder;
   # hiçbir koşulda non-zero çıkış üretmez (gate değişmez).
+  # Şema append-only: mevcut alanlar korunur, model_used eklenir; parse_error
+  # satırında DA yazılır (fallback satır dahil).
   METRICS_FILE="$PROJECT/.factory/metrics.jsonl" \
-  MET_AGENT="$1" MET_PHASE="$2" MET_RC="$3" MET_START="$4" MET_END="$5" MET_EV="$6" python3 - <<'PY'
+  MET_AGENT="$1" MET_PHASE="$2" MET_RC="$3" MET_START="$4" MET_END="$5" MET_EV="$6" MET_MODEL="${7:-}" python3 - <<'PY'
 import datetime
 import json
 import os
@@ -356,6 +358,7 @@ record = {
     "agent": os.environ["MET_AGENT"],
     "rc": int(os.environ["MET_RC"]),
     "latency_ms": max(0, int(os.environ["MET_END"]) - int(os.environ["MET_START"])),
+    "model_used": os.environ.get("MET_MODEL") or None,
     "parse_error": parse_error is not None,
 }
 if parse_error is None:
@@ -387,25 +390,50 @@ for t in texts:
 PY
 }
 
+# JEV Faz 1.1 — model routing (MANUEL katmanlama; JEV MCP entegrasyonu Faz 2).
+# P1 küçük model / P2-P4 güçlü model; env varsa hardcoded default yerine env kullanılır
+# (MODEL_P1, MODEL_P2, MODEL_P4). claude-* bu ortamda yok (0 credential, anthropic
+# provider'sız) → brief'teki "veya mevcut en ucuz yetenekli/en güçlü" yetkisiyle envanterden
+# substitüte edildi; claude eklenince env override yeterli.
+MODEL_MAP_P1="${MODEL_P1:-nvidia/z-ai/glm-5.3-flash}"
+MODEL_MAP_P2="${MODEL_P2:-nvidia/z-ai/glm-5.3}"
+MODEL_MAP_P4="${MODEL_P4:-nvidia/z-ai/glm-5.3}"
+
+resolve_model() { # $1=phase(P1|P2|P4) → "provider/model"; boş = opencode varsayılanı (dokunma)
+  case "$1" in
+    P1) printf '%s' "$MODEL_MAP_P1" ;;
+    P2) printf '%s' "$MODEL_MAP_P2" ;;
+    P4) printf '%s' "$MODEL_MAP_P4" ;;
+    *)  printf '%s' "" ;;
+  esac
+}
+
 run_agent() { # $1=agent $2=prompt $3=phase(P1|P2|P4)
   local agent="$1" prompt="$2" phase="${3:-unknown}"
   if ! command -v opencode >/dev/null 2>&1; then
     echo "orkestratör: opencode CLI yok — --auto kullanılamaz" >&2
     return 1
   fi
-  echo "==> opencode agent: $agent ($phase)"
+  local model model_args=()
+  model="$(resolve_model "$phase")"
+  if [[ -n "$model" ]]; then
+    model_args=(--model "$model")
+  fi
+  echo "==> opencode agent: $agent ($phase)${model:+ [model=$model]}"
   local ev rc=0 start_ms end_ms
   ev="$(mktemp)"
   start_ms="$(python3 -c 'import time; print(int(time.time() * 1000))')"
-  CURRENT_EV="$ev" CURRENT_AGENT="$agent" CURRENT_PHASE="$phase" CURRENT_START_MS="$start_ms"
-  (cd "$PROJECT" && opencode run --format json --agent "$agent" "$prompt") > "$ev" || rc=$?
+  CURRENT_EV="$ev" CURRENT_AGENT="$agent" CURRENT_PHASE="$phase" CURRENT_START_MS="$start_ms" CURRENT_MODEL="$model"
+  # --model prompt'tan ÖNCE (self-test stub'ı son argümanı prompt sayar); boşta --model verilmez.
+  (cd "$PROJECT" && opencode run --format json --agent "$agent" ${model_args[@]+"${model_args[@]}"} "$prompt") > "$ev" || rc=$?
   end_ms="$(python3 -c 'import time; print(int(time.time() * 1000))')"
-  record_agent_metrics "$agent" "$phase" "$rc" "$start_ms" "$end_ms" "$ev" || true
+  record_agent_metrics "$agent" "$phase" "$rc" "$start_ms" "$end_ms" "$ev" "$model" || true
   if ! budget_check; then
     echo "orkestratör: STRICT bütçe sert aşıldı (2×) — duraklatıldı; yeniden çalıştırarak devam edebilirsin" >&2
     exit 1
   fi
   CURRENT_EV=""
+  CURRENT_MODEL=""
   rm -f "$ev"
   return "$rc"
 }
@@ -413,13 +441,13 @@ run_agent() { # $1=agent $2=prompt $3=phase(P1|P2|P4)
 # B4: kill-safe metrik — TERM/INT ile öldürülürken uçuş halindeki çağrı
 # satırı metrics.jsonl'e rc=143 olarak düşer (watchdog kill_tree sırası:
 # çocuklar önce → trap opencode öldükten sonra koşar, çift satır olmaz).
-CURRENT_EV="" CURRENT_AGENT="" CURRENT_PHASE="" CURRENT_START_MS=""
+CURRENT_EV="" CURRENT_AGENT="" CURRENT_PHASE="" CURRENT_START_MS="" CURRENT_MODEL=""
 on_kill_metrics() {
   if [[ -n "$CURRENT_EV" && -f "$CURRENT_EV" ]]; then
     local now_ms
     now_ms="$(python3 -c 'import time; print(int(time.time() * 1000))')"
     record_agent_metrics "$CURRENT_AGENT" "$CURRENT_PHASE" 143 \
-      "${CURRENT_START_MS:-$now_ms}" "$now_ms" "$CURRENT_EV" || true
+      "${CURRENT_START_MS:-$now_ms}" "$now_ms" "$CURRENT_EV" "${CURRENT_MODEL:-}" || true
     rm -f "$CURRENT_EV"
   fi
   exit 143
@@ -436,8 +464,14 @@ scaffold_ok() {
 
 # B2 (E2E-1/2, write SchemaError: Expected string, got {...}) — tüm üretim ajanlarına
 # aynı açık kural; opencode sürümü değil model parametre tipi sorunu.
+# JEV Faz 1.1 (A): JSON content leading-newline kuralı — recovery speedup, prevention değil;
+# B2 harness-side kalır (harness "{" ile başlayan content'i JSON parse eder), bkz.
+# .factory/e2e-runs/20261007-120921Z/FINDINGS.md §3.
 WRITE_RULE="Araç kuralı: write tool çağrısında content parametresi DÜZ STRING olmalı
-(JSON objesi/array DEĞİL); JSON içeriğini string olarak gömün — aksi SchemaError."
+(JSON objesi/array DEĞİL); JSON içeriğini string olarak gömün — aksi SchemaError.
+JSON dosyalarında content BAŞA newline ile başlasın: ilk karakter '{' OLMASIN, JSON
+'{' işareti ikinci satırdan itibaren gelsin (satır başı ile başla) — recovery speedup,
+prevention değil: kalıcı çözüm harness-side."
 
 p1_prompt() {
   local c
@@ -503,7 +537,8 @@ P4 (Revision) — QA hatalarını düzelt.
 Proje dizini: $PROJECT
 $WRITE_RULE
 Girdi: $PROJECT/qa-report.json ve $PROJECT/debug_report.json (errors[] listesi).
-Hedef: bash scripts/web/qa-gate.sh ile 0 Error, 0 Warning.
+Hedef: bash $ROOT/scripts/web/qa-gate.sh . ile 0 Error, 0 Warning — MUTLAK yol,
+cwd ne olursa olsun bu yolu kullan (göreceli adla arama yapma).
 Yalnız proje dosyalarını düzenle; scripts/web/* betiklerine ve .factory/ kontratlarına dokunma.
 EOF
 }

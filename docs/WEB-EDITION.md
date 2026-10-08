@@ -259,7 +259,7 @@ arşiv/failed içine yazılır).
 | Paketleme | `bash`, `python3`, `shasum` | zorunlu |
 | Kontrat doğrulama | `python3 -m pip install jsonschema` | yoksa zorunlu-alan/const yedeği |
 | SQL dump | `sql-dump.sh` (python3) | migrations yoksa `sql_dump` SKIPPED; varsa drift **FAIL** |
-| Lighthouse | `lighthouse` (npm) + `LIGHTHOUSE_URL` | env/araç yoksa SKIPPED — **raporlayıcı faz** (§9) |
+| Lighthouse | `lighthouse` (npm) + `LIGHTHOUSE_URL` | env/araç yoksa SKIPPED — **raporlayıcı faz** (§10) |
 | Smoke test | `php -S` + `curl` (+ `php -l`) | araç yoksa paketleme **FAIL** (paket doğrulanamaz — zorunlu) |
 | Minify | `npx --no-install terser/csso` | `minify: skipped` notu |
 
@@ -273,7 +273,39 @@ npm install -g eslint
 `qa-gate.sh`/`self-test.sh` composer global bin dizinlerini (`~/.composer/vendor/bin`,
 `~/.config/composer/vendor/bin`) PATH'e otomatik ekler.
 
-## 9. Route / Komut Eşlemesi
+## 9. Model Katmanlama (Routing — JEV Faz 1.1)
+
+**Neden:** token tüketimi E2E-3'te **14.68M** (E2E-1 ~3.5M) — tüm ajanlar aynı modelle
+çalışıyor, faz başına katman yok. Routing zorunlu: P1 küçük, P2/P4 güçlü model.
+
+**Nasıl:** `scripts/web/orchestrate.sh` → `MODEL_MAP` + `resolve_model()`; `run_agent`
+`opencode run ... --model "$MODEL"` çağrısına enjekte eder (`--model` biçim:
+`provider/model`, prompt'tan önce — self-test stub son argümanı prompt sayar).
+
+| faz | hardcoded default | env override |
+|-----|-------------------|--------------|
+| P1 | `nvidia/z-ai/glm-5.3-flash` (en ucuz yetenekli, 3 E2E kanıtlı) | `MODEL_P1` |
+| P2 | `nvidia/z-ai/glm-5.3` (mevcut envanterin güçlü ailenin flagship'i) | `MODEL_P2` |
+| P4 | `nvidia/z-ai/glm-5.3` (P2 ile aynı — revizyon da kod seviyesinde) | `MODEL_P4` |
+| diğer | mevcut opencode varsayılanı — **dokunma** (boş döner, `--model` verilmez) | — |
+
+- **Env önce:** `MODEL_P2=nvidia/moonshotai/kimi-k3 bash scripts/web/orchestrate.sh . --auto`
+  gibi; env varsa hardcoded default kullanılmaz.
+- **claude substitüte edildi:** brief `claude-haiku-4-5`/`claude-sonnet-4-6` istiyordu; bu
+  ortamda anthropic provider **yok** (`opencode auth list` → 0 credential, 68 model envanter
+  `opencode/*-free` + `nvidia/*`). "Veya mevcut en ucuz yetenekli/en güçlü" yetkisiyle
+  envanterden seçildi; claude eklenince `MODEL_*` env override yeterli.
+- **Metrik:** `metrics.jsonl` satırına `model_used` alanı (append-only: mevcut alanlar
+  korunur, alan eklenir); `parse_error` fallback satırında da yazılır; kill-safe
+  rc=143 satırı `CURRENT_MODEL` taşır. `run_agent` log satırı `[model=…]` basar.
+- **Sınır — henüz JEV değil, manuel routing:** hardcoded map + env. JEV MCP entegrasyonu
+  (dynamic ensemble/tool seçimi) **Faz 2**'dir; bu faz yalnız `--model` katmanıdır.
+- **Metrik planı:** aynı E2E senaryosu önce/sonra karşılaştırması **ayrı turda**
+  (Faz 1.2). Baz: E2E-3 = 14.68M. Beklenti: P1 belirgin düşer, P2 sabit/hafif düşer
+  (güçlü modelde step sayısının düşmesi beklenir — token/step de izlenecek).
+  Sonuç ne olursa olsun Faz 2.1 (JEV MCP) için zemin hazır.
+
+## 10. Route / Komut Eşlemesi
 
 | İşlem | Cursor | Claude Code | opencode |
 |-------|--------|-------------|----------|
@@ -300,14 +332,17 @@ yalnız opencode **yeniden başlatıldığında** yüklenir; `opencode debug con
 exFAT/FAT32 hacimlerde `._*` AppleDouble ikizleri komut/ajan listesini bozar — paketleme
 ve `debug config` öncesi `find . -name '._*' -delete` ile temizle.
 
-## 10. Referanslar
+## 11. Referanslar
 
 - State kontratı: `.factory/web-state-graph.json`
 - Artefakt şemaları: `.factory/contracts/{p1-domain-report,p3-qa-report,p5-packaging-report}.schema.json`
 - Örnek state: `.factory/web-state.example.json`
 - Orkestratör: `bash scripts/web/orchestrate.sh <proje> [--auto] [--strict]`
 - Agent metrikleri: `<proje>/.factory/metrics.jsonl` (`--auto` reporter-only; parse
-  edilemezse `parse_error: true` — gate/exit kodu değişmez)
+  edilemezse `parse_error: true` — gate/exit kodu değişmez; satırda `model_used` alanı — §9)
+- Model routing (manuel, §9): `MODEL_P1`/`MODEL_P2`/`MODEL_P4` env override; hardcoded
+  map `scripts/web/orchestrate.sh` içinde (`MODEL_MAP_*` + `resolve_model`)
+- E2E bulguları: `.factory/e2e-runs/<TS>/FINDINGS.md` (ör. `20261007-120921Z` — B2/handoff/strict verisi)
 - SQL dump üretici: `bash scripts/web/sql-dump.sh <proje> [--output <path>]`
 - Lighthouse (raporlayıcı): `bash scripts/web/lighthouse-verify.sh <proje> [--serve] [--strict]`
 - Temiz bootstrap: `bash scripts/web/bootstrap-project.sh <hedef> [--yes] [--force]`
