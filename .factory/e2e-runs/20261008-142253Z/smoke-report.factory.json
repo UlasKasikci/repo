@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "tool": "smoke-test",
+  "version": "1.0.0",
+  "mode": "local",
+  "target": "/var/folders/nd/178klgxs675c7ntwdvw3nlyc0000gn/T/opencode/e2e-20261008-142253Z/project/.factory/yukleme-staging",
+  "result": "PASS",
+  "strict": false,
+  "errors": [],
+  "violations": [],
+  "notes": [
+    ".htaccess: php -S rewrite kurallarını uygulamaz; rewrite bağımlı rotalar canlıda (--url) doğrulanmalı"
+  ],
+  "checks": [
+    {
+      "ok": true,
+      "name": "php_lint",
+      "detail": "25 dosya geçti"
+    },
+    {
+      "ok": true,
+      "name": "server_start",
+      "detail": "127.0.0.1:19734"
+    },
+    {
+      "ok": true,
+      "name": "root_transport",
+      "detail": "HTTP 200"
+    },
+    {
+      "ok": true,
+      "name": "content_signature",
+      "detail": "temiz"
+    },
+    {
+      "ok": true,
+      "name": "html_marker",
+      "detail": "<html> var"
+    },
+    {
+      "ok": true,
+      "name": "robots_txt",
+      "detail": "200 · text/plain; charset=UTF-8"
+    },
+    {
+      "ok": true,
+      "name": "sitemap_xml",
+      "detail": "200 · application/xml"
+    }
+  ],
+  "at": "2026-10-08T16:41:57Z"
+}

@@ -166,3 +166,28 @@ argümanı prompt sayar), boşta hiç verilmez. Log: `[model=…]`.
 PASS** (yeni senaryo yok — ayrı tur) · metrics örnek satırı `model_used` görünür ·
 `grep MODEL_MAP|--model|model_used` konumları raporlandı · docs §9 eklendi (Route→§10,
 Referanslar→§11).
+
+## 12. Faz 1.1 routing sonrası ölçüm — E2E-4 (`20261008-142253Z`, Faz 1.2)
+
+**Tam tablo + 3 soru:** `.factory/e2e-runs/20261008-142253Z/COMPARISON.md` (bu bölüm özet).
+
+- **Koşu:** `rc=0 attempts=1`, `DONE retry=0`, **2s18dk** (E2E-3: 14s16dk arıza), sağlayıcı
+  arızası YOK, qa-fail 0 (P4 yine koşmadı), qa PASS 0/0 · intent sha birebir.
+- **Token:** P1 780,586→**987,470** (+26.5%) · P2 12,232,931→**6,825,044** (**−44.2%**;
+  crash-att1 dahil bazda −50.9%) · TOP 14,682,011→**7,812,514** (**−46.8%**).
+  Brief'in P1=412k taslağı E2E-1'e ait — düzeltildi; E2E-3 modelleri `opencode.log`
+  `modelID=z-ai/glm-5.3-flash` kanıtıyla dolduruldu (`model_used` yoktu, yönlü ölçüm).
+- **Temiz kontrol (E2E-2, flash):** P2 4,194,591/55 adım → 6,825,044/74 adım = **+%62.7 /
+  +%34.5 adım** — glm-5.3 flash'a göre daha çok harcıyor; P2 duvar süresi ise 112.5→69.5 dk.
+  KARAR verisi iki参照 ile raporlandı (brief kriteri: −44% → yeşil ışık; kontrol: +63% →
+  model seçimi gözden geçirme eşiği de tetikleniyor — karar kullanıcı/Faz 1.3, n=1).
+- **S1 steps:** E2E-3'e göre 113→74 (−34.5% ✓) · E2E-2'ye göre 55→74 (arttı).
+- **S2 QA FAIL:** 0 → 0 değişmedi (ilk geçişte PASS, her i turda).
+- **S3 Write SchemaError:** **%6.8 → %4.0** (4/59→2/50); kırılım: P1 flash **2/2 hata**
+  (leading-newline'a rağmen harness parse → **B2 prevention'sız teyidi**), P2 glm-5.3
+  **0/48**; edit %25→%14.3. Handoff: P2 ilk read = domain-report (3/3).
+- **Yeni alanlar canlı:** `model_used`, `cost_usd` (0.0 — models.dev explicit 0/0 ücretsiz
+  NIM tier; `not_available` fallback parse_error satırında doğrulandı, uydurma rate yok),
+  `input_tokens`/`output_tokens` (P2 cache_read 6.69M = bağlamın %98'i), `retry_count` (0/0).
+- **Küçük bulgu:** driver.sh `printf '---- attempt…'` bash printf option-tuzzağı → rc satırı
+  tüm run'larda eksik (kozmetik; `printf --` düzeltme adayı, ayrı tur).
