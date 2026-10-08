@@ -222,3 +222,31 @@ Referanslar→§11).
   oturumu domain-report'u ilk okudu**; P4 odakları uygun (qa-report/debug/HelpersTest).
 - driver `printf --` düzeltmesi bu A/B'nin kendi driver'larına uygulandı (rc satırları
   artık log'da — E2E-4'teki kozmetik eksiklik kapandı).
+
+## 14. Karar + Tur 1: ajan self-advance toleransı (advance guard)
+
+**Model kararı (kullanıcı onayı):** **(a) glm-5.3 P2 varsayılanı KORUNDU** — hız (2.2×
+duvar / 4.4× throughput) ve kalite (13/13; ek maliyet tek P4) birincil; token ücretsiz
+NIM tier'da ikincil; A/B'deki "−25.1%" varyans (flash 2.15×, glm-5.3 1.76×) nedeniyle
+sinyal sayılmadı. (c) "daha fazla A/B" olarak REDDEDİLDİ; **atık denetimi** (Tur 2) olarak
+yeniden çerçevelendi — P2'nin ~12M token'ının att1/retry/input-context/output kırılımı
+yeni koşusuz, mevcut loglardan.
+
+**Tur 1 — kök neden (kanıt):** ab1 att2'de P2 agent'ı bash #39 ile `state.sh advance`
+(P2→P3) çalıştırdı → orchestrate P2-branch `advance` geçersiz-faz `die("P3 → P5 yalnız
+qa-pass ile")` (log satır 137, stderr) → rc=1 + `set -e` → orkestratör sessiz exit →
+driver att3 (yalnız qa+pkg, token'sız ama tam bir attempt israfı). E2E-4'te P2 agent'ı
+ilmeleri bu yola girmeden geçti — şans işi.
+
+**Düzeltme (sınıf, satır değil):** `orchestrate.sh` → `state_phase()` helper + **P1/P2/P5
+üç advance guard'ı**: yalnız hâlâ o fazdaysa `advance`, aksi halde ajanın koyduğu fazla
+devam. `state.sh`'a dokunulmadı (hatalar zaten stderr'de).
+
+**Regresyon kilidi:** self-test **adım 23** — davranışsal (stub: yan-etki `advance` +
+iskelet üretimi; "P2 → P3 (code-complete)" basılır, "P3 → P5 yalnız" basılmaz, durak
+P3'te kalır) + `state.sh` kanal kontratı (geçersiz advance → **rc=1, stdout boş, stderr
+mesaj, state değişmez**). Self-test **23/23 PASS** (`bash -n` OK).
+
+**Tur 2 sıradaki (atık denetimi):** E2E-3/E2E-4/ab1/ab2 metrik+loglarından P2 token
+kategorizasyonu — tahmin: att1 erken-dönüş ~0.25-0.5M israf/tur, input-context ~%50+,
+gerçek output ~%10; kaldıraç model seçiminde değil bağlam şişkinliğinde.

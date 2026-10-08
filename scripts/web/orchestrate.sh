@@ -237,6 +237,11 @@ print(state.get("current_phase", "NONE"), state.get("status", "in_progress"))
 PY
 }
 
+state_phase() { # mevcut faz — advance guard'ları için (ajan self-advance toleransı)
+  read -r p _ <<< "$(read_state)"
+  printf '%s' "$p"
+}
+
 get_retry() {
   python3 - "$STATE_FILE" <<'PY'
 import json, os, sys
@@ -663,7 +668,12 @@ while true; do
           wait_for "P1: eksik artefakt .factory/domain-report.json (web-domain-architect)"
         fi
       fi
-      bash "$STATE_SH" advance "$PROJECT" >/dev/null
+      # Ajan kendi oturumunda faz ilerletmiş olabilir (self-advance); geçersiz-faz
+      # hatası set -e ile orkestratörü sessiz öldürür (E2E ab1 att2 israfı) — yalnız
+      # hâlâ bu fazdaysa ilerle, değilse mevcut fazla devam et.
+      if [[ "$(state_phase)" == "P1" ]]; then
+        bash "$STATE_SH" advance "$PROJECT" >/dev/null
+      fi
       echo "==> P1 → P2 (requirements-frozen)"
       ;;
 
@@ -676,7 +686,9 @@ while true; do
           wait_for "P2: MVC iskeleti eksik (web-core-engineer)"
         fi
       fi
-      bash "$STATE_SH" advance "$PROJECT" >/dev/null
+      if [[ "$(state_phase)" == "P2" ]]; then
+        bash "$STATE_SH" advance "$PROJECT" >/dev/null
+      fi
       echo "==> P2 → P3 (code-complete)"
       ;;
 
@@ -710,7 +722,9 @@ while true; do
         echo "orkestratör: paketleme başarısız (exit $rc)" >&2
         exit "$rc"
       fi
-      bash "$STATE_SH" advance "$PROJECT" >/dev/null
+      if [[ "$(state_phase)" == "P5" ]]; then
+        bash "$STATE_SH" advance "$PROJECT" >/dev/null
+      fi
       echo "==> ORCHESTRATE: DONE — $PROJECT"
       echo "    qa-report.json + packaging-report.json + Yukleme/ üretildi"
       exit 0

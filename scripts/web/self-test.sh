@@ -18,7 +18,9 @@ set -euo pipefail
 # KVKK koşullu kanal (intent.compliance: yok→SKIPPED, kvkk→FAIL, iskelet→PASS) →
 # P4 hata-enjeksiyon tam döngü (P1 üretimi+enjeksiyon → P3 QA FAIL → P4
 # düzeltme → PASS → DONE, retry=1 + metrics P1/P4 satırları) →
-# --strict bütçe alarmı (1× uyarı, exit/gate değişmez; 2× sert katman → exit 1)
+# --strict bütçe alarmı (1× uyarı, exit/gate değişmez; 2× sert katman → exit 1) →
+# ajan self-advance toleransı (P2→P3 çift-ilerlemede advance guard + set -e sessiz
+# ölüm regresyonu; state.sh kanal kontratı: rc=1 + stdout boş + stderr mesaj)
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FIX="$ROOT/tests/fixtures/web-sample"
@@ -1085,6 +1087,84 @@ OUT22d="$(env PATH="$STUB2:$PATH" STRICT_TOTAL_TOKENS=50 STRICT_WALL_MS=99999999
 grep -q "SERT AŞIM: exit 1" <<<"$OUT22d" || die "SERT AŞIM satırı basılmadı"
 grep -q "STRICT bütçe sert aşıldı" <<<"$OUT22d" || die "sert aşımda duraklatma mesajı yok"
 echo "    1× uyarı eşik aşıldığında tekil basıldı (rc=3); eşik içi/sıfır bayrakta yok; 2× sert katman → exit 1"
+
+step "23) ajan self-advance toleransı: P2→P3 çift-ilerlemede orkestratör sessiz ölmez"
+# E2E ab1 (A/B, 491e3ba öncesi): P2 agent'ı kendi oturumundan `state.sh advance`
+# çalıştırdı → orkestratörün P2-branch advance'ı geçersiz-faz rc=1 verdi
+# (set -e → sessiz exit → driver att3 israfı). Guard: yalnız hâlâ fazındayken ilerle.
+grep -q 'state_phase()' "$ORCH" || die "orchestrate.sh'de state_phase() guard yardımcısı yok"
+SA="$TMP/mp23"
+cp -R "$FIX" "$SA"
+rm -f "$SA/index.php" "$SA/SQL/veritabani.sql"
+rm -rf "$SA/core" "$SA/views"
+rm -f "$SA/.factory/domain-report.json" "$SA/.factory/metrics.jsonl" "$SA/.factory/web-state.json"
+bash "$STATE" start "$SA" >/dev/null
+bash "$STATE" advance "$SA" >/dev/null # P1 → P2
+STUB4="$TMP/ocbin4"
+mkdir -p "$STUB4"
+cat > "$STUB4/opencode" <<'STUB'
+#!/usr/bin/env bash
+# yan etki: ajan davranışı — state'i ilerlet + iskeleti üret, sonra NDJSON döndür
+bash "${ORCH_STATE_SH:?}" advance . >/dev/null
+mkdir -p core views SQL
+touch index.php core/App.php views/home.php SQL/veritabani.sql
+python3 - <<'PYF'
+import json, time
+
+now = int(time.time() * 1000)
+evs = [
+    {"type": "step_start", "timestamp": now, "sessionID": "ses_selfadv01",
+     "part": {"type": "step-start"}},
+    {"type": "text", "timestamp": now + 5, "sessionID": "ses_selfadv01",
+     "part": {"type": "text", "text": "SELF-ADV (stub)",
+              "time": {"start": now, "end": now + 5}}},
+    {"type": "step_finish", "timestamp": now + 6, "sessionID": "ses_selfadv01",
+     "part": {"type": "step-finish", "reason": "stop",
+              "tokens": {"total": 77, "input": 60, "output": 17, "reasoning": 0,
+                         "cache": {"write": 0, "read": 0}},
+              "cost": 0}},
+]
+for e in evs:
+    print(json.dumps(e))
+PYF
+STUB
+chmod +x "$STUB4/opencode"
+SA_LOG="$TMP/mp23-orch.log"
+env PATH="$STUB4:$PATH" ORCH_STATE_SH="$STATE" bash "$ORCH" "$SA" --auto > "$SA_LOG" 2>&1 &
+SA_PID=$!
+for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+  grep -q "P2 → P3 (code-complete)" "$SA_LOG" 2>/dev/null && break
+  kill -0 "$SA_PID" 2>/dev/null || break
+  sleep 0.5
+done
+for c in $(pgrep -P "$SA_PID" || true); do
+  for g in $(pgrep -P "$c" || true); do kill -TERM "$g" 2>/dev/null || true; done
+  kill -TERM "$c" 2>/dev/null || true
+done
+kill -TERM "$SA_PID" 2>/dev/null || true
+wait "$SA_PID" 2>/dev/null || true
+grep -q "P2 → P3 (code-complete)" "$SA_LOG" \
+  || { cat "$SA_LOG"; die "self-advance toleransı: 'P2 → P3 (code-complete)' basılmadı (sessiz set -e ölümü)"; }
+if grep -q "P3 → P5 yalnız" "$SA_LOG"; then
+  die "geçersiz-faz hatası yine tetiklendi — advance guard çalışmıyor"
+fi
+python3 - "$SA/.factory/web-state.json" <<'PY' || die "self-advance: durak P3'te kalmalı"
+import json, sys
+s = json.load(open(sys.argv[1], encoding="utf-8"))
+assert s["current_phase"] == "P3", s
+PY
+# state.sh kanal kontratı: geçersiz advance → rc=1 + stdout boş + stderr mesaj + state değişmez
+rc=0
+SA_OUT="$(bash "$STATE" advance "$SA" 2>"$TMP/mp23-err.txt")" || rc=$?
+[[ "$rc" == "1" ]] || die "state.sh geçersiz advance rc=1 beklenir, gelen $rc"
+[[ -z "$SA_OUT" ]] || die "state.sh geçersiz advance stdout'a yazdı (kanal kontratı): $SA_OUT"
+grep -q "P3 → P5" "$TMP/mp23-err.txt" || die "state.sh hata mesajı stderr'e düşmedi"
+python3 - "$SA/.factory/web-state.json" <<'PY' || die "geçersiz advance state'i bozdu"
+import json, sys
+s = json.load(open(sys.argv[1], encoding="utf-8"))
+assert s["current_phase"] == "P3", s
+PY
+echo "    ajan P2→P3 ilerlese bile orkestratör code-complete ile devam etti (sessiz rc=1 yok); state.sh kanal kontratı: rc=1 + stdout boş + stderr mesaj + state değişmez"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"
