@@ -1,0 +1,7 @@
+driver_pid_arm1=5516
+watchdog_arm1=5517 (15M→30M cap, 20:29Z reset)
+driver_pid_arm2=5518
+watchdog_arm2=5519 (15M→30M cap, 20:29Z reset)
+LAUNCHED=2026-10-08T17:58:48Z
+arm1_done=2026-10-08T23:29:27Z (rc=0 attempts=3)
+arm2_done=2026-10-08T20:30:23Z (rc=0 attempts=2)

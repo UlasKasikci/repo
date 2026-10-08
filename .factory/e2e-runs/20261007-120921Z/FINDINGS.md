@@ -191,3 +191,34 @@ Referanslar→§11).
   `input_tokens`/`output_tokens` (P2 cache_read 6.69M = bağlamın %98'i), `retry_count` (0/0).
 - **Küçük bulgu:** driver.sh `printf '---- attempt…'` bash printf option-tuzzağı → rc satırı
   tüm run'larda eksik (kozmetik; `printf --` düzeltme adayı, ayrı tur).
+
+## 13. Faz 1.3 A/B doğrulama — P2 flash vs glm-5.3 (`20261008-175827Z-ab1/ab2`)
+
+**Tam tablo:** `.factory/e2e-runs/20261008-175827Z-ab1/COMPARISON-AB.md` (ab2'de kopya).
+
+- **Protokol:** aynı commit `@fa2113d`, aynı intent, iki temiz bootstrap, **paralel**
+  (aynı sağlayıcı penceresi), tek fark `MODEL_P2` env (ab1=flash, ab2=glm-5.3); P1/P4
+  sabit (flash/glm-5.3). Sağlayıcı hatası 0. Watchdog cap 15M→30M simetrik yükseltildi
+  (ab2 P4 riski; `PROTOCOL_NOTES`; hiçbir kol 15M'yi geçmedi).
+- **Sonuç:** P2 toplam **flash 9,007,437/83 st** vs **glm-5.3 12,026,151/94 st**
+  (**flash −25.1%**; TOP −28.3%) · P4: ab1 yok (qa-fail 0), ab2 841,234 (qa-fail 1,
+  eslint+phpunit → düzeldi) · final ikisi de QA PASS 13/13 + pkg PASS · duvar:
+  ab1 **5s30dk** vs ab2 **2s31dk** (glm-5.3 **2.2×** hızlı; P2 throughput 4.4×) ·
+  cost_usd 0.0/0.0 · model_used alanları env geçişini doğruladı.
+- **Varyans uyarısı (ana bulgu):** glm-5.3 P2 n=2 = [6.83M (E2E4), 12.03M] **1.76×**;
+  flash n=2 = [4.19M (E2E2), 9.01M] **2.15×** → **run varyansı model etkisinden büyük**;
+  ortalama flash −30% ama n=2 zayıf kanıt. Karar veri seti §4 (öneri: glm-5.3 kalsın —
+  hız kesin, token ücretsiz tier'da ikincil, instabilite prompt/parallel tarafında).
+- **Ortak konfördanç:** paralel koşuda **her iki kolun P2 att1'i de 0-write erken-döndü**
+  (exit-3 → retry; token israfı ortak/küçük). E2E-4 tekil değildi → parallel ilk-deneme
+  güvenilirliğini düşürüyor.
+- **Yeni harness bulgusu (ab1 att2 rc=1, token'sız):** P2 agent'ı kendi oturumundan
+  `state.sh advance` (P2→P3) çalıştırdı → orchestrate P2-branch `advance` geçersiz-faz
+  rc=1 (`>/dev/null` stdout yuttu, `set -e` sessiz exit) → driver att3 yalnız qa+pkg
+  (~13 sn) bitirdi. Düzeltme adayları (ayrı tur): advance'ı idempotent yap veya agent'a
+  state-yazma yasağı prompt'ta.
+- **B2/handoff:** P1 flash write SchemaError **7/7** (iki kol toplamı — deterministik);
+  P2 att2: flash 3/61, glm-5.3 1/76 (glm-5.3 JSON yazımı daha temiz). Handoff: **4/4 P2
+  oturumu domain-report'u ilk okudu**; P4 odakları uygun (qa-report/debug/HelpersTest).
+- driver `printf --` düzeltmesi bu A/B'nin kendi driver'larına uygulandı (rc satırları
+  artık log'da — E2E-4'teki kozmetik eksiklik kapandı).

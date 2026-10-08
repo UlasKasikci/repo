@@ -1,0 +1,1 @@
+AB PROTOCOL NOTE 2026-10-08T20:29:34Z: watchdog cap 15000000 -> 30000000 (her iki kol), E2E_TIMEOUT 43200 (yeni watchdog'ta yeniden baslatildi). Neden: ab2 P4 tokenikiacta 12.79M/15M idi; cap kacak-koruma agi olcum parametresi degildir, A/B'nin yarida kesilmemesi icin simetrik yukseltildi. Eski W: 5517,5519 yeni W: 32185,32186
