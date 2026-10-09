@@ -25,6 +25,17 @@ mobil/native kod yasak.
 PDO Prepared Statement; superglobal asla sorguya ham girmez; CSRF token her POST'ta;
 `PASSWORD_ARGON2ID`/`PASSWORD_BCRYPT` + `password_verify`; HttpOnly/Secure/SameSite çerez.
 
+## Üretim verimliliği (Faz 1.4 — L1/L4)
+
+- **Batch-yaz (L1):** hedef dosyaları mümkünse **tek write dalgasında** (aynı adımda
+  birden fazla write); dosyalar arası sıralı bash keşfi yasak; doğrulama bash'ları
+  en fazla 3 (`php -l` / sql-dump / qa-gate).
+- **Okuma budama (L4):** büyük dosyaları bütünüyle okuma — aralık/sed ile oku; bir
+  dosya oturum başına en fazla 1 kez (read-tool ≤12 hedefi); `domain-report.json`'dan
+  çalış.
+- Her bash/read çağrısı bir sonraki adımın bağlamını şişirir: maliyet ≈ adım × bağlam
+  (`.factory/e2e-runs/20261007-120921Z/WASTE-AUDIT.md`).
+
 ## Zorunlu kapanış
 
 ```bash

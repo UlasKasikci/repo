@@ -52,6 +52,24 @@ PROJECT="$(cd "$PROJECT" && pwd)"
 STATE_FILE="$PROJECT/.factory/web-state.json"
 GUARD=0
 
+# Faz 1.4 L2 — compaction eşiği: proje-seviyesi opencode.json yoksa ÜRET (mevcut
+# opencode.json/jsonc'a asla dokunma). `opencode run` cwd=$PROJECT ile bu dosyayı
+# okur (opencode debug config ile doğrulandı: keep→preserve_recent_tokens=20000,
+# buffer→reserved=40000). buffer 40k = bağlam limitinin 40k altında compaction →
+# replay −%30 hedefi (WASTE-AUDIT §2-C: 12/12 oturumda compaction 0).
+if [[ ! -f "$PROJECT/opencode.json" && ! -f "$PROJECT/opencode.jsonc" ]]; then
+  cat > "$PROJECT/opencode.json" <<'OCFG'
+{
+  "$schema": "https://opencode.ai/config.json",
+  "compaction": {
+    "auto": true,
+    "keep": { "tokens": 20000 },
+    "buffer": 40000
+  }
+}
+OCFG
+fi
+
 # --strict bütçe alarmı (reporter-only — exit/gate asla değişmez).
 # Eşik varsayılanları n=2 emprik zeminden (E2E-1/2): P1 0.6–0.9M, P2 3.1–4.2M,
 # toplam 4.2–4.8M token, duvar ~2.5s;WD 3s/9M altında pay bırakılır. Env ile override.
@@ -547,6 +565,15 @@ JSON dosyalarında content BAŞA newline ile başlasın: ilk karakter '{' OLMASI
 '{' işareti ikinci satırdan itibaren gelsin (satır başı ile başla) — recovery speedup,
 prevention değil: kalıcı çözüm harness-side."
 
+# Faz 1.4 L1+L4 — üretim verimliliği (WASTE-AUDIT: maliyet ≈ adım × bağlam;
+# production token'ın ~%1.2'si): batch-yaz steps'i, okuma budama bağlamı düşürür.
+BATCH_RULE="Üretim verimliliği kuralı: hedef dosyaları MÜMKÜNSE tek write dalgasında
+(aynı adımda birden fazla write) yaz — dosyalar arası sıralı bash keşfi yasak;
+doğrulama bash'ları en fazla 3 (php -l / sql-dump / qa-gate). Okuma: büyük dosyaları
+bütünüyle okuma, aralık/sed ile oku; bir dosya oturum başına en fazla 1 kez okunur
+(read-tool ≤12 hedefi); domain-report'tan çalış — her bash/read çağrısı bir sonraki
+adımın bağlamını şişirir."
+
 p1_prompt() {
   local c
   c="$(compliance_mode)"
@@ -578,6 +605,7 @@ p2_prompt() {
 P2 (Code Generation) — App-Fabrika Web Edition MVC iskeletini tamamla.
 Proje dizini: $PROJECT
 $WRITE_RULE
+$BATCH_RULE
 Girdi kontratı: $PROJECT/.factory/domain-report.json (P1 çıktısı) — entities[] tablo
 adları ve module_matrix kararları (present|injected|missing|proposed) P2 şemasına,
 SQL migrations/ ve views/ akışına bağlayıcıdır; görmezden gelme.

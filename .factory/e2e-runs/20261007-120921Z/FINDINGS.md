@@ -270,3 +270,29 @@ token israfı 0 (Tur 1'de `69024f1` kapatıldı).
 (replay −%30) · L3 att0-0-write watchdog 15 dk (kategori A israfının %80'i) · L4 read
 budama kuralı. L1+L3 tek başına sonraki E2E'de duvar −%40-60 hedefi → Faz 2 planının
 girdisi.
+
+## 16. Faz 1.4 — L1-L4 uygulaması (onaylı: sıra L1-L4 önce, ensemble P4-only, WD 15dk)
+
+`docs/FAZ2-PLAN.md` onaylandı ve dört kaldıraç uygulandı:
+
+- **L1+L4 (prompt + kalıcı kayıt):** `orchestrate.sh` → `BATCH_RULE` (tek write
+  dalgası, sıralı bash keşfi yasak, doğrulama ≤3 bash; bütünsel okuma yasak, dosya
+  başına 1 okuma, read ≤12 hedefi) — `p2_prompt`'a bindirildi +
+  `.cursor/agents/web-core-engineer.md` "Üretim verimliliği" bölümü.
+- **L2 (compaction):** araştırma — opencode v2 `compaction: {auto, keep.tokens,
+  buffer}`; **proje-dizini `opencode.json` gerçekten okunuyor** (`opencode debug
+  config`: keep→`preserve_recent_tokens`, buffer→`reserved`). `orchestrate.sh`
+  `$PROJECT/opencode.json` **yoksa üretir** (mevcut json/jsonc'a asla dokunmaz):
+  auto=true, keep=20k, **buffer=40k** (bağlam limitinin 40k altında compaction).
+- **L3 (watchdog):** yeni **`scripts/web/e2e-driver.sh`** — yeniden kullanılabilir
+  attempt döngüsü + `run_watchdog`: **yalnız P2 fazında** $PROJECT dosya-değişikliği
+  `idle_max` (vars. 900s) durursa kill_tree (çocuklar → orchestrate) TERM; watchdog
+  TERM'i **retry** (rc=143+watchdog=1), dış TERM **durur**; `--watchdog` tek başına
+  da çağrılabilir. P1 uzun sessizlikleri meşru olduğundan silah yalnız P2'de.
+- **Regresyon:** self-test **adım 24** — A) idle P2 hedefi ~5-10s'te TERM (rc=143 +
+  WATCHDOG satırı), B) 1sn dokunuşlu aktif hedef 8s'de false-positive yok.
+- **Self-test 24/24 PASS**, `bash -n` OK.
+
+**Sıradaki:** tek-değişken ölçüm koşusu (Faz 1.4 kabul kriterleri: P2 steps ≤50,
+token ≤ baz×0.7, compaction ≥1 veya bağlam/adım −%20, att0 ≤15dk, read ≤12) — baz
+E2E-4 + ab2; tek kol, glm-5.3 default. Sonuç yeşilse Faz 2.1 (JEV MCP) kapısı açılır.

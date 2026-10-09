@@ -20,7 +20,8 @@ set -euo pipefail
 # düzeltme → PASS → DONE, retry=1 + metrics P1/P4 satırları) →
 # --strict bütçe alarmı (1× uyarı, exit/gate değişmez; 2× sert katman → exit 1) →
 # ajan self-advance toleransı (P2→P3 çift-ilerlemede advance guard + set -e sessiz
-# ölüm regresyonu; state.sh kanal kontratı: rc=1 + stdout boş + stderr mesaj)
+# ölüm regresyonu; state.sh kanal kontratı: rc=1 + stdout boş + stderr mesaj) →
+# att0-0-write watchdog (L3): P2 idle'da TERM + aktif yazımda false-positive yok
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FIX="$ROOT/tests/fixtures/web-sample"
@@ -1165,6 +1166,63 @@ s = json.load(open(sys.argv[1], encoding="utf-8"))
 assert s["current_phase"] == "P3", s
 PY
 echo "    ajan P2→P3 ilerlese bile orkestratör code-complete ile devam etti (sessiz rc=1 yok); state.sh kanal kontratı: rc=1 + stdout boş + stderr mesaj + state değişmez"
+
+step "24) att0-0-write watchdog (L3): P2 idle'da TERM; aktif yazımda false-positive yok"
+WD="$ROOT/scripts/web/e2e-driver.sh"
+[[ -x "$WD" ]] || die "e2e-driver.sh yok/çalıştırılabilir değil"
+# A: idle hedef (dosya yazmayan 'ajan') — state=P2, idle_max=2 → ~5-10s'te TERM rc=143
+MP24="$TMP/mp24"
+cp -R "$FIX" "$MP24"
+rm -f "$MP24/index.php" "$MP24/SQL/veritabani.sql"
+rm -rf "$MP24/core" "$MP24/views"
+rm -f "$MP24/.factory/domain-report.json" "$MP24/.factory/metrics.jsonl" "$MP24/.factory/web-state.json"
+bash "$STATE" start "$MP24" >/dev/null
+bash "$STATE" advance "$MP24" >/dev/null # P1 → P2
+sleep 60 &
+TID=$!
+WD_OUT="$TMP/mp24-wd.txt"
+rc=0
+bash "$WD" --watchdog "$MP24" "$TID" 2 2> "$WD_OUT" &
+WPID=$!
+for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+  kill -0 "$WPID" 2>/dev/null || break
+  sleep 1
+done
+if kill -0 "$WPID" 2>/dev/null; then
+  kill -TERM "$WPID" 2>/dev/null || true
+  wait "$WPID" 2>/dev/null || true
+  kill -TERM "$TID" 2>/dev/null || true
+  wait "$TID" 2>/dev/null || true
+  die "watchdog: idle hedef 15s'te bitmedi"
+fi
+wait "$WPID" || rc=$?
+[[ "$rc" == "143" ]] || { kill -TERM "$TID" 2>/dev/null || true; die "watchdog: idle hedef TERM → rc143 beklenir, gelen $rc"; }
+grep -q "WATCHDOG: P2 idle" "$WD_OUT" || die "WATCHDOG log satırı basılmadı"
+if kill -0 "$TID" 2>/dev/null; then
+  kill -TERM "$TID" 2>/dev/null || true
+  die "watchdog hedefi öldürmedi"
+fi
+wait "$TID" 2>/dev/null || true
+# B: aktif yazan hedef — 1sn'de bir dokunuş, idle_max=5, 8s izleme → tetiklenmemeli
+MP24B="$TMP/mp24b"
+mkdir -p "$MP24B/.factory"
+python3 -c "import json; json.dump({'current_phase':'P2','status':'in_progress'}, open('$MP24B/.factory/web-state.json','w'))"
+( i=0; while [[ $i -lt 12 ]]; do touch "$MP24B/activity.txt"; i=$((i+1)); sleep 1; done ) &
+WID=$!
+bash "$WD" --watchdog "$MP24B" "$WID" 5 2> "$TMP/mp24b-err.txt" &
+WPID2=$!
+sleep 8
+alive=0
+kill -0 "$WPID2" 2>/dev/null && alive=1
+kill -TERM "$WPID2" 2>/dev/null || true
+wait "$WPID2" 2>/dev/null || true
+kill -TERM "$WID" 2>/dev/null || true
+wait "$WID" 2>/dev/null || true
+[[ "$alive" == "1" ]] || die "watchdog: aktif yazımda erken kapandı (false-negative)"
+if grep -q "WATCHDOG" "$TMP/mp24b-err.txt"; then
+  die "watchdog: aktif yazımda tetiklendi (false-positive)"
+fi
+echo "    idle P2 hedefi ~5-10s'te TERM (rc=143 + WATCHDOG satırı); 1sn dokunuşlu aktif hedef 8s'de false-positive yok"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"
