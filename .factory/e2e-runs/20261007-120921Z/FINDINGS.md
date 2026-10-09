@@ -250,3 +250,23 @@ mesaj, state değişmez**). Self-test **23/23 PASS** (`bash -n` OK).
 **Tur 2 sıradaki (atık denetimi):** E2E-3/E2E-4/ab1/ab2 metrik+loglarından P2 token
 kategorizasyonu — tahmin: att1 erken-dönüş ~0.25-0.5M israf/tur, input-context ~%50+,
 gerçek output ~%10; kaldıraç model seçiminde değil bağlam şişkinliğinde.
+
+## 15. Tur 2 — atık denetimi sonucu (`WASTE-AUDIT.md`, yeni koşu yok)
+
+6 koşu / 15 metrics satırı + DB tool sayaçları (12 oturum). §14 tahmini **revize edildi**:
+gerçek production **~%1.2** (tahmin %10 idi), bağlam taşıma **%98.8**. Maliyet
+fonksiyonu **steps × ort. bağlam** (91-143k/adım); tool sonuçları yalnız 30-50k token
+— şişkinlik adım iskeletinin tekrar-gönderiminden. **Compaction: 12/12 oturumda 0.**
+
+**Atık kategorileri:** (A) **att0-0-write erken dönüş — 2.40M token + 372 dk (6.2 saat)**
+üç koşuda tekrarlandı (en kötüsü E2E-3: 275 dk, 23 adım, 0 write); (B) cache-miss
+varyansı — ab1 att1 5.17M taze input vs ab2 90k (**57×**) → ab1 3.8× yavaş adım attı;
+"−28.3% token" farkının çoğu üretim değil tek oturumun provider cache performansı;
+(C) 100+ adım oturumları compactionsız (E2E-3 att1 12.23M/7.5 saat); (D) bash/read
+churn — en kötü verim E2E-3 att1 305.8k tok/write (ab2 att1 151.8k); (E) silent-exit
+token israfı 0 (Tur 1'de `69024f1` kapatıldı).
+
+**Öneriler (sıralı):** L1 batch-yaz kuralı (steps −%45 hedefi) · L2 compaction eşiği
+(replay −%30) · L3 att0-0-write watchdog 15 dk (kategori A israfının %80'i) · L4 read
+budama kuralı. L1+L3 tek başına sonraki E2E'de duvar −%40-60 hedefi → Faz 2 planının
+girdisi.
