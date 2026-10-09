@@ -3,5 +3,13 @@
   "instructions": [
     "CLAUDE.md",
     "docs/WEB-EDITION.md"
-  ]
+  ],
+  "permission": {
+    "skill": {
+      "kvkk-compliance": "allow",
+      "admin-crud": "allow",
+      "auth-rbac": "allow",
+      "experimental-*": "deny"
+    }
+  }
 }
