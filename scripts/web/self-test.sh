@@ -25,7 +25,7 @@ set -euo pipefail
 # A1 QUESTIONS.json exit gate (P2 soru → P2→P1 dönüşü + P1 yanıtı tüketir) →
 # A1 whitelist read scan (whitelist dışı read → WARN, reporter-only) →
 # frontmatter validator (kırık imza → standalone FAIL + qa-gate 14. kontrol FAIL) +
-# manifest-onaylı okuma (file_manifest yolu sessiz, manifest dışı WARN) — 30 senaryo
+# manifest-onaylı okuma (file_manifest yolu sessiz, manifest dışı WARN) — 31 senaryo
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FIX="$ROOT/tests/fixtures/web-sample"
@@ -1597,9 +1597,10 @@ cat > "$CPU30A" <<'EOF'
 #!/bin/bash
 while :; do :; done
 EOF
+WD30_MARK="$TMP/mp30a-killmark"
 bash "$CPU30A" --agent web-core-engineer "opencode run burn-stub" &
 TID30A=$!
-bash "$WD29" --watchdog "$MP30A" "$TID30A" 8 15 2> "$TMP/mp30a-err.txt" &
+E2E_WD_KILL_MARK="$WD30_MARK" bash "$WD29" --watchdog "$MP30A" "$TID30A" 8 15 2> "$TMP/mp30a-err.txt" &
 WPID30A=$!
 rc30a=0
 for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
@@ -1616,6 +1617,8 @@ fi
 wait "$WPID30A" 2>/dev/null || rc30a=$?
 [[ "$rc30a" == "143" ]] || { kill -TERM "$TID30A" 2>/dev/null || true; die "watchdog: busy-loop kill → rc143 beklenir, gelen $rc30a"; }
 grep -q "P2 no-write" "$TMP/mp30a-err.txt" || { kill -TERM "$TID30A" 2>/dev/null || true; die "watchdog: no-write-cap mesajı basılmadı (busy-loop)"; }
+[[ -s "$WD30_MARK" ]] || { kill -TERM "$TID30A" 2>/dev/null || true; die "watchdog: kill marker dosyası yazılmadı (E2E_WD_KILL_MARK)"; }
+grep -q "no-write" "$WD30_MARK" || { kill -TERM "$TID30A" 2>/dev/null || true; die "watchdog: marker 'no-write' içermiyor"; }
 if grep -q "P2 idle" "$TMP/mp30a-err.txt"; then
   kill -TERM "$TID30A" 2>/dev/null || true
   die "watchdog: busy-loop idle ile kill edildi — CPU kanalı idle'ı sıfırlamıyor (kanal-c bozuk)"
@@ -1652,6 +1655,47 @@ if grep -q "WATCHDOG" "$TMP/mp30b-err.txt"; then
   die "watchdog: üretken süreçte WATCHDOG tetiklendi (false-positive)"
 fi
 echo "    busy-loop (CPU aktif, dosya yok) no-write-cap ile kill (rc=143, idle DEĞİL) · üretken süreç 18s'de korundu"
+
+step "31) L3 doğal çıkış (Tur 2-4): hedef kendiliğinden ölürse watchdog KILL SAYMAZ — rc=0 + marker yok"
+# Tur 2-3 sahte sayım bulgusu: driver rc=3 çıkışında watchdog'u TERM edip
+# wrc=143'ü kill sayıyordu (watchdog_kills=6, gerçek kill=0). Fix: sayım artık
+# E2E_WD_KILL_MARK marker dosyasına göre. Bu senaryo sürücü-dışı birim:
+# orchestrate doğal çıkarsa (rc=3 eşdeğeri) watchdog return 0 ile çıkar,
+# marker YAZMAZ → driver wd_fired=0 sayar.
+MP31="$TMP/mp31"
+mkdir -p "$MP31/.factory"
+python3 -c "import json; json.dump({'current_phase':'P2','status':'in_progress'}, open('$MP31/.factory/web-state.json','w'))"
+WD31_MARK="$TMP/mp31-killmark"
+sleep 3 & TID31=$!
+E2E_WD_KILL_MARK="$WD31_MARK" bash "$WD29" --watchdog "$MP31" "$TID31" 60 120 2> "$TMP/mp31-err.txt" &
+WPID31=$!
+rc31=0
+for _ in 1 2 3 4 5 6 7 8 9 10 11 12; do
+  kill -0 "$WPID31" 2>/dev/null || break
+  sleep 1
+done
+if kill -0 "$WPID31" 2>/dev/null; then
+  kill -TERM "$WPID31" 2>/dev/null || true
+  wait "$WPID31" 2>/dev/null || true
+  kill -TERM "$TID31" 2>/dev/null || true
+  wait "$TID31" 2>/dev/null || true
+  die "watchdog: hedef doğal çıkıştan 12s sonra hâlâ ayakta (return 0 yapmadı)"
+fi
+wait "$WPID31" 2>/dev/null || rc31=$?
+if [[ "$rc31" != "0" ]]; then
+  wait "$TID31" 2>/dev/null || true
+  die "watchdog: doğal çıkışta rc=0 beklenir, gelen $rc31"
+fi
+if [[ -e "$WD31_MARK" ]]; then
+  wait "$TID31" 2>/dev/null || true
+  die "watchdog: doğal çıkışta kill marker yazılmamalı (sahte kill sayımı — Tur 2-3 bug'ı)"
+fi
+if grep -q "WATCHDOG" "$TMP/mp31-err.txt"; then
+  wait "$TID31" 2>/dev/null || true
+  die "watchdog: doğal çıkışta WATCHDOG log satırı basılmamalı"
+fi
+wait "$TID31" 2>/dev/null || true
+echo "    hedef doğal çıkınca watchdog rc=0 + marker YOK (driver wd_fired=0 sayar)"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

@@ -110,6 +110,7 @@ run_watchdog() { # $1=project $2=target-pid $3=idle_max $4=no_write_cap(Varsayı
     idle=$((now - last))
     if [[ "$idle" -ge "$idle_max" ]]; then
       echo "WATCHDOG: P2 idle ${idle}s ≥ ${idle_max}s (dosya+stream+CPU sessiz) — TERM (pid $target)" >&2
+      [[ -n "${E2E_WD_KILL_MARK:-}" ]] && echo "idle" >> "$E2E_WD_KILL_MARK"
       kill_tree "$target"
       rm -f "$mark"
       return 143
@@ -117,6 +118,7 @@ run_watchdog() { # $1=project $2=target-pid $3=idle_max $4=no_write_cap(Varsayı
     # Kademe 2: busy-loop tuzağı — dosya ilerlemesi yoksa CPU/stream yetmez
     if [[ $((now - last_write)) -ge "$now_cap" ]]; then
       echo "WATCHDOG: P2 no-write $((now - last_write))s ≥ ${now_cap}s (CPU/stream aktif olsa bile dosya yok) — TERM (pid $target)" >&2
+      [[ -n "${E2E_WD_KILL_MARK:-}" ]] && echo "no-write" >> "$E2E_WD_KILL_MARK"
       kill_tree "$target"
       rm -f "$mark"
       return 143
@@ -179,15 +181,26 @@ while [[ "$attempt" -lt "$MAX_ATTEMPTS" ]]; do
   wd_fired=0
   printf '######## attempt %s · %s ########\n' "$attempt" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LOG"
   rc=0
+  WD_MARK="$RUN/.wd-kill.$attempt"
+  rm -f "$WD_MARK"
   bash "$REPO/scripts/web/orchestrate.sh" "$PROJ" --auto >> "$LOG" 2>&1 &
   opid=$!
-  run_watchdog "$PROJ" "$opid" "$IDLE_MAX" "$NO_WRITE_CAP" 2>> "$LOG" &
+  E2E_WD_KILL_MARK="$WD_MARK" run_watchdog "$PROJ" "$opid" "$IDLE_MAX" "$NO_WRITE_CAP" 2>> "$LOG" &
   wpid=$!
   wait "$opid" || rc=$?
+  # Tur 2-4 fix: watchdog doğal çıkışını bekle (hedef ölünce ≤5s'de return 0);
+  # 12s sonra hâlâ yaşıyorsa TERM et. Sayım ARTIK wrc'ye göre DEĞİL — yalniz
+  # kill marker dosyasına göre (eski davranış: driver'ın kendi TERM'i 143 üretip
+  # sahte kill sayıyordu — Tur 2-3: watchdog_kills=6, gerçek kill=0).
+  waited=0
+  while kill -0 "$wpid" 2>/dev/null && [[ "$waited" -lt 12 ]]; do
+    sleep 1
+    waited=$((waited + 1))
+  done
   kill "$wpid" 2>/dev/null || true
-  wrc=0
-  wait "$wpid" 2>/dev/null || wrc=$?
-  if [[ "$wrc" -eq 143 ]]; then
+  wait "$wpid" 2>/dev/null || true
+  wd_fired=0
+  if [[ -s "$WD_MARK" ]]; then
     wd_fired=1
     WD_KILLS=$((WD_KILLS + 1))
   fi
