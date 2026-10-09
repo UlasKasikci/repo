@@ -1,0 +1,6 @@
+DRIVER header: max_attempts=4 idle_max=900 launched=2026-10-09T14:53:40Z
+######## attempt 1 · 2026-10-09T14:53:40Z ########
+==> Orkestratör: /var/folders/nd/178klgxs675c7ntwdvw3nlyc0000gn/T/opencode/tur2pilot2-20261009T145339Z/project (auto=1)
+==> opencode agent: web-core-engineer (P2) [model=nvidia/z-ai/glm-5.3]
+Terminated: 15
+Domain raporu okundu (kısaltılmış satır — kalanını pretty-print ile alacağım), state **P2 in_progress**, iskelet henüz yok (core/views/SQL/assets boş — sıfırdan yazılıyor). Duvar-saati kuralı gereği önce ilk write'ı basıyorum, aynı adımda tam raporu ve araç envanterini çekiyorum:

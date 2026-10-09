@@ -39,15 +39,25 @@ PY
 }
 
 run_watchdog() { # $1=project $2=target-pid $3=idle_max(s) — P2 idle'da TERM, rc=143
-  # K1 genişletmesi (Tur 2-2): iki sinyal kanalı —
-  #   (a) proje dosya değişikliği (eski davranış), (b) event stream non-empty output.
-  # Kill yalnızca HER İKİ kanal da idle_max saniye sessizse (reasoning idle-kill yasak).
+  # K1 genişletmesi (Tur 2-2 + pilot düzeltmesi): ÜÇ sinyal kanalı —
+  #   (a) proje dosya değişikliği (eski davranış),
+  #   (b) event stream non-empty output (stream boyutu büyüyor mu),
+  #   (c) opencode CPU time ilerlemesi — reasoning token üretimi CPU kullanır.
+  # Pilot bulgusu: NDJSON stream reasoning SIRASINDA sessiz kalır (step-start →
+  # step-finish arası hiçbir event yazılmaz; att1: 36KB'da 900s sabit, 27.4% CPU).
+  # Bu yüzden stream sinyali tek başına yetersiz — CPU kanalı "dolu reasoning"
+  # ile "ölü idle"ı ayırır (K1: reasoning sırasında idle-kill yasak).
+  # Kill yalnızca HER ÜÇ kanal da idle_max saniye sessizse.
   local project="$1" target="$2" idle_max="$3"
-  local mark last now hit phase idle evpath size lastsize
+  local mark last now hit phase idle evpath size lastsize opid ct1 ct2
   mark="$(mktemp)"
   last="$(date +%s)"
   lastsize=-1
   while kill -0 "$target" 2>/dev/null; do
+    # Kanal (c) CPU örneği: uyku ÖNCESİ opencode CPU time'ı
+    opid="$(pgrep -f "opencode run" 2>/dev/null | head -1)"
+    ct1=""
+    [[ -n "$opid" ]] && ct1="$(ps -p "$opid" -o cputime= 2>/dev/null | tr -d ' ')"
     sleep 5
     phase="$(watchdog_phase "$project")"
     if [[ "$phase" != "P2" ]]; then
@@ -63,7 +73,6 @@ run_watchdog() { # $1=project $2=target-pid $3=idle_max(s) — P2 idle'da TERM, 
       continue
     fi
     # Kanal (b): event stream non-empty output — son non-empty output sinyali.
-    # Reasoning stream'i doluysa (dosya boyutu büyüyor) idle DEĞİL.
     evpath="$(cat "$project/.factory/e2e-last-ev" 2>/dev/null || true)"
     if [[ -n "$evpath" && -f "$evpath" ]]; then
       size="$(wc -c < "$evpath" 2>/dev/null || echo 0)"
@@ -72,7 +81,7 @@ run_watchdog() { # $1=project $2=target-pid $3=idle_max(s) — P2 idle'da TERM, 
         if [[ "$lastsize" -lt 0 ]]; then
           lastsize="$size" # baseline
           if [[ "$size" -gt 0 ]]; then
-            last="$(date +%s)" # mevcut stream içeriği aktivite kredisi (K1: dolu stream idle değil)
+            last="$(date +%s)" # mevcut stream içeriği aktivite kredisi (K1)
           fi
         elif [[ "$size" -gt "$lastsize" ]]; then
           lastsize="$size"
@@ -81,10 +90,18 @@ run_watchdog() { # $1=project $2=target-pid $3=idle_max(s) — P2 idle'da TERM, 
         fi
       fi
     fi
+    # Kanal (c): opencode CPU time ilerledi mi? (reasoning token üretimi CPU kullanır)
+    if [[ -n "$opid" && -n "$ct1" ]]; then
+      ct2="$(ps -p "$opid" -o cputime= 2>/dev/null | tr -d ' ')"
+      if [[ -n "$ct2" && "$ct1" != "$ct2" ]]; then
+        last="$(date +%s)"
+        continue # CPU çalışıyor — model reasoning/üretimde, idle değil
+      fi
+    fi
     now="$(date +%s)"
     idle=$((now - last))
     if [[ "$idle" -ge "$idle_max" ]]; then
-      echo "WATCHDOG: P2 idle ${idle}s ≥ ${idle_max}s (dosya+stream sessiz) — TERM (pid $target)" >&2
+      echo "WATCHDOG: P2 idle ${idle}s ≥ ${idle_max}s (dosya+stream+CPU sessiz) — TERM (pid $target)" >&2
       kill_tree "$target"
       rm -f "$mark"
       return 143
