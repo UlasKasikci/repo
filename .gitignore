@@ -115,3 +115,8 @@ debug_report.json
 packaging-report.json
 smoke-report.json
 metrics.jsonl
+.factory/lighthouse-report.json
+
+# Web Edition — E2E run artefaktları (kalıcı bulgular docs/findings/ altına taşınır;
+# run dir'leri commit edilmez — takip edilen dosyalar tarihsel kayıt olarak yerinde kalır)
+.factory/e2e-runs/

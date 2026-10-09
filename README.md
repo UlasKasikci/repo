@@ -93,7 +93,7 @@ app-fabrika/
 │   ├── web-state-graph.json  # State graph kontratı
 │   ├── web-state.example.json
 │   ├── model-pricing.json    # Model rate kartları
-│   ├── e2e-runs/             # E2E koşu arşivi (kanıtlar)
+│   ├── e2e-runs/             # E2E koşu arşivi (yerel, commit dışı — bulgular docs/findings/)
 │   └── metrics.jsonl         # Token/latency/model_used (proje-başına)
 ├── scripts/web/              # Orkestrasyon
 │   ├── orchestrate.sh        # Faz sürücüsü (--auto / --strict)
@@ -110,7 +110,10 @@ app-fabrika/
 ├── docs/                     # Kanonik dokümanlar
 │   ├── WEB-EDITION.md        # Teknik spesifikasyon
 │   ├── MASTER-PROMPT-V2.md   # Stratejik karar + K1-K8
-│   └── FAZ2-PLAN.md          # Token ekonomisi planı
+│   ├── FAZ2-PLAN.md          # Token ekonomisi planı
+│   ├── audits/               # CONTRACT-AUDIT + REVIEW-NOTES (K8)
+│   ├── protocols/            # E2E protokol notları + rapor taslakları
+│   └── findings/             # E2E kalıcı bulgular (run dir commit dışı)
 ├── tests/                    # Fabrika testleri
 ├── CLAUDE.md                 # Claude Code CLI direktifleri
 ├── .cursorrules              # Cursor kuralları
@@ -246,16 +249,16 @@ Yukleme/
 
 ## Yol Haritası
 
-### v1 — Starter Kit (Şimdi) · %90
+### v1 — Starter Kit (Şimdi)
 
-- Bootstrap + üç IDE config + QA gate (14) + paketleme + self-test (29)
+- Bootstrap + üç IDE config + QA gate (14) + paketleme + self-test (30)
 - **Tamamlandı:** A1 okuma yasağı + QUESTIONS kapısı (`e946064`) + A2 spike→write
-  (`801dbef`) + frontmatter kontratı + manifest-onaylı whitelist + `.cursor/rules`
-  5 mdc + `.opencode/skills` iskeleti (hazırlık turu)
-- **Kalan:** temiz E2E ile doğrulama — kabul: att≤2 · P2 token ≤ E2E-3×0.7 · iskelet tam
-  (aynı intent `2e4816…`; gözlem: manifest kullanımı, whitelist WARN, spike→write)
-- Gerekçe: 3/3 ardışık L3 kill — A1/A2 olmadan P2 tamamlanamıyor
-  (kanıt: `.factory/e2e-runs/20261009-005625Z-faz14/`)
+  (`801dbef`) + A2' duvar-saati (`fa45b28`) + L3 watchdog idle+stream+CPU+no-write-cap
+  (`72bbee7`) + frontmatter kontratı + manifest-onaylı whitelist + `.cursor/rules`
+  5 mdc + `.opencode/skills` iskeleti
+- **Kalan:** Tur 2-3 tam E2E doğrulaması (canlı, 2026-10-09T15:52Z) — kabul:
+  att≤3 · P2<8sa · P2 token<12.23M · write>0 · L3 kill=0 (aynı intent `2e4816…`;
+  FINDINGS-PILOT §6) · sonuç gelince v1.0 final kararı
 
 ### v2 — Optimize (2-3 ay)
 
@@ -273,6 +276,29 @@ Yukleme/
 
 ---
 
+## Release
+
+| Sürüm | Durum | Not |
+|-------|-------|-----|
+| **v1.0-rc1** | **Release Candidate** (2026-10-09) | Starter Kit — Tur 2-3 E2E onayı bekliyor |
+| v1.0 | Planlı | Tur 2-3 PASS → final; Kısmi → v1.1 (model hızı); FAIL → A2'' iterasyon |
+| v2 | Planlı | JEV routing + modül kütüphanesi |
+| v3 | Vizyon | Şablonlaşma, <1M token istikameti |
+
+rc1, Tur 2-3 sonucundan **bağımsız**dır: kod tabanı CI yeşil + self-test 30/30 ile
+donmuştur; E2E sonucu yalnız v1.0 final onayını etkiler (K7: tek kol tek tur).
+
+---
+
+## Bilinen Sorunlar
+
+- **P2 model hızı:** glm-5.3 pilotda 30dk'da iskeleti tamamlayamadı (kill yok —
+  yavaş ama üretken). Tur 2-3 tam bütçeyle ölçüyor; eşik: P2 < 8 saat.
+- **B2 write SchemaError ~%6.8:** harness-side NDJSON şema kayması (prompt ile
+  çözülemez; schema-recovery devrede — P1'de 3× tetiklendi, kurtarıldı).
+
+---
+
 ## Değişmez Kurallar (K1-K8)
 
 Tam metin: [`docs/MASTER-PROMPT-V2.md`](docs/MASTER-PROMPT-V2.md)
@@ -286,7 +312,7 @@ Tam metin: [`docs/MASTER-PROMPT-V2.md`](docs/MASTER-PROMPT-V2.md)
 | K5 | Belge kanıttan türesin | `[x]` yalnız qa-gate PASS sonrası; halüsinasyon yasak |
 | K6 | Denetim %90'da donduruldu | Yeni QA kontrolü yalnız somut bug için |
 | K7 | İki imza, iki kol | Model + bağlam değişimi aynı turda test edilmez |
-| K8 | Silme değil işaretleme | Reddedilen yaklaşım `REVIEW-NOTES`'a yazılır |
+| K8 | Silme değil işaretleme | Reddedilen yaklaşım `docs/audits/REVIEW-NOTES`'a yazılır |
 
 ---
 

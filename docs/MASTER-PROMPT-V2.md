@@ -151,7 +151,7 @@ Model değişimi + bağlam değişimi AYNI turda test EDİLMEZ.
 İkisi karışırsa hangisinin işe yaradığı bilinemez.
 
 ### K8 — Silme değil, işaretleme
-Bir yaklaşım başarısız olduysa, dosyayı silme — `REVIEW-NOTES`'a
+Bir yaklaşım başarısız olduysa, dosyayı silme — `docs/audits/REVIEW-NOTES`'a
 "reddedildi + neden" olarak yaz. Gelecek tur aynı hatayı tekrarlamasın.
 
 ---

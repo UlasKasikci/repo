@@ -1,0 +1,15 @@
+FAZ 1.4 ÖLÇÜM KOŞUSU (Faz 1.4-M) — @e6cfc62, L1-L4 aktif
+TS=20261009-005625Z
+PROJ=/var/folders/nd/178klgxs675c7ntwdvw3nlyc0000gn/T/opencode/faz14-20261009-005625Z/project
+RUN=/Volumes/SSD/Projeler/Repo/.factory/e2e-runs/20261009-005625Z-faz14
+commit=e6cfc62 (feat: Faz 1.4 L1-L4)  base_intent_sha=2e481696ceeb6a5f7ebfbccdec35dcad7bd07e07ae25cd64bb1c165b51d50007
+tek kol (paralel YOK — ab1 att0 çekişmesi dersi); model override YOK (hardcoded
+map: P1 flash / P2+P4 glm-5.3); driver=scripts/web/e2e-driver.sh (L3 P2-idle
+watchdog idle_max=900 dahil, ilk saha kullanımı); dış katman: bu dizindeki
+watchdog.sh (duvar 10800s / token 15M).
+KABUL KRİTERLERİ (docs/FAZ2-PLAN.md §2):
+  L1: P2 steps ≤50 VE P2 token ≤ baz×0.7 (baz: E2E-4 6.83M/74adim, ab2 11.54M/80)
+  L2: compaction ≥1 VEYA medyan bağlam/adım −≥%20
+  L3: att0 (varsa) ≤15dk; watchdog_kills≥1 ise log'da WATCHDOG satırı
+  L4: P2 read-tool çağrıları ≤12 (baz E2E-3 att1=37)
+Baz koşular: E2E-4 (20261008-142253Z), ab2 (20261008-175827Z-ab2).
