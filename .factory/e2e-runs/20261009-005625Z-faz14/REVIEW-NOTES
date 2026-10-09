@@ -171,3 +171,20 @@ Q1 ÖNCELİK NOTU: att2 bittiğinde İLK iş — att2 transcript'inde att1'e ref
 aramak (grep: domain-report, todowrite, index.php/core/views dosya adları,
 "önceki", "önceki deneme", "att"). Bu arama yapılmadan "att1 gereksiz" hükmü
 kesinleşmez; arama sonucu §17'de tek satır olarak zorunlu.
+
+Q1 CEVABI (DB otopsisi — make-or-break)
+=======================================
+(c) sınıfı (E2E-3): att1, att0'ın çıktılarını **AKTİF TÜKETTİ** —
+  28 referans (read×4 core/App.php, read×3 View.php, ...) +
+  **20 edit att0'ın 8 dosyasında** (App.php×4, AdminController×3,
+  ContactController×3, View.php×3, helpers×3, bootstrap×2, Database×1,
+  AuthController×1). HÜKÜM: att1 = **KISMİ YATIRIM, atık değil.**
+(a) sınıfı (faz14): att1'in 0 çıktısı var — att2'nin referans arayacağı bir şey
+  YOK (att2'nin 3 aracı: domain-report(P1) + state + ls). Trivial "atık".
+(b) sınıfı (ab1/ab2): att0 0 write → att1 sıfırdan başladı → att0 tam atık.
+
+SONRAKİ TUR İÇİN TASARIM SONUCU: "devam et" modeli **yalnız (c) için meşru**;
+(a)/(b) waste'i L3 ile 15dk'ya kısılmış durumda. P2 prompt'una "önceki denemenin
+dosyalarını oku/devam et" kuralı yalnız (c)-sınıfı retry'larda anlamlı —
+ama her retry'da mevcut iskelet zaten diskte; kural evrensel yazılabilir
+("scaffold dosyaları varsa sıfırdan yazma, tamamla").

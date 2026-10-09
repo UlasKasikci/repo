@@ -95,3 +95,14 @@ ayrımı kâğıt üzerinde kalır.
   WRITE_RULE prevention değil recovery olarak çalıştı.
 - L3 ilk saha avı:904s TERM (imza-faz14 CLI stall — boş reasoning[0ch]).
 - att2: 02:01:45Z start; P2 hâlâ aktif (izleme sürüyor).
+
+## 6c. Q1 CEVABI (make-or-break — dolduruldu)
+
+| sınıf | attN→attN+1 referans? | kanıt | hüküm |
+|---|---|---|---|
+| (c) E2E-3 | **VAR** | att1: att0 dosyalarına 28 ref + 20 edit (8 dosya) | att1 = **kısmi yatırım**; "devam et" modeli meşru |
+| (a) faz14 | YOK (trivial) | att1 0 çıktı; att2 3 araç = P1 artifactsı | att1 = tam atık (L3 ile 15dk'ya kısılmış) |
+| (b) ab1/ab2 | YOK | att0 0 write | att0 = tam atık |
+
+Tasarım sonucu: "scaffold varsa sıfırdan yazma, tamamla" kuralı evrensel
+yazılabilir — (c)'yi korur, (a)/(b)'de bedavi.
