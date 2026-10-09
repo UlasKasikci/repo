@@ -53,6 +53,15 @@ listesi, şema detayı): kodu tahmin edip yazma — `.factory/contracts/QUESTION
 dosyayı görürse P2→P1 döner; P1 soruları domain-report'a yanıtlar ve dosyayı tüketir.
 
 
+## Spike→Write Kuralı (A2 — imza-b)
+
+- todowrite sonrası EN FAZLA 3 tool çağrısı içinde ilk write başlamalı.
+- Reasoning'in 20k karakteri geçtiyse, BİR SONRAKİ tool çağrın write olmalı.
+- Spike'ın kendisi sorun DEĞİL — E2E-3 att0: 55k/79k spike → 18 write üretken.
+  Sorun spike SONRASI write'ın gelmemesi (ab1: 121.8k spike → 0 write).
+- Bu bir hız kuralıdır, kesme/hard-kill DEĞİLDİR (K1) — watchdog zaten idle ile
+  çalışır, reasoning uzunluğuyla değil.
+
 ## Mandatory close-out
 
 ```bash
