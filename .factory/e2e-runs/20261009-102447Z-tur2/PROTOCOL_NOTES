@@ -1,0 +1,44 @@
+TUR 2 — TEMİZ E2E (A1/A2 doğrulaması + ön koşul denetimi) — @a42fbe6
+TS=20261009-102447Z
+PROJ=/var/folders/nd/178klgxs675c7ntwdvw3nlyc0000gn/T/opencode/tur2-20261009-102447Z/project
+RUN=/Volumes/SSD/Projeler/Repo/.factory/e2e-runs/20261009-102447Z-tur2
+commit=a42fbe6 (opencode permission.skill) · Tur 1: e00054c
+base_intent_sha=2e481696ceeb6a5f7ebfbccdec35dcad7bd07e07ae25cd64bb1c165b51d50007
+  (faz14 projesinden birebir kopya — shasum teyitli, RUN1/RUN2/E2E-3 serisiyle aynı)
+tek kol (paralel YOK); model override YOK (hardcoded map: P1 flash / P2+P4 glm-5.3);
+driver=scripts/web/e2e-driver.sh <proje> <run> 6 900 30 (L3 P2-idle watchdog dahil);
+dış katman: WATCHDOG_KILLED riskine karşı bu dizindeki watchdog.sh (10800s / 15M token).
+
+ÖN KOŞUL DENETİMİ (Tur 2 prompt 4+1 — E2E ÖNCESİ TAMAM):
+1. Ölü kural audit (validator bulgusu):
+   - 06-mcp-orchestrator: ÖLÜ DEĞİLDİ — alwaysApply=true → hep yüklüydü; yalnız
+     globs'u ignore ediliyordu (ölü VERİ, satır silindi, davranış aynı).
+   - 22/25/26/27: ÖLÜ idi (alwaysApply=false + globs YOK → Cursor asla uygulamıyordu).
+     Tur 1'de globs eklendi: AYNI dosyalarda canlandılar (22→docs/**+*.md,
+     25→.factory/**+**/*.php+**/*.sql, 26→**/*.php+**/*.sql+qa-report/debug,
+     27→Yukleme/**+packaging-report+SQL/**+package-yukleme.sh). Taşınma YOK,
+     içerik kaybı YOK. (28-32 ayrı iş: .cursorrules'ten bölünen anayasa.)
+   - İÇERİK: 22=/cevap AAR contract (command), 25=P1 domain denetim listesi,
+     26=P3 qa-gate readonly kapı, 27=P5 paketleme kapısı.
+   - P2 ETKİSİ: YOK. (a) .mdc = Cursor'a özgü; opencode asla yüklemez
+     (docs/rules: instructions=[CLAUDE.md, docs/WEB-EDITION.md]; .mdc referansı yok).
+     (b) fazlar P1/P3/P5/command — hiçbiri P2 core-engineer kuralı değil.
+   - SONUÇ: Bu E2E TEK DEĞİŞKENLİDÜR (A1/A2). "Ölü kural canlanması" değişkeni
+     yalnız CURSOR oturumlarını etkiler; E2E-3↔Tur2 izolasyonu K7 uyumlu, ikinci
+     koşu gerekmez. (Rapor notu: iki değişken kaygısı docs kanıtıyla kapandı.)
+2. opencode.json → permission.skill (commit a42fbe6). NOT: prompt'taki üst-seviye
+   "skills" anahtarı docs'ta TANINMIYOR (silent-ignore sınıfı hata); doğru şema
+   permission.skill altında uygulandı.
+3. README teyit: 14 kontrol ×5 satır · 28/28 ×3 referans ✓
+4. .cursorrules ↔ 5 yeni .mdc tutarlılık: çelişki YOK (2 grep yanılış pozitifi:
+   "Web Edition mobil kod üretmez" = doğru kural cümlesi; "rol katmanı enjekte"
+   = satır kırmalı eşleşme).
+
+KABUL KRİTERLERİ (Tur 2 prompt):
+  hipotez: P2 tek attempt'te tamamlanır VEYA QUESTIONS.json'a düşer
+  kabul: att≤2 · P2 token ≤ 8.56M (E2E-3 12.23M × 0.7) · iskelet tam
+GÖZLEMLER (FINDINGS-TUR2.md):
+  1) file_manifest okuması  2) whitelist_scan WARN  3) spike→write tutumu
+  4) QUESTIONS düşüşü+sorusu  5) P2 davranış özeti (spiral öncesi adım, ilk write)
+KARŞILAŞTIRMA BAZI: E2E-3 P1 412k / P2 12.23M / TOP 14.68M (metrics'ten yeniden hesap)
+ÇIKTI: FINDINGS-TUR2.md (bu dizin) · kill → sebep yazılır, driver retry (att≤6)
