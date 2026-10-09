@@ -1,0 +1,173 @@
+KULLANICI DEĞERLENDİRMESİ (ölçüm öncesi) + CANLI KANIT
+=====================================================
+
+Uyarı 1 — tek kol = sinyal, kanıt değil: KAYIT. §17 yorumu "hipotez onayı"
+dilinde olacak; n=2 varyansı Faz 2.1 öncesi zorunlu.
+
+Uyarı 2 — WD P1 false-positive riski: KANIT İLE KAPANDI (attempt 1):
+- P1 tam 49.2 dk (2,952,704 ms) çalıştı, 18 adım, 739k token, domain-report
+  bash-heredoc ile yazıldı, P1→P2 advance — watchdog P1 boyunca HİÇ TETİKLENMEDİ
+  (faz kapısı doğrulandı: idle sayacı yalnız P2'de işliyor).
+- Tek WATCHDOG satırı P2'den: att1 **1 adım / 199 token üretip 904 sn sustu**
+  (0-write) → L3 904s'te TERM etti → retry. Eski driver olsa: en az outer
+  timeout'a (3h) kadar ölü hava. L3 ilk saha koşusunda kategori-A israfını
+  kesti — waste-audit §2-A'nın birebir sahada karşılığı.
+- P1'in write aracı bu harness'ta JSON-parse ediyor (B2 sınıfı) — ajan WRITE_RULE
+  recovery (bash-heredoc) ile kurtardı; domain-report gate geçti. İzlenecek.
+
+Uyarı 3 — compaction"net kazanç" muhasebesi: §17'de AYRI SATIR zorunlu —
+compaction sayısı + adım pozisyonu + compaction sonrası cache_read/adım
+düşüşü + tahmini net replay tasarrufu (lineer extrapolasyon; tahmin olarak
+etiketlenecek).
+
+KARAR AĞACI (koşu bitince):
+A) tüm kriterler PASS → hipotez onayı; Faz 2.1 öncesi n=2 (aynı konfig).
+B) kısmi PASS → en bilgilendirici; hangi kaldıraç ne yaptı ayrıştır (örn. read
+   düştü token düşmedi → içerik boyutu sorunu, dosya sayısı değil).
+C) FAIL → panik yok; faz-bazlı kalem kalem hangi müdahale etkiledi çıkar.
+
+ATT1 OTOPSİSİ (salt-okunur DB, 3 oturum) — patern 4/4, mekanizma İKİ
+===================================================================
+"0-write att1" tek mekanizma DEĞİL; terminal davranışı aynı, iki imza:
+
+(1) ab1/ab2 imzası — ARAŞTIRMA SARMALI → DEV REASONING → YOKSAYMA:
+    ab1: state+domain-report+intent+qa-gate+araçlar okundu → todowrite ile TÜM
+    dosya planı yazıldı (core autoload/Config/Database/Csrf...) → son step
+    reasoning[121,774ch] (40 dk tek başına!) → 0 write, session completed.
+    ab2: aynı spiral (qa-gate.sh 20k, orchestrate.sh 550 satır, smoke-test,
+    ajan md'leri okundu) → reasoning[91,727ch] + 1 status=error bash → 0 write.
+    Teşhıs: model P2'de harness'ı tersine mühendislikle öğrenmeye çalışıyor;
+    reasoning baloncukları bir provider/turn limitine çarparak kesiliyor —
+    yazmaya başlamadan bitiyor. (faz14 att1'in todowrite'ı yok ama aynı okuma
+    spiraline girdi: read×2+glob, sonra boş reasoning + asılma.)
+
+(2) faz14 imzası — CLI ASILMASI: 27sn/3 mesaj aktif (read×2+glob tamam) →
+    son assistant mesaj reasoning[0ch] boş → opencode süreci 877sn ASILI
+    → L3 904s'te TERM. Altyapı/sağlayıcı stallı; prompt'tan çözülemez,
+    L3'ün doğru işi.
+
+ÖNLEYİCİ (L3'ü sınırlayıcıdan önleyiciye çevirecek — sonraki tur adayı):
+- P2 ARAŞTIRMA YASAĞI: girdi domain-report + contracts + iskelet; qa-gate.sh /
+  orchestrate.sh / smoke-test.sh / ajan md okuması YASAK (harness'ı tersine
+  mühendislikle öğrenme spiralini keser — ab1/ab2 imzasının doğrudan hedefi).
+- "todowrite/plan sonrası İLK tool çağrısı write dalgası olmalı" kuralı.
+- write post-process string-zorlama (B2, 3. tekrar) → Faz 2 planına AYRI aday.
+
+§17 ÇERÇEVESİ (kullanıcı onayı):
+- L3 ROI satırı = KURTARILAN DUVAR SÜRESİ (token değil): faz14 att1 904s vs
+  eski driver outer-timeout 10800s → tek avda ~2.75 saat.
+- P1 ayrı satır (49.2dk = E2E-1'in 2× varyansı; P2 kazancını maskeler).
+- İki değişkenli atıf: L1+L4 (token+step ↓) · L2 (token ↑, net belirsiz) ·
+  L3 (token nötr, duvar ↓). Beklenti: P2 token −15-30% (sinyal).
+
+RAFINE EDİLMİŞ ÖNLEYİCİLER (kullanıcı, 2. değerlendirme) + ÖNCELİK
+==================================================================
+imza-ab = hız problemi (40 dk duvar reasoning), token problemi değil — buna göre
+önceliklendir.
+
+A1 araştırma yasağı → REFINED: "hiçbir şey okuma" değil **"yalnız şunları oku:
+domain-report.json + contracts/* + iskelet dizin listesi"** + çıkış kapısı:
+belirsizlik contracts/QUESTIONS.json'a yazılır (araştırma dürtüsüne kanal).
+**ÖN KOŞUL: kontrat tamlığı denetimi** — yasaklamadan önce contracts'ın P2'nin
+ihtiyaç duyduğu her şeyi içerdiğini doğrula; eksikse yasak sorunu gizler,
+sessizce yanlış üretir.
+
+A2 todowrite→write → REFINED: **todowrite sonrası ≤3 tool çağrısı içinde write
+dalgası başlamalı** (tek meşru kontrol hakkı). Kanıt: ab1'de todowrite VARDI ama
+sarmal todowrite'tan SONRA oldu — kural todowrite→write değil todowrite→3→write.
+
+A3 write post-process string-zorlama: B2 harness-side, imza-ab ile ilgisiz —
+Faz 2'ye AYRI aday (3. tekrar doğrulandı).
+
+EK1 REVİZE (sert eşik YANLIŞ — veriyle çelişiyor): "~20k hard reasoning kill"
+önerisi **REDDEDİLDİ**. Kanıt: E2E-3 att0 spike'ları 55.4k/79k → üretken (18 write);
+20k hard-kill o üretken tek attempt'i öldürürdü. (b) ve (c) aynı yüzeyi (reasoning
+spike) paylaşır ama **zıt müdahale** ister: (b)'de spike ÖLÜ (sonrası write yok),
+(c)'de spike CANLI (sonrası write var). Ayrım boyutta değil, **spike-sonrası write
+gelip gelmediğinde**. Doğru tedavi: **spike-sonrası-write zorlaması** — spike
+tespit edilince (event stream reasoning boyutu) model "şimdi write dalgası" ile
+devam etmeye **yönlendirilir** (soft nudge / kural), KESİLMEZ. Hard-kill yalnız
+spike + sonraki N adımda write yoksa (imza-b kanıtı) düşünülür.
+
+ÜÇ İMZA / ÜÇ TEDAVİ (düzeltme — hard-kill değil, imza-bazlı):
+| İmza | Kök neden | Doğru tedavi |
+|---|---|---|
+| (a) CLI stall | Altyapı (provider/opencode) | No-progress watchdog 60-120s (EK2) — prompt'a yazılmaz |
+| (b) 0-write spiral | Model, TERMINAL reasoning (sonrası write yok) | Araştırma yasağı (A1) + spike-sonrası-write zorlaması |
+| (c) partial-write + spike | Model, üretken ama eksik (spike sonrası write VAR ama scaffold yarım) | "Başladıysan bitir" — kesme değil, tamamlama kuralı |
+
+(b) ve (c): aynı yüzey, zıt müdahale. Ayrım sinyali = spike sonrasında write
+gelip gelmediği (DB: spike step'inden sonraki tool=write sayısı).
+
+EK2 no-progress watchdog (imza-faz14): file-idle ≠ process-stall. Sinyal sınıfı:
+"son 60-120sn non-empty output yok" → daha erken kill (904s→~120s, olay başına
+~13 dk kazanç). Uygulama yeri: orchestrate run_agent event stream'i ($ev) tail
+edilir — L3'ün (driver, dosya-mtime) yerine geçmez, ÜZERİNE katman.
+
+ÖNCELİK SIRASI (koşu bitince):
+1. Kontrat tamlığı denetimi (A1 ön koşulu)
+2. Araştırma yasağı + QUESTIONS.json çıkış kapısı (imza-ab hedefi)
+3. Spike-sonrası-write zorlaması (EK1 revize; hard-kill değil — imza-b hedefi,
+   imza-c'yi korur) + "başladıysan bitir" (imza-c)
+4. todowrite→3-call→write (tamamlayıcı)
+5. no-progress watchdog (imza-faz14)
+6. write post-process (B2, ayrı)
+
+**Faz 2.1 (JEV MCP) ERTELENDİ:** routing faydası temiz tek-attempt P2 varsayar;
+imza-ab çözülmeden varsayım geçersiz değil.
+
+Q2/Q3 YANITLARI (DB otopsisi) — İMZA TABLOSU 3 SINIFA GENİŞLEDİ
+===============================================================
+Q3 imza oranı (4 koşu):
+  (a) CLI stall (imza-faz14):        1/4  (faz14 att1: boş reasoning[0ch] + 877s asılma)
+  (b) 0-write spiral (imza-ab):      2/4  (ab1, ab2)
+  (c) partial-write + reasoning spike (YENİ, imza-3): 1/4
+      E2E-3 att0: msg5 reasoning=55.4k, msg9=79k (mid-run spike'lar — AMA
+      toparlandı) → msg11 todowrite → msg12-23: **18 write** → scaffold eksik
+      kalınca retry. "0-write" DEĞİL; yarı-yazım + spike.
+
+Q2 spiral sınırı (adım bazlı):
+  ab1: normal keşif msg1-6 → **todowrite sonrası msg7 = reasoning 121.8k terminal**
+       (sarmal todowrite'tan SONRA başlıyor — A2 rafinasyonunu doğrular)
+  ab2: msg1-12 harness okuma (orchestrate/smoke-test/ajan md) → msg13 reasoning
+       91.7k terminal (sarmal harness-okuma spiralinden)
+  E2E-3: spike'lar msg5/msg9'da (55k/79k) ama kurtarıp yazdı — imza-(c).
+      NOT (EK1 düzeltmesi): buradaki "alt eşikte kalıp kurtardı" yorumu
+      REVİZE — ayrım eşik yüksekliği değil, spike-SONRASI write varlığıdır
+      (55k/79k sonrası write geldi → canlı spike; ab1 121.8k sonrası write
+      yok → terminal). Hard-kill eşiği önerisi veriyle çeliştiği için
+      reddedildi (bkz. EK1 REVİZE).
+
+Q1 (att2 att1'i referanslıyor mu?): att2 oturumu açıldı (ses_ee19ae0eeffe…),
+ama **şu an sessiz** — 10.5 dk'da 3 araç çağrısı (2 bash+1 read), son part
+7.7 dk önce. 900s idle'da L3 tekrar devrede (watchdog attempt-başına sıfırlanıyor;
+sonraki kill ~02:16:45Z). Q1 att2 yazmaya başladığında yanıtlanacak:
+transcript'te todowrite/plan/dosya-listesi referansı aranacak.
+
+HAZIRLIK TURU ÇERÇEVESİ (kullanıcı): att1 rolü "keşif+plan+kontrat doğrulama"
+(çıktı: todowrite + QUESTIONS.json + dosya listesi; ≤10 dk; reasoning ≤20k;
+başarı=plan tamam) · att2 = yazma (≤90 dk; reasoning ≤50k). Araştırma yasağını
+tamamlar: kısıtlamak değil, MEŞRU İŞ vermek. JEV yalnız ertelenmedi —
+DESİGN'i revize: routing "tek-attempt P2" varsayımını bırakıp "hazırlık+yazma"
+iki-attempt modeline bağlanmalı.
+
+HAZIRLIK-TURU ÇERÇEVESİ REVİZyonu (kullanıcı görevi) + Q1 ÖNCELİK
+=================================================================
+ESKİ (yanlış): "att0=hazırlık (keşif+plan), att1=yazma" — iki temiz faz.
+YENİ (doğru): "att0=**araştır+yaz** (tek faz, sıkı bütçe), att1=**devam et**
+(sıfırdan değil)". İimza-(c) bunu zorunlu kılıyor: E2E-3 att0 zaten 18 write
+yaptı — "att0 yalnız hazırlık yapar" modeli o veriyi inkâr eder.
+
+Kritik bağ (Q1 — HAYATİ, hâlâ ceapsız): att1/att2, att0'ın çıktısını **görüyor mu?**
+  - att2 transcript'inde att1'e referans var mı? (domain-report / todowrite /
+    yazılmış dosya listesi)
+  - Q1 YANITI = devam-modelinin meşruiyeti:
+    * YOK → att1 tamamen atık ("sıfırdan başlar" kanıtlanır) → tek-attempt
+      sıkı bütçe + imza-a tedavileri yeterli.
+    * VAR → att1 kısmi yatırım ("devam eder" kanıtlanır) → iki-attempt model
+      meşru: att0 sıkı bütçeyle araştır+yaz, att1 eksikleri tamamla.
+
+Q1 ÖNCELİK NOTU: att2 bittiğinde İLK iş — att2 transcript'inde att1'e referans
+aramak (grep: domain-report, todowrite, index.php/core/views dosya adları,
+"önceki", "önceki deneme", "att"). Bu arama yapılmadan "att1 gereksiz" hükmü
+kesinleşmez; arama sonucu §17'de tek satır olarak zorunlu.
