@@ -1,3 +1,5 @@
+> Bu ajan docs/MASTER-PROMPT-V2.md'deki K1-K8 kurallarına tabidir.
+
 ---
 description: App-Fabrika Production Deployment & Packager (Agent 5) — QA PASS sonrası Yukleme/ üretir, build isolation uygular, sha256 manifestli teslim raporu çıkarır.
 mode: primary

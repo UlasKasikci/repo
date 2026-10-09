@@ -1,3 +1,5 @@
+> Bu ajan docs/MASTER-PROMPT-V2.md'deki K1-K8 kurallarına tabidir.
+
 ---
 description: App-Fabrika Core Web & Database Engineer (Agent 2) — PHP 8.1+ MVC çekirdek, PDO katmanı, normalize SQL şema ve REST uçlarını üretir; P4 revizyonlarını düzeltir.
 mode: primary

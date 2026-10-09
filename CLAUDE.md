@@ -1,3 +1,5 @@
+> Bu ajan docs/MASTER-PROMPT-V2.md'deki K1-K8 kurallarına tabidir.
+
 # CLAUDE CODE EXECUTION DIRECTIVES — App-Fabrika Web Edition
 
 **Role:** FAANG-grade Senior Web Architect & Automator.

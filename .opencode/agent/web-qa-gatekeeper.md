@@ -1,3 +1,5 @@
+> Bu ajan docs/MASTER-PROMPT-V2.md'deki K1-K8 kurallarına tabidir.
+
 ---
 description: App-Fabrika QA & Security Gatekeeper — qa-gate.sh ile 0 Error 0 Warning doğrular; kod değiştirmez (readonly).
 mode: primary

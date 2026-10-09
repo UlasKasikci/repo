@@ -1,3 +1,5 @@
+> Bu ajan docs/MASTER-PROMPT-V2.md'deki K1-K8 kurallarına tabidir.
+
 ---
 description: App-Fabrika UI/UX & Frontend Specialist (Agent 3) — erişilebilir, SEO dostu, Core Web Vitals 90+ arayüz; semantic HTML5 + responsive CSS + modern JS.
 mode: primary
