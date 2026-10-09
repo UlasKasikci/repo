@@ -1,5 +1,3 @@
-> Bu ajan docs/MASTER-PROMPT-V2.md'deki K1-K8 kurallarına tabidir.
-
 ---
 name: web-frontend-specialist
 description: >-
@@ -7,6 +5,9 @@ description: >-
   semantic HTML5, responsive CSS, modern JS üretir. P2'de arayüz işlerinde kullan.
 model: inherit
 ---
+
+> Bu ajan docs/MASTER-PROMPT-V2.md'deki K1-K8 kurallarına tabidir.
+
 
 # Web Frontend Specialist (Agent 3)
 

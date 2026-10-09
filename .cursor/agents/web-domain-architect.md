@@ -1,5 +1,3 @@
-> Bu ajan docs/MASTER-PROMPT-V2.md'deki K1-K8 kurallarına tabidir.
-
 ---
 name: web-domain-architect
 description: >-
@@ -8,6 +6,9 @@ description: >-
   Yeni domain/scaffold/mimari talebinde ve /web-baslat içinde kullan.
 model: inherit
 ---
+
+> Bu ajan docs/MASTER-PROMPT-V2.md'deki K1-K8 kurallarına tabidir.
+
 
 # Web Domain Architect (Agent 1)
 

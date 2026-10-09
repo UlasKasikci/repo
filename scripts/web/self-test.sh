@@ -60,6 +60,35 @@ done
 python3 -m py_compile "$ROOT/scripts/web/domain-check.py" || die "py_compile: domain-check.py"
 echo "    OK: domain-check.py"
 
+# Ajan frontmatter kontratı: opencode/cursor YAML frontmatter dosyanın 1. SATIRINDA
+# başlamalı. Üstüne eklenen satır (örn. K1-K8 referansı) parse'ı sessizce kırar —
+# A/B kanıtı: ref frontmatter üstünde → mode=None + qa-gatekeeper edit:deny kaybı.
+python3 - "$ROOT" <<'PY' || die "ajan frontmatter kontratı"
+import glob
+import os
+import sys
+
+root = sys.argv[1]
+bad = []
+checked = 0
+for path in sorted(glob.glob(os.path.join(root, ".opencode", "agent", "*.md"))
+                   + glob.glob(os.path.join(root, ".cursor", "agents", "*.md"))):
+    head = open(path, encoding="utf-8").read(8000)
+    lines = head.split("\n")
+    # frontmatter var mı: ilk 5 satırda açılış --- ve ilk 20 satırda kapanış ---
+    if "---" not in lines[:5]:
+        continue
+    checked += 1
+    if lines[0] != "---":
+        bad.append(os.path.relpath(path, root))
+if bad:
+    print("frontmatter 1. satırda değil (parse kırılır):", file=sys.stderr)
+    for b in bad:
+        print("  " + b, file=sys.stderr)
+    sys.exit(1)
+print("    OK: %d ajan dosyası — frontmatter 1. satırda" % checked)
+PY
+
 if [[ ! -d "$FIX" ]]; then
   echo
   echo "SELF-TEST: SKIP — fixture yok (tests/ bu repoya dahil edilmedi)"

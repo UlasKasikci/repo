@@ -1,5 +1,3 @@
-> Bu ajan docs/MASTER-PROMPT-V2.md'deki K1-K8 kurallarına tabidir.
-
 ---
 name: web-deploy-packager
 description: >-
@@ -7,6 +5,9 @@ description: >-
   build isolation uygular, SQL dump ve sha256 manifest raporunu çıkarır. /web-yukle ile çağır.
 model: inherit
 ---
+
+> Bu ajan docs/MASTER-PROMPT-V2.md'deki K1-K8 kurallarına tabidir.
+
 
 # Web Deploy Packager (Agent 5)
 

@@ -1,5 +1,3 @@
-> Bu ajan docs/MASTER-PROMPT-V2.md'deki K1-K8 kurallarına tabidir.
-
 ---
 name: web-core-engineer
 description: >-
@@ -8,6 +6,9 @@ description: >-
   Kod üretiminde ve /web-faz P2 aşamasında kullan.
 model: inherit
 ---
+
+> Bu ajan docs/MASTER-PROMPT-V2.md'deki K1-K8 kurallarına tabidir.
+
 
 # Web Core Engineer (Agent 2)
 

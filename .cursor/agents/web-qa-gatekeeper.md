@@ -1,5 +1,3 @@
-> Bu ajan docs/MASTER-PROMPT-V2.md'deki K1-K8 kurallarına tabidir.
-
 ---
 name: web-qa-gatekeeper
 description: >-
@@ -8,6 +6,9 @@ description: >-
 model: inherit
 readonly: true
 ---
+
+> Bu ajan docs/MASTER-PROMPT-V2.md'deki K1-K8 kurallarına tabidir.
+
 
 # Web QA Gatekeeper (Agent 4)
 
