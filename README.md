@@ -162,6 +162,18 @@ bash scripts/web/state.sh status         # aktif faz
 
 Çıkış kodları: `0` OK · `1` FAIL · `2` HALT · `3` orkestratör bekleme (LLM adımı).
 
+### Ortam Değişkenleri
+
+| Değişken | Varsayılan | Ne işe yarar |
+|----------|-----------|--------------|
+| `MODEL_P1` / `MODEL_P2` / `MODEL_P4` | hardcoded map | Faz bazlı model routing (`provider/model`) |
+| `STRICT_TOTAL_TOKENS` | 8.000.000 | `--strict` toplam bütçe eşiği (2× → exit 1) |
+| `STRICT_PHASE_TOKENS` | 6.000.000 | P2-P4 tek faz eşiği |
+| `STRICT_WALL_MS` | 10.800.000 | Duvar saati bütçesi (3 saat) |
+| `SMOKE_PORT` / `SMOKE_PATHS` | 18000+ | Smoke test portu / ek rotalar |
+| `LIGHTHOUSE_URL` | — | Tanımlı değilse Lighthouse SKIPPED |
+| `E2E_TIMEOUT_SEC` / `E2E_MAX_TOKENS` | 10.800 / 15M | E2E driver dış watchdog bütçesi |
+
 ---
 
 ## Kullanım — Üç IDE
