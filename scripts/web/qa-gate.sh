@@ -275,6 +275,34 @@ if [[ "$COMPLIANCE" != "none" ]]; then
   check_end kvkk
 fi
 
+# --- 5d) Fabrika kontratı: ajan/rule frontmatter (K6 istisnası — somut regresyon) ---
+# K1-K8 ref satırı frontmatter üstüne eklenince opencode mode/permission parse'ı
+# sessiz kırılmıştı (14 dosya; A/B: qa-gatekeeper permission.edit=deny kaybı) →
+# fabrika kendi agent/rule/skill dosyalarını her gate koşusunda doğrular.
+# Tarama hedefi fabrika kökü (ROOT); proje kendi .opencode/.cursor taşıyorsa o da.
+set_check frontmatter SKIPPED
+_fm_roots=("$ROOT")
+if [[ "$PROJECT" != "$ROOT" ]] && [[ -d "$PROJECT/.opencode" || -d "$PROJECT/.cursor" ]]; then
+  _fm_roots+=("$PROJECT")
+fi
+_fm_targets=()
+for _r in "${_fm_roots[@]}"; do
+  if [[ -d "$_r/.opencode/agent" || -d "$_r/.cursor/agents" || -d "$_r/.cursor/rules" || -d "$_r/.cursor/skills" || -d "$_r/.opencode/skills" ]]; then
+    _fm_targets+=("$_r")
+  fi
+done
+if [[ ${#_fm_targets[@]} -gt 0 ]]; then
+  check_begin
+  for _r in "${_fm_targets[@]}"; do
+    FM_OUT="$(bash "$ROOT/scripts/web/frontmatter-check.sh" "$_r" 2>&1)" || {
+      while IFS= read -r _l; do
+        [[ -n "$_l" ]] && err "frontmatter: $_l"
+      done <<<"$FM_OUT"
+    }
+  done
+  check_end frontmatter
+fi
+
 # --- 6) Statik analiz + birim test (garantici çekirdek — asimetrik kural) ---
 # phpstan + phpunit ZORUNLUDUR: yapılandırması yoksa o kontrol doğrudan FAIL.
 # Yalnız eslint SKIPPED olabilir (ör. JS'siz proje).

@@ -1,6 +1,7 @@
 ---
 description: Web Domain Architect — proaktif eksik gereksinim denetimi (P1)
 alwaysApply: false
+globs: [".factory/**", "**/*.php", "**/*.sql"]
 ---
 
 # WEB DOMAIN ARCHITECT (Agent 1 · Jev Yönlendirici)

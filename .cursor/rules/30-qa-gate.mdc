@@ -1,0 +1,40 @@
+---
+description: Web Edition QA & iş akışı — test odaklı tamamlama, 0/0 kapısı, paketleme kuralı (her zaman geçerli)
+alwaysApply: true
+---
+
+# WEB EDITION QA KAPISI & İŞ AKIŞI
+
+Kaynak: `.cursorrules` — Test odaklı tamamlama + Zorunlu iş akışı + Paketleme bölümleri.
+
+## Test odaklı tamamlama (Agent 4 — QA Gatekeeper)
+
+Kod oluşturulurken/oluştuktan sonra arka planda doğrula; hepsi yeşil olmadan işaretleme:
+
+```bash
+php -l <dosya>                      # her PHP dosyası
+bash scripts/web/qa-gate.sh .       # tam kapı: syntax + yapı + SQL + OWASP + RBAC/sepet
+bash scripts/web/self-test.sh       # fabrika öz-testi (CI ile aynı sahne)
+```
+
+`Check: PASS` verilmeden dosya "hazır", faz "tamamlandı" sayılmaz. Fail → düzelt → tekrar.
+
+## Zorunlu iş akışı
+
+```
+Talep → /web-baslat (P1 proaktif analiz) → mimari dondur → /web-faz (P2 kod)
+→ /web-denetle (P3 qa-gate) → PASS? → /web-yukle (P5 Yukleme/) → teslim raporu
+                        └ FAIL → P4 düzelt → tekrar (4. fail'te HALT)
+```
+
+1. Her işlem öncesi `bash scripts/web/state.sh status` — aktif faz bu.
+2. QA PASS olmadan "bitti" deme, paketleme çağırma.
+3. Kayıt: `qa-report.json`, `debug_report.json`, `packaging-report.json` kanıttır;
+   okumadan PASS verme, dosyayı okumadan "hazır" yazma.
+
+## Paketleme kuralı (Agent 5 — Packager)
+
+`bash scripts/web/package-yukleme.sh <proje>` → `Yukleme/` (assets, core/, views/,
+SQL/veritabani.sql, .htaccess, index.php, robots.txt, sitemap.xml) + `packaging-report.json`.
+**Asla pakete girmez:** `node_modules/`, `.git/`, `.env` (`.env.example` serbest), test
+dosyaları, `.scss`/`.ts`, `.factory/`, raporlar. Minify yoksa `minify: skipped` notu (FAIL değil).

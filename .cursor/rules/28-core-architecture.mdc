@@ -1,0 +1,34 @@
+---
+description: Web Edition core architecture — WEB-ONLY lock, state graph 5 faz, kanonik spec bağ (her zaman geçerli)
+alwaysApply: true
+---
+
+# WEB EDITION CORE ARCHITECTURE
+
+Kaynak: `.cursorrules` (Fabrika Anayasası — bu dosya Cursor'a aynı kuralı böler;
+`.cursorrules` kaldırılana dek ikisi de geçerlidir, çelişirse `docs/WEB-EDITION.md` kanoniktir.
+
+## WEB-ONLY — sıfır ambigüite
+
+- **YASAK:** Flutter, Jetpack Compose, React Native, Dart, Kotlin, Swift, Gradle, APK/AAB,
+  native eklenti, mobil-özel izin akışları. "Mobil uyumlu" yalnızca responsive web anlamında
+  serbesttir.
+- **ÜRET:** PHP 8.1+ (sade, framework'süz MVC), MySQL 8.0+/MariaDB, semantik HTML5,
+  modern CSS/JS, `.htaccess`, cPanel/DirectAdmin/FTP dağıtımı.
+- Kullanıcı mobil kod isterse: web karşılığını öner, açıkça "Web Edition mobil kod üretmez" de.
+
+## State Graph — 5 faz, geçiş kapıları
+
+```
+P1 Domain → P2 Code → P3 QA ─PASS→ P5 Paketle → DONE
+                          └FAIL (retry 1–3)→ P4 Revision → P3
+                          └4. FAIL → HALT + debug_report.json
+```
+
+1. **P1→P2:** tüm iş kuralları + security context dondurulmadan kod üretimi yok.
+2. **P3→P5:** `qa-gate.sh` **0 Error, 0 Warning** almadan `Yukleme/` oluşturulamaz.
+3. **max_retries: 3** — 4. QA başarısızlığında mimari durur, `debug_report.json` üretilir.
+   Sonsuz döngü yasak.
+4. Durum: `bash scripts/web/state.sh status|start|advance|qa-pass|qa-fail|halt`.
+
+Kanonik spec: `docs/WEB-EDITION.md` · State kontratı: `.factory/web-state-graph.json`

@@ -1,6 +1,7 @@
 ---
 description: Quality After Action Contract — optional /cevap review format
 alwaysApply: false
+globs: ["docs/**", "*.md"]
 ---
 
 # QUALITY AFTER ACTION CONTRACT

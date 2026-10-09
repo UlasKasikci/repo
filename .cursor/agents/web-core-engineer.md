@@ -48,6 +48,10 @@ Sadece şu kaynakları okuyabilirsin (read/grep/glob):
 - `.factory/contracts/*.json`
 - İskelet dizini (`core/`, `views/`, `assets/`, `SQL/`) — sadece VARLIK kontrolü,
   içerik okuma değil
+- **Manifest-onaylı içerik (tamamlama):** `domain-report.json` → `file_manifest`
+  içindeki dosyaların İÇERİĞİNİ okuyabilirsin — scaffold'u sıfırdan yazma, tamamla
+  (Q1 devam modeli). `file_manifest`'te OLMAYAN bir dosyanın içeriği yasaktır;
+  okuma ihtiyacın varsa QUESTIONS.json.
 
 ## Yasak Okuma (spiral riski — imza-b)
 

@@ -180,7 +180,8 @@ Kontroller: `php -l` (tüm PHP dosyaları) · yapısal dosya denetimi · SQL şe
 (P1 artefaktı varsa: module_matrix ≥4, dolu evidence/justification) · **`kvkk`
 kanalı** (intent.compliance=kvkk|gdpr → legal view + consent bileşeni + `user_consents`
 /`anonymization_log`; none/yok → SKIPPED, ayrı kanal) · **statik/test
-üçlüsü** · raporlar.
+üçlüsü** · fabrika **`frontmatter`** kontratı (agent/rule/skill dosyaları;
+K6 istisnası — somut regresyon) · raporlar.
 
 - Çıktılar: `qa-report.json` (her koşuda), `debug_report.json` (yalnız FAIL).
 - `0 Error, 0 Warning` → `Check: PASS` → yalnız o zaman P5.

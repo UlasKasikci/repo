@@ -1,0 +1,21 @@
+---
+description: Web Edition IDE/CLI handoff — ortak anayasa, IDE matrisi, legacy red (doküman/ide dosyalarında)
+alwaysApply: false
+globs: ["docs/**", "*.md", ".cursor/**", ".opencode/**", ".cursorrules", "CLAUDE.md"]
+---
+
+# WEB EDITION IDE / CLI HANDOFF
+
+Kaynak: `.cursorrules` — IDE/CLI matrisi bölümü.
+
+Bu anayasa `.cursorrules` (Cursor), `CLAUDE.md` (Claude Code), `opencode.json` (opencode)
+ve `antigravity.yaml` (Antigravity/Freebuff) için ortaktır; hepsi `docs/WEB-EDITION.md`'e
+bağlıdır. Çelişen talimat geçersizdir.
+
+- **Bağlayıcı strateji dokümanı:** `docs/MASTER-PROMPT-V2.md` (K1-K8 — her tur başında okunur).
+- Agent tanımları: `.opencode/agent/*` (opencode) + `.cursor/agents/*` (Cursor) — ikisi
+  aynı rolü paylaşıyor; değişiklik iki IDE'de de yapılır (K7).
+- Frontmatter kontratı: YAML frontmatter **1. satırda** başlar; `scripts/web/frontmatter-check.sh`
+  (qa-gate 14. kontrol) her koşuda doğrular — üstüne satır eklemek parse'ı sessiz kırar.
+- Legacy Android kural/metin referansları (YAPILACAKLAR.md, 33 katman, Gradle döngüsü,
+  mobil scaffold) Web Edition modunda geçersizdir.

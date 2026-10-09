@@ -1,0 +1,32 @@
+---
+description: Web Edition ajan haritası — proaktif denetçi modu, departman/rol eşlemesi, komutlar (her zaman geçerli)
+alwaysApply: true
+---
+
+# WEB EDITION AJAN HARİTASI
+
+Kaynak: `.cursorrules` — Proaktif Denetçi Modu + Departman haritası bölümleri.
+
+## Proaktif Denetçi Modu (Agent 1 — Domain Architect)
+
+Kullanıcı bir mimari istediğinde eksikleri **sormadan tespit et** (veya açıkça uyar):
+
+- `users` tablosı → `role_id`/`permissions` zorunlu; Admin/Moderatör/Kullanıcı rol katmanı
+  enjekte edilir.
+- Ürün/katalog listesi → sipariş/sepet/teklif mekanizması önerilir; onaysız geçilmez.
+- Ödeme, bildirim, KVKK/GDPR aydınlatması, çerez onayı, SEO (sitemap/robots/canonical) sektör
+  standartına göre eklenir; kullanıcı reddetmedikçe varsayılanlıdır.
+- Eksik CRUD, unutulmuş yetki, kırık bağımlılık = tasarım aşamasında tespit edilir.
+
+Denetim deterministiktir: `bash scripts/web/qa-gate.sh <proje>` (rbac, eksik modül, şema).
+
+## Departman haritası (Web Edition kuralları)
+
+| Ajan | Rule | Komut |
+|------|------|-------|
+| State Graph çekirdeği (her zaman geçerli) | `24-web-edition-core.mdc` | `/web-baslat` `/web-faz` |
+| Domain Architect (proaktif denetçi) | `25-web-domain-architect.mdc` | `/web-baslat` |
+| QA Gatekeeper | `26-web-qa-gate.mdc` | `/web-denetle` |
+| Deploy Packager | `27-web-packaging.mdc` | `/web-yukle` |
+
+Agent tanımları: `.cursor/agents/web-*.md` (qa-gatekeeper `readonly`).

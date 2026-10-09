@@ -520,7 +520,7 @@ run_agent() { # $1=agent $2=prompt $3=phase(P1|P2|P4)
   (cd "$PROJECT" && opencode run --format json --agent "$agent" ${model_args[@]+"${model_args[@]}"} "$prompt") > "$ev" || rc=$?
   end_ms="$(python3 -c 'import time; print(int(time.time() * 1000))')"
   record_agent_metrics "$agent" "$phase" "$rc" "$start_ms" "$end_ms" "$ev" "$model" || true
-  whitelist_scan "$ev" "$phase" || true # A1: P2 okuma taraması — reporter-only WARN
+  whitelist_scan "$ev" "$phase" "$PROJECT" || true # A1: P2 okuma taraması — reporter-only WARN
   if ! budget_check; then
     echo "orkestratör: STRICT bütçe sert aşıldı (2×) — duraklatıldı; yeniden çalıştırarak devam edebilirsin" >&2
     exit 1
@@ -620,21 +620,46 @@ p2_questions_back() { # P2 → P1 (state.sh questions); sonsuz döngü koruması
 # A1 whitelist taraması (reporter-only — asla gate/exit değiştirmez): P2 oturumunda
 # read/grep/glob ile whitelist dışı yol okunduysa WARN bas. Çalıştırma (bash) yasak
 # DEĞİLDİR (php -l / sql-dump.sh / qa-gate.sh çalıştırılır) — yalnız içerik okuma.
-whitelist_scan() { # $1=event dosyası $2=phase
+# A1.x (işaret-2 çözümü — manifest-onaylı içerik): file_manifest'te listelenen
+# dosyalar okunabilir (tamamlama için scaffold içeriği şart — Q1 "devam et" modeli);
+# FORBIDDEN mutlaktır (manifest scripts/web'i beyazlayamaz).
+whitelist_scan() { # $1=event dosyası $2=phase $3=proje kökü (manifest kaynağı)
   [[ "$2" == "P2" ]] || return 0
-  python3 - "$1" <<'PY' || true
+  python3 - "$1" "${3:-}" <<'PY' || true
 import json
 import sys
 
 FORBIDDEN = ("scripts/web/", ".cursor/agents/", ".opencode/agent/",
              "docs/WEB-EDITION.md", ".cursorrules", "CLAUDE.md")
 
+project = sys.argv[2] if len(sys.argv) > 2 else ""
+manifest = set()
+if project:
+    try:
+        rep = json.load(open(project.rstrip("/") + "/.factory/domain-report.json",
+                             encoding="utf-8"))
+        for it in rep.get("file_manifest") or []:
+            p = it.get("path") if isinstance(it, dict) else it
+            if isinstance(p, str) and p:
+                manifest.add(p[2:] if p.startswith("./") else p)
+    except Exception:
+        manifest = set()
+
+
+def norm_name(target):
+    t = target[2:] if target.startswith("./") else target
+    if project and t.startswith(project.rstrip("/") + "/"):
+        t = t[len(project.rstrip("/")) + 1:]
+    return t.lstrip("/") if t.startswith("/") else t
+
 
 def allowed(target):
     norm = target if target.startswith("/") else "/" + target
     if "/.factory/domain-report.json" in norm or "/.factory/contracts/" in norm:
         return True
-    return any(("/%s/" % d) in norm for d in ("core", "views", "assets", "SQL"))
+    if any(("/%s/" % d) in norm for d in ("core", "views", "assets", "SQL")):
+        return True
+    return norm_name(target) in manifest  # manifest-onaylı içerik (tamamlama)
 
 
 def path_like(value):

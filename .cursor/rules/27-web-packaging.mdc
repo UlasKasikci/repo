@@ -1,6 +1,7 @@
 ---
 description: Web Packaging — Yukleme/ ağaç kontratı, build isolation, SQL dump (P5)
 alwaysApply: false
+globs: ["Yukleme/**", "packaging-report.json", "SQL/**", "scripts/web/package-yukleme.sh"]
 ---
 
 # WEB PACKAGING (Agent 5 · Production Deployment & Packager)

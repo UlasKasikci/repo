@@ -1,6 +1,5 @@
 ---
 description: MCP orkestrasyonu — ilk kurulumda zorunlu MCP kontrolü ve ajan-MCP eşlemesi.
-globs: [".cursor/mcp.json", ".cursor/mcp.*", "docs/MCP_SETUP.md"]
 alwaysApply: true
 ---
 # MCP ORKESTRATÖR — Ajan Güçlendirme Katmanı

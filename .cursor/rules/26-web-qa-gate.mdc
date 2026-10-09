@@ -1,6 +1,7 @@
 ---
 description: Web QA Gate — 0 Error 0 Warning kapısı, max_retries 3, HALT semantiği (P3/P4)
 alwaysApply: false
+globs: ["**/*.php", "**/*.sql", "qa-report.json", "debug_report.json"]
 ---
 
 # WEB QA GATE (Agent 4 · Proactive Quality Assurance & Security Gatekeeper)

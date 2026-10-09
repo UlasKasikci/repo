@@ -23,7 +23,7 @@ Hedef: ortalama proje 14M token → 3-4M token. <1M bir ütopyadır, kovalanmaz.
 1. 14M token'ın çoğu "yeniden üretim"dir (KVKK bloğu, admin CRUD, auth).
    Bu bir denetim problemi DEĞİL, yeniden kullanım problemidir.
 2. Denetim katmanları zaten freelance ihtiyacın ÜSTÜNDE:
-   13 QA kontrol, smoke, SQL drift, KVKK kanalı, doc-code drift.
+   14 QA kontrol, smoke, SQL drift, KVKK kanalı, doc-code drift.
    %100'e çıkarmak marjinal hata yakalar, orantısız token yakar.
 3. JEV'in değeri tam burada: "denetim yerine" değil, "denetim varken tasarruf".
    Denetim aynı kalır; hangi ajanın hangi modelle/bağlamla çalıştığı optimize edilir.
@@ -41,7 +41,7 @@ Hedef: ortalama proje 14M token → 3-4M token. <1M bir ütopyadır, kovalanmaz.
 ### Kanıtlanmış Bileşenler
 - State graph: P1→P2→P3→P5, max_retries:3, idempotent devam (E2E-2)
 - 5 ajan, ayrık oturumlar (B1 fix, mode:primary, fallback=0)
-- QA gate: 13 kontrol, asimetrik çekirdek (phpstan∧phpunit zorunlu)
+- QA gate: 14 kontrol, asimetrik çekirdek (phpstan∧phpunit zorunlu)
 - Paketleme: staging → smoke → arşiv → atomik takas + MANIFEST.json
 - SQL dump drift kontrolü, KVKK koşullu modül, doc-code drift
 - Model routing (Faz 1.1): MODEL_MAP + model_used + env override
@@ -179,8 +179,8 @@ Bir yaklaşım başarısız olduysa, dosyayı silme — `REVIEW-NOTES`'a
 | Metrik | Hedef |
 |--------|-------|
 | Net token tasarrufu | ≥0 (tur tasarruf üretmeli, sıfır kabul; negatif YASAK) |
-| Denetim kapsamı | Değişmemeli (13 QA kontrol + smoke + drift) |
-| Self-test | 24/24 PASS (kırılma yok) |
+| Denetim kapsamı | Değişmemeli (14 QA kontrol + smoke + drift) |
+| Self-test | 28/28 PASS (kırılma yok) |
 | CI | Yeşil |
 
 ### Proje Başına (3-6 ay)

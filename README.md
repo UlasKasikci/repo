@@ -1,7 +1,7 @@
 # App-Fabrika Web Edition
 
 **Freelance web projesi üretim fabrikası:** deterministik state graph, 5 ajanlı
-denetim, IDE-agnostik kontratlar ve 13 kontrollü QA gate ile PHP/MySQL projelerini
+denetim, IDE-agnostik kontratlar ve 14 kontrollü QA gate ile PHP/MySQL projelerini
 tek komutla üretir.
 
 Eksik CRUD, unutulan RBAC, kırık bağımlılık ve token israfı problemlerini çözer:
@@ -10,7 +10,7 @@ her proje aynı kapılardan geçer — domain analizi → kod → QA → paketle
 
 [![CI](https://github.com/clariongemini/APP-FABRIKA/actions/workflows/validate.yml/badge.svg)](https://github.com/clariongemini/APP-FABRIKA/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![self-test](https://img.shields.io/badge/self--test-24%2F24%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
+[![self-test](https://img.shields.io/badge/self--test-28%2F28%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
 
 ---
 
@@ -20,7 +20,7 @@ her proje aynı kapılardan geçer — domain analizi → kod → QA → paketle
 |---------|-------|
 | Her projeye sıfırdan başlama | `bootstrap-project.sh` + iskelet kopyalama |
 | Eksik CRUD / unutulan RBAC / kayıp KVKK | P1 proaktif domain denetimi (module_matrix kapısı) |
-| Kırık bağımlılık, sessiz hata | QA gate: 13 kontrol, 0 Error / 0 Warning zorunlu |
+| Kırık bağımlılık, sessiz hata | QA gate: 14 kontrol, 0 Error / 0 Warning zorunlu |
 | Token israfı (14M/proje) | model routing, batch yazma, watchdog; hedef 3-4M |
 | IDE kilitlenmesi | IDE-agnostik kontratlar (`.factory/contracts`) |
 
@@ -71,7 +71,7 @@ Tek ajan onayı yasaktır: P1→P2 yalnız domain raporuyla, P3→P5 yalnız QA 
 ```text
 ┌─ Kontratlar ── .factory/contracts/*.schema.json (P1/P3/P5 artefakt doğrulama)
 ├─ Ajanlar ───── .cursor/agents/ + .opencode/agent/ + .cursorrules + CLAUDE.md
-├─ QA Gate ───── scripts/web/qa-gate.sh (13 kontrol, 0 Error 0 Warning)
+├─ QA Gate ───── scripts/web/qa-gate.sh (14 kontrol, 0 Error 0 Warning)
 └─ Paketleme ─── scripts/web/package-yukleme.sh (staging → smoke → arşiv → takas)
 ```
 
@@ -86,6 +86,7 @@ app-fabrika/
 │   └── agents/               # 5 ajan tanımı
 ├── .opencode/                # OpenCode CLI config
 │   ├── agent/                # 5 ajan tanımı (paralel)
+│   ├── skills/               # Modül iskeletleri (kvkk-compliance, admin-crud, auth-rbac)
 │   └── command/              # Slash komutlar (/web-baslat, /web-denetle, ...)
 ├── .factory/                 # Runtime state (proje-başına)
 │   ├── contracts/            # p1/p3/p5 JSON şemaları
@@ -97,7 +98,8 @@ app-fabrika/
 ├── scripts/web/              # Orkestrasyon
 │   ├── orchestrate.sh        # Faz sürücüsü (--auto / --strict)
 │   ├── state.sh              # State geçişleri (start/advance/qa-pass/qa-fail)
-│   ├── qa-gate.sh            # 13 kontrol
+│   ├── qa-gate.sh            # 14 kontrol
+│   ├── frontmatter-check.sh  # Frontmatter kontratı (qa-gate 14. kontrol)
 │   ├── package-yukleme.sh    # Paketleme (staging → smoke → arşiv → takas)
 │   ├── smoke-test.sh         # php -S + curl canlı doğrulama
 │   ├── sql-dump.sh           # Deterministik SQL dump (drift'e karşı)
@@ -135,7 +137,7 @@ git clone https://github.com/clariongemini/APP-FABRIKA.git && cd APP-FABRIKA
 composer global require phpstan/phpstan phpunit/phpunit
 
 # fabrika kendini sınamalı
-bash scripts/web/self-test.sh          # hedef: 24/24 PASS
+bash scripts/web/self-test.sh          # hedef: 28/28 PASS
 ```
 
 ### Yeni proje
@@ -192,7 +194,7 @@ bash scripts/web/state.sh status         # aktif faz
 
 ---
 
-## QA Gate — 13 Kontrol
+## QA Gate — 14 Kontrol
 
 `bash scripts/web/qa-gate.sh <proje>` → **0 Error, 0 Warning** zorunlu.
 
@@ -211,6 +213,7 @@ bash scripts/web/state.sh status         # aktif faz
 | 11 | `kvkk` | intent=kvkk\|gdpr → legal view + consent + 2 tablo | Eksik (none → SKIPPED) |
 | 12 | `domain_report` | P1 artefaktı: module_matrix ≥4, dolu evidence/justification | Şablon/uydurma kanıt |
 | 13 | `static_coverage` | `phpstan ∧ phpunit` | Aksi her koşulda FAIL |
+| 14 | `frontmatter` | Fabrika agent/rule/skill frontmatter kontratı (`mode`/`permission`/`globs`/K1-K8 ref) | Ref üstte, dead rule, eksik alan (K6 istisnası — somut regresyon) |
 
 Çıktılar: `qa-report.json` (her koşuda) · `debug_report.json` (yalnız FAIL).
 
@@ -243,10 +246,14 @@ Yukleme/
 
 ## Yol Haritası
 
-### v1 — Starter Kit (Şimdi) · %80
+### v1 — Starter Kit (Şimdi) · %90
 
-- Bootstrap + üç IDE config + QA gate (13) + paketleme + self-test (24)
-- **Kalan:** A1 araştırma yasağı + A2 spike→write zorlaması (v1 kapanışı)
+- Bootstrap + üç IDE config + QA gate (14) + paketleme + self-test (28)
+- **Tamamlandı:** A1 okuma yasağı + QUESTIONS kapısı (`e946064`) + A2 spike→write
+  (`801dbef`) + frontmatter kontratı + manifest-onaylı whitelist + `.cursor/rules`
+  5 mdc + `.opencode/skills` iskeleti (hazırlık turu)
+- **Kalan:** temiz E2E ile doğrulama — kabul: att≤2 · P2 token ≤ E2E-3×0.7 · iskelet tam
+  (aynı intent `2e4816…`; gözlem: manifest kullanımı, whitelist WARN, spike→write)
 - Gerekçe: 3/3 ardışık L3 kill — A1/A2 olmadan P2 tamamlanamıyor
   (kanıt: `.factory/e2e-runs/20261009-005625Z-faz14/`)
 
@@ -285,7 +292,7 @@ Tam metin: [`docs/MASTER-PROMPT-V2.md`](docs/MASTER-PROMPT-V2.md)
 
 ## Katkı
 
-1. Issue aç veya PR gönder — PR'da `bash scripts/web/self-test.sh` **24/24 PASS**
+1. Issue aç veya PR gönder — PR'da `bash scripts/web/self-test.sh` **28/28 PASS**
    ve CI yeşil olmalı.
 2. Yeni QA kontrolü yalnız somut bir bug raporuyla eklenir (K6).
 3. Doküman güncellemeleri kanıttan türetilir (K5).

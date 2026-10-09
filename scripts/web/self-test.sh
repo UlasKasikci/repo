@@ -23,7 +23,9 @@ set -euo pipefail
 # ölüm regresyonu; state.sh kanal kontratı: rc=1 + stdout boş + stderr mesaj) →
 # att0-0-write watchdog (L3): P2 idle'da TERM + aktif yazımda false-positive yok →
 # A1 QUESTIONS.json exit gate (P2 soru → P2→P1 dönüşü + P1 yanıtı tüketir) →
-# A1 whitelist read scan (whitelist dışı read → WARN, reporter-only) — 26 senaryo
+# A1 whitelist read scan (whitelist dışı read → WARN, reporter-only) →
+# frontmatter validator (kırık imza → standalone FAIL + qa-gate 14. kontrol FAIL) +
+# manifest-onaylı okuma (file_manifest yolu sessiz, manifest dışı WARN) — 28 senaryo
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FIX="$ROOT/tests/fixtures/web-sample"
@@ -53,41 +55,18 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 step "0) bash -n söz dizimi + python söz dizimi"
-for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh bootstrap-project.sh smoke-test.sh; do
+for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh bootstrap-project.sh smoke-test.sh frontmatter-check.sh; do
   bash -n "$ROOT/scripts/web/$s" || die "bash -n: $s"
   echo "    OK: $s"
 done
 python3 -m py_compile "$ROOT/scripts/web/domain-check.py" || die "py_compile: domain-check.py"
 echo "    OK: domain-check.py"
 
-# Ajan frontmatter kontratı: opencode/cursor YAML frontmatter dosyanın 1. SATIRINDA
-# başlamalı. Üstüne eklenen satır (örn. K1-K8 referansı) parse'ı sessizce kırar —
-# A/B kanıtı: ref frontmatter üstünde → mode=None + qa-gatekeeper edit:deny kaybı.
-python3 - "$ROOT" <<'PY' || die "ajan frontmatter kontratı"
-import glob
-import os
-import sys
-
-root = sys.argv[1]
-bad = []
-checked = 0
-for path in sorted(glob.glob(os.path.join(root, ".opencode", "agent", "*.md"))
-                   + glob.glob(os.path.join(root, ".cursor", "agents", "*.md"))):
-    head = open(path, encoding="utf-8").read(8000)
-    lines = head.split("\n")
-    # frontmatter var mı: ilk 5 satırda açılış --- ve ilk 20 satırda kapanış ---
-    if "---" not in lines[:5]:
-        continue
-    checked += 1
-    if lines[0] != "---":
-        bad.append(os.path.relpath(path, root))
-if bad:
-    print("frontmatter 1. satırda değil (parse kırılır):", file=sys.stderr)
-    for b in bad:
-        print("  " + b, file=sys.stderr)
-    sys.exit(1)
-print("    OK: %d ajan dosyası — frontmatter 1. satırda" % checked)
-PY
+# Frontmatter kontratı — qa-gate 14. kontrol ile AYNI tek doğruluk kaynağı
+# (scripts/web/frontmatter-check.sh): opencode/cursor YAML frontmatter dosyanın
+# 1. SATIRINDA başlamalı; üstüne eklenen satır (örn. K1-K8 ref) parse'ı sessiz
+# kırar (A/B kanıtı: ref üstte → mode=None, qa-gatekeeper edit:deny kaybı).
+bash "$ROOT/scripts/web/frontmatter-check.sh" "$ROOT" || die "frontmatter kontratı"
 
 if [[ ! -d "$FIX" ]]; then
   echo
@@ -1443,6 +1422,111 @@ if grep -q "domain-report.json" <<<"$(grep 'UYARI (A1 whitelist)' <<<"$OUT26" ||
 fi
 grep -q '"current_phase": "P2"' "$M26/.factory/web-state.json" || die "state P2'de kalmalı (reporter-only)"
 echo "    whitelist dışı read → WARN (qa-gate.sh); whitelist içi domain-report sessiz; rc=3 + state değişmedi"
+
+step "27) frontmatter validator: kırık imza → standalone FAIL + qa-gate 14. kontrol FAIL"
+# (a) doğrudan doğrulayıcı — regresyon kalıbı (ref 1. satır, --- 2. satır)
+FMBAD="$TMP/fmbad/.opencode/agent"
+mkdir -p "$FMBAD"
+cat > "$FMBAD/_broken.md" <<'MD'
+> Bu ajan docs/MASTER-PROMPT-V2.md'deki K1-K8 kurallarına tabidir.
+---
+description: bozuk regresyon örneği
+mode: primary
+---
+# bozuk
+MD
+rc="$(run_rc bash "$ROOT/scripts/web/frontmatter-check.sh" "$TMP/fmbad")"
+[[ "$rc" == "1" ]] || die "kırık frontmatter validator 1 vermeli, gelen $rc"
+FMBAD_OUT="$(bash "$ROOT/scripts/web/frontmatter-check.sh" "$TMP/fmbad" 2>&1 || true)"
+grep -q "_broken.md" <<<"$FMBAD_OUT" \
+  || die "ihlal dosyası (_broken.md) raporlanmadı"
+# (b) qa-gate entegrasyonu — fabrika köküne kırık dosya enjekte et → gate FAIL
+M27="$TMP/mp27"
+cp -R "$FIX" "$M27"
+BAD="$ROOT/.opencode/agent/_zbad.md"
+cat > "$BAD" <<'MD'
+> Bu ajan docs/MASTER-PROMPT-V2.md'deki K1-K8 kurallarına tabidir.
+---
+description: qa-gate entegrasyon testi
+mode: primary
+---
+MD
+rc=0
+bash "$QA" "$M27" >/dev/null 2>&1 || rc=$?
+rm -f "$BAD"   # assert'ten önce temizlik — kırık dosya asla commit edilmez
+[[ "$rc" == "1" ]] || { cat "$M27/qa-report.json" 2>/dev/null; die "enjeksiyonla qa-gate FAIL beklenen 1, gelen $rc"; }
+python3 - "$M27/qa-report.json" <<'PY' || die "qa-gate frontmatter=FAIL vermedi"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["result"] == "FAIL", r["result"]
+assert r["checks"].get("frontmatter") == "FAIL", r["checks"].get("frontmatter")
+assert any(e.startswith("frontmatter:") for e in r["errors"]), r["errors"][:5]
+PY
+# (c) enjeksiyon temizlendi → validator tekrar PASS (kanıt: kapı temizde açık)
+bash "$ROOT/scripts/web/frontmatter-check.sh" "$ROOT" >/dev/null \
+  || die "enjeksiyon sonrası temiz repo'da validator PASS vermeli"
+echo "    kırık imza → validator rc=1 · qa-gate frontmatter=FAIL · temiz repo PASS"
+
+step "28) manifest-onaylı okuma: file_manifest yolu sessiz, manifest dışı WARN"
+M28="$TMP/mp28"
+cp -R "$FIX" "$M28"
+rm -rf "$M28/core" "$M28/views" "$M28/SQL"
+rm -f "$M28/.factory/metrics.jsonl" "$M28/.factory/web-state.json"
+cat > "$M28/.factory/domain-report.json" <<'JSON'
+{
+  "file_manifest": [
+    {"path": "index.php", "purpose": "front-controller"}
+  ]
+}
+JSON
+bash "$STATE" start "$M28" >/dev/null
+bash "$STATE" advance "$M28" >/dev/null # P1 → P2
+STUB8="$TMP/ocbin8"
+mkdir -p "$STUB8"
+cat > "$STUB8/opencode" <<'STUB'
+#!/usr/bin/env bash
+python3 - <<'PYF'
+import json, time
+now = int(time.time() * 1000)
+evs = [
+    {"type": "step_start", "timestamp": now, "sessionID": "ses_manifest1",
+     "part": {"type": "step-start"}},
+    {"type": "tool", "timestamp": now + 2, "sessionID": "ses_manifest1",
+     "part": {"type": "tool", "tool": "read",
+              "state": {"input": {"filePath": "index.php"}}}},
+    {"type": "tool", "timestamp": now + 3, "sessionID": "ses_manifest1",
+     "part": {"type": "tool", "tool": "read",
+              "state": {"input": {"filePath": "NOTES.md"}}}},
+    {"type": "tool", "timestamp": now + 4, "sessionID": "ses_manifest1",
+     "part": {"type": "tool", "tool": "read",
+              "state": {"input": {"filePath": ".factory/domain-report.json"}}}},
+    {"type": "text", "timestamp": now + 5, "sessionID": "ses_manifest1",
+     "part": {"type": "text", "text": "WL-MANIFEST (stub)",
+              "time": {"start": now, "end": now + 5}}},
+    {"type": "step_finish", "timestamp": now + 6, "sessionID": "ses_manifest1",
+     "part": {"type": "step-finish", "reason": "stop",
+              "tokens": {"total": 9, "input": 6, "output": 3, "reasoning": 0,
+                         "cache": {"write": 0, "read": 0}},
+              "cost": 0}},
+]
+for e in evs:
+    print(json.dumps(e))
+PYF
+STUB
+chmod +x "$STUB8/opencode"
+rc=0
+OUT28="$(env PATH="$STUB8:$PATH" bash "$ORCH" "$M28" --auto 2>&1)" || rc=$?
+[[ "$rc" == "3" ]] || die "manifest senaryosu gate'i etkilememeli (iskelet eksik → rc3), gelen $rc"
+WARN28="$(grep 'UYARI (A1 whitelist)' <<<"$OUT28" || true)"
+grep -q "NOTES.md" <<<"$WARN28" || die "manifest dışı NOTES.md WARN olarak basılmadı"
+if grep -q "index.php" <<<"$WARN28"; then
+  die "manifest-onaylı index.php yanlışlıkla WARN oldu (false-positive)"
+fi
+if grep -q "domain-report.json" <<<"$WARN28"; then
+  die "whitelist içi domain-report yanlışlıkla WARN oldu (false-positive)"
+fi
+grep -q '"current_phase": "P2"' "$M28/.factory/web-state.json" || die "state P2'de kalmalı (reporter-only)"
+echo "    manifest-onaylı read sessiz · manifest dışı NOTES.md WARN · rc=3 + state değişmedi"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"
