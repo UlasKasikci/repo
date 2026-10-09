@@ -25,7 +25,7 @@ set -euo pipefail
 # A1 QUESTIONS.json exit gate (P2 soru → P2→P1 dönüşü + P1 yanıtı tüketir) →
 # A1 whitelist read scan (whitelist dışı read → WARN, reporter-only) →
 # frontmatter validator (kırık imza → standalone FAIL + qa-gate 14. kontrol FAIL) +
-# manifest-onaylı okuma (file_manifest yolu sessiz, manifest dışı WARN) — 28 senaryo
+# manifest-onaylı okuma (file_manifest yolu sessiz, manifest dışı WARN) — 29 senaryo
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FIX="$ROOT/tests/fixtures/web-sample"
@@ -1527,6 +1527,60 @@ if grep -q "domain-report.json" <<<"$WARN28"; then
 fi
 grep -q '"current_phase": "P2"' "$M28/.factory/web-state.json" || die "state P2'de kalmalı (reporter-only)"
 echo "    manifest-onaylı read sessiz · manifest dışı NOTES.md WARN · rc=3 + state değişmedi"
+
+step "29) L3 reasoning-stream sinyali (K1): dolu stream'de kill YOK, boş stream'de kill VAR"
+WD29="$ROOT/scripts/web/e2e-driver.sh"
+[[ -x "$WD29" ]] || die "e2e-driver.sh yok/çalıştırılabilir değil"
+# A: reasoning stream dolu — ev file'a NDJSON event ekleniyor, proje dosyası YAZMAZ
+# → watchdog 12s'de kill YAPMAMALI (stream sinyali aktif, K1: reasoning idle-kill yasak)
+MP29A="$TMP/mp29a"
+mkdir -p "$MP29A/.factory"
+python3 -c "import json; json.dump({'current_phase':'P2','status':'in_progress'}, open('$MP29A/.factory/web-state.json','w'))"
+EV29A="$TMP/mp29a-ev.ndjson"
+printf '%s' "$EV29A" > "$MP29A/.factory/e2e-last-ev"
+( i=0; while [[ $i -lt 20 ]]; do printf '{"type":"text","text":"reasoning chunk %d"}\n' "$i" >> "$EV29A"; i=$((i+1)); sleep 1; done ) &
+TID29A=$!
+bash "$WD29" --watchdog "$MP29A" "$TID29A" 5 2> "$TMP/mp29a-err.txt" &
+WPID29A=$!
+sleep 12
+alive29a=0
+kill -0 "$WPID29A" 2>/dev/null && alive29a=1
+kill -TERM "$WPID29A" 2>/dev/null || true
+wait "$WPID29A" 2>/dev/null || true
+kill -TERM "$TID29A" 2>/dev/null || true
+wait "$TID29A" 2>/dev/null || true
+[[ "$alive29a" == "1" ]] || die "watchdog: reasoning stream doluyken erken kapandı (K1 ihlali — false kill)"
+if grep -q "WATCHDOG" "$TMP/mp29a-err.txt"; then
+  die "watchdog: reasoning stream doluyken tetiklendi (false-positive)"
+fi
+# B: stream boş — ev file'a HİÇ event yazılmıyor → idle_max'da kill VAR
+MP29B="$TMP/mp29b"
+mkdir -p "$MP29B/.factory"
+python3 -c "import json; json.dump({'current_phase':'P2','status':'in_progress'}, open('$MP29B/.factory/web-state.json','w'))"
+EV29B="$TMP/mp29b-ev.ndjson"
+: > "$EV29B"
+printf '%s' "$EV29B" > "$MP29B/.factory/e2e-last-ev"
+sleep 30 & TID29B=$!
+bash "$WD29" --watchdog "$MP29B" "$TID29B" 2 2> "$TMP/mp29b-err.txt" &
+WPID29B=$!
+rc29b=0
+for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+  kill -0 "$WPID29B" 2>/dev/null || break
+  sleep 1
+done
+if kill -0 "$WPID29B" 2>/dev/null; then
+  kill -TERM "$WPID29B" 2>/dev/null || true
+  wait "$WPID29B" 2>/dev/null || true
+  kill -TERM "$TID29B" 2>/dev/null || true
+  wait "$TID29B" 2>/dev/null || true
+  die "watchdog: boş stream'de idle kill tetiklenmedi (15s'te bitmedi)"
+fi
+wait "$WPID29B" 2>/dev/null || rc29b=$?
+[[ "$rc29b" == "143" ]] || { kill -TERM "$TID29B" 2>/dev/null || true; die "watchdog: boş stream idle kill → rc143 beklenir, gelen $rc29b"; }
+grep -q "WATCHDOG" "$TMP/mp29b-err.txt" || die "WATCHDOG log satırı basılmadı (boş stream)"
+kill -0 "$TID29B" 2>/dev/null && { kill -TERM "$TID29B" 2>/dev/null || true; die "watchdog: boş stream hedefi öldürmedi"; }
+wait "$TID29B" 2>/dev/null || true
+echo "    dolu reasoning stream'de kill YOK (K1) · boş stream'de idle kill VAR (rc=143)"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

@@ -514,6 +514,8 @@ run_agent() { # $1=agent $2=prompt $3=phase(P1|P2|P4)
   echo "==> opencode agent: $agent ($phase)${model:+ [model=$model]}"
   local ev rc=0 start_ms end_ms
   ev="$(mktemp)"
+  # K1 genişletmesi (Tur 2-2): watchdog için stream sinyali — ev yolunu proje-factory'e yaz
+  printf '%s' "$ev" > "$PROJECT/.factory/e2e-last-ev"
   start_ms="$(python3 -c 'import time; print(int(time.time() * 1000))')"
   CURRENT_EV="$ev" CURRENT_AGENT="$agent" CURRENT_PHASE="$phase" CURRENT_START_MS="$start_ms" CURRENT_MODEL="$model"
   # --model prompt'tan ÖNCE (self-test stub'ı son argümanı prompt sayar); boşta --model verilmez.
@@ -527,7 +529,7 @@ run_agent() { # $1=agent $2=prompt $3=phase(P1|P2|P4)
   fi
   CURRENT_EV=""
   CURRENT_MODEL=""
-  rm -f "$ev"
+  rm -f "$ev" "$PROJECT/.factory/e2e-last-ev"
   return "$rc"
 }
 

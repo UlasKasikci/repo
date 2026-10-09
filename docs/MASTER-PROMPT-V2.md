@@ -53,7 +53,7 @@ Hedef: ortalama proje 14M token → 3-4M token. <1M bir ütopyadır, kovalanmaz.
 | imza | oran | kök neden | doğru tedavi |
 |------|------|-----------|--------------|
 | (a) CLI stall | 1/4 | altyapı | no-progress watchdog 60-120s |
-| (b) 0-write spiral | 2/4 | terminal reasoning | araştırma yasağı + spike→write zorlaması |
+| (b) 0-write spiral | 2/4 | terminal reasoning | araştırma yasağı + ilk-write duvar-saati (A2') |
 | (c) partial-write + spike | 1/4 | üretken ama eksik | "başladıysan bitir" (kesme değil) |
 
 (b) ve (c) aynı yüzeyi (reasoning spike) paylaşır. Ayrım sinyali:
@@ -110,10 +110,20 @@ Kapı: "tek paket sığar" hedefi için ölçülebilir kanıt.
 
 ## 4. Değişmez Kurallar (Deneyimden)
 
-### K1 — Hard-kill YASAK (imza-c için)
+### K1 — Hard-kill YASAK (imza-c için; Tur 2-2 genişletmesi)
 Reasoning spike'ta hard kill = üretken attempt'i öldürmek.
 E2E-3 att0'ın 55.4k/79k spike'ları 18 write üretti; 20k hard-kill olsaydı hepsi ölürdü.
 Doğru: "spike sonrası ilk write'ı zorla", kesme değil.
+
+**Genişletme (Tur 2-2):** Reasoning sırasında **idle-kill de YASAK.** Tur 2'de L3,
+P2'yi 6/6 kez idle öldürdü — çünkü L3 idle sinyali "son tool çağrısı ne zamandı" idi;
+model reasoning yaptığı için tool çağırmıyor, L3 bunu "idle" sanıp kill etti.
+Yani L3, pratikte bir reasoning-kill aracıydı — K1'in kör noktası.
+- Eski sinyal: son tool çağrısı ne zaman (yanlış — reasoning'i idle sayar).
+- Yeni sinyal: **son non-empty output** (event stream'den). Boş reasoning stream'i
+  idle sayılır; dolu reasoning stream'i (text/tool/reasoning event'i geliyorsa) idle
+  DEĞİL. Kill yalnızca: (tool çağrısı yok) VE (stream 60s+ boş) VE (toplam idle_max+).
+Bu hem Tur 2'nin hem gelecekteki JEV (v2) karmaşık reasoning'inin altyapı güvencesidir.
 
 ### K2 — İmza-bazlı tedavi (yüzey değil kök)
 Aynı görünen spike (b)'de ölü, (c)'de canlı. Tek eşikle ikisine müdahale etmek
@@ -180,7 +190,7 @@ Bir yaklaşım başarısız olduysa, dosyayı silme — `REVIEW-NOTES`'a
 |--------|-------|
 | Net token tasarrufu | ≥0 (tur tasarruf üretmeli, sıfır kabul; negatif YASAK) |
 | Denetim kapsamı | Değişmemeli (14 QA kontrol + smoke + drift) |
-| Self-test | 28/28 PASS (kırılma yok) |
+| Self-test | 29/29 PASS (kırılma yok) |
 | CI | Yeşil |
 
 ### Proje Başına (3-6 ay)
@@ -240,14 +250,17 @@ Bir turun konusu, o anki baskın imzaya göre seçilir.
 Baskın imza = son N koşuda en sık görülen.
 
 - Şu an: (a) 3/3 → ÖNCELİK A1 (araştırma yasağı) + EK2 (no-progress watchdog)
-- Sonra: (b) baskınsa → A2 (spike→write) + reasoning tavanı
+- Sonra: (b) baskınsa → A2' (ilk-write duvar-saati) + reasoning tavanı
 - Sonra: (c) baskınsa → "scaffold varsa tamamla" kuralı (zaten yazıldı)
 
 ### v1 tamamlama kapsamı (bu tur / sıradaki tur)
 Aynı imzaya (b) hizmet ettikleri için birlikte:
 - **A1 — araştırma yasağı:** P2 ajanı yalnız whitelist kaynakları okur
   (domain-report + contracts + iskelet); çıkış kapısı `contracts/QUESTIONS.json`.
-- **A2 — spike→write zorlaması:** reasoning spike'ından sonra ilk write'ı
-  zorla; kesme yok (K1). P2 tamamlanmadan JEV'e (v2) geçilmez — JEV routing
-  "tek attempt'te temiz P2" varsayar; kanıt (3/3 kill) P2'nin attemptsiz
-  tamamlanamadığını gösteriyor.
+- **A2' — ilk-write duvar-saati (A2 revizyonu, Tur 2-2):** İlk 3 tool çağrısı içinde
+  EN AZ 1 write — mutlak duvar-saati, todowrite tetikleyicisine bağlı değil
+  (Tur 2 kanıtı: todo çağıran 2/6 oturumda bile write=0). Kesme yok (K1). Ayrıca P2
+  prompt'una tek-bash `cat` affordance'ı (truncation döngüsü kırılır — Tur2 att6).
+  P2 tamamlanmadan JEV'e (v2) geçilmez — JEV routing
+  "tek attempt'te temiz P2" varsayar; Tur 2 kanıtı (6/6 0-write kill) P2'nin
+  attemptsiz tamamlanamadığını gösteriyor.

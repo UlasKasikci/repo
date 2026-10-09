@@ -10,7 +10,7 @@ her proje aynı kapılardan geçer — domain analizi → kod → QA → paketle
 
 [![CI](https://github.com/clariongemini/APP-FABRIKA/actions/workflows/validate.yml/badge.svg)](https://github.com/clariongemini/APP-FABRIKA/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![self-test](https://img.shields.io/badge/self--test-28%2F28%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
+[![self-test](https://img.shields.io/badge/self--test-29%2F29%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
 
 ---
 
@@ -106,7 +106,7 @@ app-fabrika/
 │   ├── bootstrap-project.sh  # Yeni proje başlatma
 │   ├── e2e-driver.sh         # E2E driver + idle watchdog (L3)
 │   ├── lighthouse-verify.sh  # Lighthouse (raporlayıcı, opsiyonel)
-│   └── self-test.sh          # 24 senaryo
+│   └── self-test.sh          # 29 senaryo
 ├── docs/                     # Kanonik dokümanlar
 │   ├── WEB-EDITION.md        # Teknik spesifikasyon
 │   ├── MASTER-PROMPT-V2.md   # Stratejik karar + K1-K8
@@ -137,7 +137,7 @@ git clone https://github.com/clariongemini/APP-FABRIKA.git && cd APP-FABRIKA
 composer global require phpstan/phpstan phpunit/phpunit
 
 # fabrika kendini sınamalı
-bash scripts/web/self-test.sh          # hedef: 28/28 PASS
+bash scripts/web/self-test.sh          # hedef: 29/29 PASS
 ```
 
 ### Yeni proje
@@ -248,7 +248,7 @@ Yukleme/
 
 ### v1 — Starter Kit (Şimdi) · %90
 
-- Bootstrap + üç IDE config + QA gate (14) + paketleme + self-test (28)
+- Bootstrap + üç IDE config + QA gate (14) + paketleme + self-test (29)
 - **Tamamlandı:** A1 okuma yasağı + QUESTIONS kapısı (`e946064`) + A2 spike→write
   (`801dbef`) + frontmatter kontratı + manifest-onaylı whitelist + `.cursor/rules`
   5 mdc + `.opencode/skills` iskeleti (hazırlık turu)
@@ -292,7 +292,7 @@ Tam metin: [`docs/MASTER-PROMPT-V2.md`](docs/MASTER-PROMPT-V2.md)
 
 ## Katkı
 
-1. Issue aç veya PR gönder — PR'da `bash scripts/web/self-test.sh` **28/28 PASS**
+1. Issue aç veya PR gönder — PR'da `bash scripts/web/self-test.sh` **29/29 PASS**
    ve CI yeşil olmalı.
 2. Yeni QA kontrolü yalnız somut bir bug raporuyla eklenir (K6).
 3. Doküman güncellemeleri kanıttan türetilir (K5).

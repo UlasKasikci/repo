@@ -75,14 +75,16 @@ listesi, şema detayı): kodu tahmin edip yazma — `.factory/contracts/QUESTION
 dosyayı görürse P2→P1 döner; P1 soruları domain-report'a yanıtlar ve dosyayı tüketir.
 
 
-## Spike→Write Kuralı (A2 — imza-b)
+## İlk-Write Duvar-Saati Kuralı (A2' — imza-b revizyonu, Tur 2-2)
 
-- todowrite sonrası EN FAZLA 3 tool çağrısı içinde ilk write başlamalı.
-- Reasoning'in 20k karakteri geçtiyse, BİR SONRAKİ tool çağrın write olmalı.
-- Spike'ın kendisi sorun DEĞİL — E2E-3 att0: 55k/79k spike → 18 write üretken.
-  Sorun spike SONRASI write'ın gelmemesi (ab1: 121.8k spike → 0 write).
-- Bu bir hız kuralıdır, kesme/hard-kill DEĞİLDİR (K1) — watchdog zaten idle ile
-  çalışır, reasoning uzunluğuyla değil.
+- **İlk 3 tool çağrısı içinde EN AZ 1 write/edit ile dosya yaz — mutlak duvar-saati.**
+  todowrite'a bağlı DEĞİL; todo çağırsan da çağırmasan da kural işler.
+- Reasoning spike'ı beklemek/dalmak YASAK; spike gelmeden ilk write'ı bas.
+  E2E-3 att0 kanıtı: 55k/79k spike → 18 write (üretken). Tur2 kanıtı: 6/6 oturum
+  0-write → hepsi L3 idle kill (ölü).
+- **ÇOK DOSYA OKUMA:** tek bash çağrısında `cat dosya1 dosya2 ...` — read tool ile
+  bölme; truncation "tam raporu alamadım" döngüsü yaratır (Tur2 att6).
+- Bu bir hız kuralıdır, kesme/hard-kill DEĞİLDİR (K1 — reasoning idle-kill de yasak).
 
 ## Zorunlu kapanış
 
