@@ -15,6 +15,9 @@
     "edge_cases",
     "security_context",
     "sql_draft",
+    "file_manifest",
+    "acceptance_criteria",
+    "api_endpoints",
     "result"
   ],
   "additionalProperties": true,
@@ -27,11 +30,11 @@
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["name"],
+        "required": ["name", "fields"],
         "additionalProperties": true,
         "properties": {
           "name": { "type": "string", "minLength": 1 },
-          "fields": { "type": "array", "items": { "type": "string" } }
+          "fields": { "type": "array", "minItems": 1, "items": { "type": "string" } }
         }
       }
     },
@@ -95,6 +98,40 @@
         },
         "seed_rows": { "type": "integer", "minimum": 0 }
       }
+    },
+    "file_manifest": {
+      "type": "array",
+      "minItems": 1,
+      "description": "P2'nin üreteceği hedef dosyalar (A1 whitelist gerekçesi: P2 dosya listesini tahmin etmez, kontrattan okur)",
+      "items": {
+        "type": "object",
+        "required": ["path", "purpose"],
+        "additionalProperties": true,
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "purpose": { "type": "string", "minLength": 3 }
+        }
+      }
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 10 },
+      "description": "P2'nin neyi başaracağı (qa-gate.sh okumak yasak → tek kaynak bu alan)"
+    },
+    "api_endpoints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "method"],
+        "additionalProperties": true,
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "method": { "type": "string", "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"] },
+          "auth": { "type": "string" }
+        }
+      },
+      "description": "REST uçları; API yoksa boş dizi (yokluğu değil, kararı belirtir)"
     },
     "result": { "const": "requirements-frozen" }
   }

@@ -21,7 +21,9 @@ set -euo pipefail
 # --strict bütçe alarmı (1× uyarı, exit/gate değişmez; 2× sert katman → exit 1) →
 # ajan self-advance toleransı (P2→P3 çift-ilerlemede advance guard + set -e sessiz
 # ölüm regresyonu; state.sh kanal kontratı: rc=1 + stdout boş + stderr mesaj) →
-# att0-0-write watchdog (L3): P2 idle'da TERM + aktif yazımda false-positive yok
+# att0-0-write watchdog (L3): P2 idle'da TERM + aktif yazımda false-positive yok →
+# A1 QUESTIONS.json exit gate (P2 soru → P2→P1 dönüşü + P1 yanıtı tüketir) →
+# A1 whitelist read scan (whitelist dışı read → WARN, reporter-only) — 26 senaryo
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FIX="$ROOT/tests/fixtures/web-sample"
@@ -272,6 +274,15 @@ cat > "$PROJ/.factory/domain-report.json" <<'JSON'
   "edge_cases": ["gecersiz e-posta → 422", "CSRF geçersiz → 419"],
   "security_context": ["PDO prepared", "Argon2id", "CSRF token"],
   "sql_draft": {"tables": ["roles", "users", "products", "orders"], "seed_rows": 3},
+  "file_manifest": [
+    {"path": "index.php", "purpose": "front-controller"},
+    {"path": "SQL/veritabani.sql", "purpose": "normalize şema + seed"}
+  ],
+  "acceptance_criteria": [
+    "qa-gate.sh 0 Error, 0 Warning (tüm 13 kontrol)",
+    "RBAC: users.role_id FK + roller seed ile doğrulanır"
+  ],
+  "api_endpoints": [],
   "result": "requirements-frozen"
 }
 JSON
@@ -344,7 +355,7 @@ cat > "$HOLLOW/.factory/domain-report.json" <<'JSON'
 {
   "schema_version": 1,
   "project": "web-sample",
-  "entities": [{"name": "users"}],
+  "entities": [{"name": "users", "fields": ["id", "email"]}],
   "roles": ["user"],
   "module_matrix": [
     {"module": "rbac", "status": "present", "evidence": "ok", "justification": "rbac"},
@@ -357,6 +368,9 @@ cat > "$HOLLOW/.factory/domain-report.json" <<'JSON'
   "edge_cases": ["x"],
   "security_context": ["y"],
   "sql_draft": {"tables": ["users"]},
+  "file_manifest": [{"path": "index.php", "purpose": "front-controller"}],
+  "acceptance_criteria": ["qa-gate.sh 0 Error, 0 Warning — temel kabul kriteri"],
+  "api_endpoints": [],
   "result": "requirements-frozen"
 }
 JSON
@@ -381,7 +395,7 @@ cat > "$PHANTOM/.factory/domain-report.json" <<'JSON'
 {
   "schema_version": 1,
   "project": "web-sample",
-  "entities": [{"name": "users"}],
+  "entities": [{"name": "users", "fields": ["id", "role_id", "email"]}],
   "roles": ["user"],
   "module_matrix": [
     {"module": "rbac", "status": "present", "evidence": "SQL/veritabani.sql:users.role_id üzerinden doğrulandı", "justification": "users tablosunda role_id sütunu var ve roles tablosuna FK ile bağlı — rol katmanı şemada present"},
@@ -394,6 +408,9 @@ cat > "$PHANTOM/.factory/domain-report.json" <<'JSON'
   "edge_cases": ["x"],
   "security_context": ["y"],
   "sql_draft": {"tables": ["users", "orders", "products", "roles"]},
+  "file_manifest": [{"path": "index.php", "purpose": "front-controller"}],
+  "acceptance_criteria": ["qa-gate.sh 0 Error, 0 Warning — temel kabul kriteri"],
+  "api_endpoints": [],
   "result": "requirements-frozen"
 }
 JSON
@@ -997,6 +1014,15 @@ case "$prompt" in
  "edge_cases": ["bos sepet ile siparis verilemez", "rol yukseltme yetkisi yalnizca admin"],
  "security_context": ["PDO prepared statements", "PASSWORD_ARGON2ID", "CSRF token dogrulamasi", "htmlspecialchars ciktisi"],
  "sql_draft": {"tables": ["roles", "users", "products", "orders"]},
+ "file_manifest": [
+  {"path": "index.php", "purpose": "front-controller"},
+  {"path": "SQL/veritabani.sql", "purpose": "normalize şema + seed"}
+ ],
+ "acceptance_criteria": [
+  "qa-gate.sh 0 Error, 0 Warning (tüm 13 kontrol)",
+  "enjeksiyon sonrası eval temiz: core/App.php içinde eval yok"
+ ],
+ "api_endpoints": [],
  "result": "requirements-frozen"
 }
 JSON
@@ -1223,6 +1249,171 @@ if grep -q "WATCHDOG" "$TMP/mp24b-err.txt"; then
   die "watchdog: aktif yazımda tetiklendi (false-positive)"
 fi
 echo "    idle P2 hedefi ~5-10s'te TERM (rc=143 + WATCHDOG satırı); 1sn dokunuşlu aktif hedef 8s'de false-positive yok"
+
+step "25) A1 QUESTIONS.json exit gate: P2 soru → P2→P1 → P1 yanıtı tüketir → DONE"
+M25="$TMP/mp25"
+cp -R "$FIX" "$M25"
+rm -f "$M25/.factory/metrics.jsonl" "$M25/.factory/web-state.json"
+# P1 kanıt dosyaları (SQL/robots/sitemap/index.php) KALIR — domain-check fs geçer;
+# yalnız core/ silinir ki P2'de iskelet eksik olsun ve run_agent tetiklensin.
+rm -rf "$M25/core"
+cat > "$M25/.factory/domain-report.json" <<'JSON'
+{
+  "schema_version": 1,
+  "project": "web-sample",
+  "entities": [
+    {"name": "roles", "fields": ["id", "name"]},
+    {"name": "users", "fields": ["id", "role_id", "email", "password_hash"]},
+    {"name": "products", "fields": ["id", "name", "price"]},
+    {"name": "orders", "fields": ["id", "user_id", "total"]}
+  ],
+  "roles": ["admin", "editor", "user"],
+  "module_matrix": [
+    {"module": "rbac", "status": "present", "evidence": "SQL/veritabani.sql:users.role_id + roles seed",
+     "justification": "users tablosunda role_id var ve roles tablosu FK ile bağlı — rol katmanı şemada present"},
+    {"module": "cart", "status": "present", "evidence": "SQL/veritabani.sql:orders.user_id FK",
+     "justification": "orders tablosu user_id FK ile sipariş akışını karşılıyor — sepet/sipariş mekanizması present"},
+    {"module": "seo", "status": "present", "evidence": "robots.txt + sitemap.xml + index.php meta description",
+     "justification": "robots.txt, sitemap.xml ve meta description çıktısı hazır — SEO modülü present"},
+    {"module": "kvkk", "status": "present", "evidence": "index.php:session_set_cookie_params SameSite=Strict",
+     "justification": "çerez onayı SameSite/HttpOnly ayarlarıyla yapıldı — KVKK aydınlatma metni home şablonunda"}
+  ],
+  "injected_modules": [],
+  "approvals": [],
+  "edge_cases": ["gecersiz e-posta → 422", "CSRF geçersiz → 419"],
+  "security_context": ["PDO prepared", "Argon2id", "CSRF token"],
+  "sql_draft": {"tables": ["roles", "users", "products", "orders"], "seed_rows": 3},
+  "file_manifest": [
+    {"path": "index.php", "purpose": "front-controller"},
+    {"path": "SQL/veritabani.sql", "purpose": "normalize şema + seed"}
+  ],
+  "acceptance_criteria": [
+    "qa-gate.sh 0 Error, 0 Warning (tüm 13 kontrol)",
+    "RBAC: users.role_id FK + roller seed ile doğrulanır"
+  ],
+  "api_endpoints": [],
+  "result": "requirements-frozen"
+}
+JSON
+bash "$STATE" start "$M25" >/dev/null # P1 (geçerli rapor → gatesiz ilerler, ajan çağrılmaz)
+STUB5="$TMP/ocbin5"
+mkdir -p "$STUB5"
+cat > "$STUB5/opencode" <<'STUB'
+#!/usr/bin/env bash
+prompt="${@: -1}"
+proj="$(printf '%s\n' "$prompt" | sed -n 's/^Proje dizini: //p' | head -1)"
+case "$prompt" in
+  *"P1 (Domain & Scope)"*)
+    # A1: P1'in aldığı prompt P2 sorularını içermeli — aksi halde gate çalışmıyordur
+    grep -q "P2 şu soruları sordu" <<<"$prompt" && touch "$proj/.q_injected"
+    ;;
+  *"P2 (Code Generation)"*)
+    if [[ -f "$proj/.questions_sent" ]]; then
+      # ikinci P2: sorular yanıtlandı → eksik tek katmanı geri yükle (FIX yedeği)
+      cp -R "$STUB_FIX_BAK/core" .
+    else
+      mkdir -p "$proj/.factory/contracts"
+      cat > "$proj/.factory/contracts/QUESTIONS.json" <<'JSONQ'
+{"questions": [{"topic": "acceptance", "needed": "qa-gate tam kontrol listesi ve SQL dump beklentisi", "blocked_files": ["scripts/web/qa-gate.sh", "scripts/web/sql-dump.sh"]}]}
+JSONQ
+      touch "$proj/.questions_sent"
+    fi
+    ;;
+esac
+python3 - <<'PYF'
+import json, time
+now = int(time.time() * 1000)
+evs = [
+    {"type": "step_start", "timestamp": now, "sessionID": "ses_qgate001",
+     "part": {"type": "step-start"}},
+    {"type": "text", "timestamp": now + 5, "sessionID": "ses_qgate001",
+     "part": {"type": "text", "text": "QUESTIONS-GATE (stub)",
+              "time": {"start": now, "end": now + 5}}},
+    {"type": "step_finish", "timestamp": now + 6, "sessionID": "ses_qgate001",
+     "part": {"type": "step-finish", "reason": "stop",
+              "tokens": {"total": 42, "input": 30, "output": 12, "reasoning": 0,
+                         "cache": {"write": 0, "read": 0}},
+              "cost": 0}},
+]
+for e in evs:
+    print(json.dumps(e))
+PYF
+STUB
+chmod +x "$STUB5/opencode"
+rc=0
+OUT25="$(env PATH="$STUB5:$PATH" STUB_FIX_BAK="$FIX" bash "$ORCH" "$M25" --auto 2>&1)" || rc=$?
+[[ "$rc" == "0" ]] || { printf '%s\n' "$OUT25" | tail -30; die "QUESTIONS gate tam döngü rc0 beklenir, gelen $rc"; }
+grep -q "P2 → P1 (questions-asked)" <<<"$OUT25" || die "P2 → P1 (questions-asked) geçişi basılmadı"
+grep -q "QUESTIONS.json yanıtlandı ve tüketildi" <<<"$OUT25" || die "P1 QUESTIONS.json tüketmedi"
+[[ -f "$M25/.q_injected" ]] || die "P1 prompt'una P2 soruları enjekte edilmedi"
+[[ ! -f "$M25/.factory/contracts/QUESTIONS.json" ]] || die "QUESTIONS.json tüketilmedi (dosya duruyor)"
+grep -q '"current_phase": "DONE"' "$M25/.factory/web-state.json" || die "tam döngü DONE'a ulaşmadı"
+python3 - "$M25/.factory/web-state.json" <<'PY' || die "state history: questions olayı yok"
+import json, sys
+s = json.load(open(sys.argv[1], encoding="utf-8"))
+evs = [e["event"] for e in s["history"]]
+assert "questions" in evs, evs
+q = s["history"][evs.index("questions")]
+assert q["from"] == "P2" and q["to"] == "P1", q
+assert q["condition"] == "questions-asked", q
+PY
+python3 - "$M25/.factory/metrics.jsonl" <<'PY' || die "metrics: P2→P1→P2 sırası yok"
+import json, sys
+lines = [json.loads(l) for l in open(sys.argv[1], encoding="utf-8") if l.strip()]
+phases = [m["phase"] for m in lines]
+assert phases == ["P2", "P1", "P2"], phases
+assert all(m["rc"] == 0 for m in lines), lines
+PY
+echo "    soru döngüsü: P2→P1 (questions-asked) → prompt enjeksiyonu → tüketim → iskelet tamam → DONE (metrics: P2,P1,P2)"
+
+step "26) A1 whitelist read scan: whitelist dışı read → WARN (reporter-only, gate değişmez)"
+M26="$TMP/mp26"
+cp -R "$FIX" "$M26"
+rm -f "$M26/index.php" "$M26/SQL/veritabani.sql"
+rm -rf "$M26/core" "$M26/views"
+rm -f "$M26/.factory/metrics.jsonl" "$M26/.factory/web-state.json" "$M26/.factory/domain-report.json"
+bash "$STATE" start "$M26" >/dev/null
+bash "$STATE" advance "$M26" >/dev/null # P1 → P2
+STUB6="$TMP/ocbin6"
+mkdir -p "$STUB6"
+cat > "$STUB6/opencode" <<'STUB'
+#!/usr/bin/env bash
+python3 - <<'PYF'
+import json, time
+now = int(time.time() * 1000)
+evs = [
+    {"type": "step_start", "timestamp": now, "sessionID": "ses_wlscan01",
+     "part": {"type": "step-start"}},
+    {"type": "tool", "timestamp": now + 2, "sessionID": "ses_wlscan01",
+     "part": {"type": "tool", "tool": "read",
+              "state": {"input": {"filePath": "/proj/scripts/web/qa-gate.sh"}}}},
+    {"type": "tool", "timestamp": now + 3, "sessionID": "ses_wlscan01",
+     "part": {"type": "tool", "tool": "read",
+              "state": {"input": {"filePath": ".factory/domain-report.json"}}}},
+    {"type": "text", "timestamp": now + 5, "sessionID": "ses_wlscan01",
+     "part": {"type": "text", "text": "WL-SCAN (stub)",
+              "time": {"start": now, "end": now + 5}}},
+    {"type": "step_finish", "timestamp": now + 6, "sessionID": "ses_wlscan01",
+     "part": {"type": "step-finish", "reason": "stop",
+              "tokens": {"total": 9, "input": 6, "output": 3, "reasoning": 0,
+                         "cache": {"write": 0, "read": 0}},
+              "cost": 0}},
+]
+for e in evs:
+    print(json.dumps(e))
+PYF
+STUB
+chmod +x "$STUB6/opencode"
+rc=0
+OUT26="$(env PATH="$STUB6:$PATH" bash "$ORCH" "$M26" --auto 2>&1)" || rc=$?
+[[ "$rc" == "3" ]] || die "whitelist scan gate'i etkilememeli (iskelet eksik → rc3), gelen $rc"
+grep -q "UYARI (A1 whitelist): P2 whitelist dışı okuma: read: /proj/scripts/web/qa-gate.sh" <<<"$OUT26" \
+  || die "whitelist dışı read (qa-gate.sh) WARN olarak basılmadı"
+if grep -q "domain-report.json" <<<"$(grep 'UYARI (A1 whitelist)' <<<"$OUT26" || true)"; then
+  die "whitelist İÇİNDEKİ domain-report.json yanlışlıkla WARN oldu (false-positive)"
+fi
+grep -q '"current_phase": "P2"' "$M26/.factory/web-state.json" || die "state P2'de kalmalı (reporter-only)"
+echo "    whitelist dışı read → WARN (qa-gate.sh); whitelist içi domain-report sessiz; rc=3 + state değişmedi"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

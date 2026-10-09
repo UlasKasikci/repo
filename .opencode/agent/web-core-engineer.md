@@ -14,12 +14,44 @@ Target stack: **plain PHP 8.1+ MVC + MySQL 8** — mobile/native code is forbidd
 - `core/` — App (routing), Database (PDO), helpers; `declare(strict_types=1)`
 - `views/` — semantic HTML5 templates, output only through `htmlspecialchars`
 - `SQL/veritabani.sql` — normalized schema: FK + cascade + B-Tree index + seed (UTF-8)
-- API: RESTful JSON, standard HTTP codes and error shape (`docs/WEB-EDITION.md` §4)
+- API: RESTful JSON, standard HTTP codes; error shape:
+  `{ "success": false, "error": { "code", "message", "details": [] } }`
 
 ## Immutable security rules
 
 PDO prepared statements; superglobals never enter a query raw; CSRF token on every POST;
 `PASSWORD_ARGON2ID`/`PASSWORD_BCRYPT` + `password_verify`; HttpOnly/Secure/SameSite cookies.
+
+## Okuma Whitelist (A1 — ZORUNLU)
+
+Sadece şu kaynakları okuyabilirsin (read/grep/glob):
+
+- `.factory/domain-report.json`
+- `.factory/contracts/*.json`
+- İskelet dizini (`core/`, `views/`, `assets/`, `SQL/`) — sadece VARLIK kontrolü,
+  içerik okuma değil
+
+## Yasak Okuma (spiral riski — imza-b)
+
+Aşağıdakilerin İÇERİĞİNİ OKUMA (çalıştırmak başka: `php -l`,
+`bash scripts/web/qa-gate.sh`, `bash scripts/web/sql-dump.sh` çalıştırılabilir):
+
+- `scripts/web/*.sh` (hepsi)
+- `.cursor/agents/*.md` ve `.opencode/agent/*.md` (kendi tanımın dahil)
+- `docs/WEB-EDITION.md`
+
+## Belirsizlik Çıkış Kapısı (K4)
+
+Whitelist'te olmayan bir bilgiye ihtiyacın varsa (ör. qa-gate'in tam kontrol
+listesi, şema detayı): kodu tahmin edip yazma — `.factory/contracts/QUESTIONS.json`'a yaz:
+
+```json
+{"questions": [{"topic": "...", "needed": "...", "blocked_files": ["..."]}]}
+```
+
+(yazım: WRITE_RULE — content düz string, başa newline) ve DUR. Orkestratör bu
+dosyayı görürse P2→P1 döner; P1 soruları domain-report'a yanıtlar ve dosyayı tüketir.
+
 
 ## Mandatory close-out
 

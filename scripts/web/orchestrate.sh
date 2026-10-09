@@ -520,6 +520,7 @@ run_agent() { # $1=agent $2=prompt $3=phase(P1|P2|P4)
   (cd "$PROJECT" && opencode run --format json --agent "$agent" ${model_args[@]+"${model_args[@]}"} "$prompt") > "$ev" || rc=$?
   end_ms="$(python3 -c 'import time; print(int(time.time() * 1000))')"
   record_agent_metrics "$agent" "$phase" "$rc" "$start_ms" "$end_ms" "$ev" "$model" || true
+  whitelist_scan "$ev" "$phase" || true # A1: P2 okuma taraması — reporter-only WARN
   if ! budget_check; then
     echo "orkestratör: STRICT bütçe sert aşıldı (2×) — duraklatıldı; yeniden çalıştırarak devam edebilirsin" >&2
     exit 1
@@ -554,6 +555,124 @@ scaffold_ok() {
   return 0
 }
 
+# A1 (imza-b) — K4 runtime güvencesi: P2'nin whitelist dışındaki bilgi ihtiyacını
+# QUESTIONS.json'a yazması, orkestratörün P2→P1 dönmesi ve P1'in yanıtı
+# domain-report'a taşıması. Yeni tek geçiş: web-state-graph.json'da questions-asked.
+QUESTIONS_FILE="$PROJECT/.factory/contracts/QUESTIONS.json"
+QUESTIONS_CYCLES=0
+QUESTIONS_MAX=3
+
+questions_pending() { # QUESTIONS.json var ve questions[] dolu → exit 0
+  python3 - "$QUESTIONS_FILE" <<'PY'
+import json, sys
+
+try:
+    with open(sys.argv[1], encoding="utf-8") as fh:
+        doc = json.load(fh)
+except Exception:
+    sys.exit(1)
+qs = doc.get("questions")
+sys.exit(0 if isinstance(qs, list) and qs else 1)
+PY
+}
+
+questions_block() { # p1_prompt'a gömülür — P2 sorularını P1'e iletir (stdout)
+  questions_pending || return 0
+  echo ""
+  echo "P2 şu soruları sordu (YANITLA — bu bilgi whitelist'te yok, tahmin yasak):"
+  python3 - "$QUESTIONS_FILE" <<'PY'
+import json, sys
+
+try:
+    with open(sys.argv[1], encoding="utf-8") as fh:
+        doc = json.load(fh)
+except Exception:
+    sys.exit(0)
+for i, q in enumerate(doc.get("questions") or [], 1):
+    if isinstance(q, dict):
+        line = str(q.get("needed") or q.get("topic") or "?")
+        topic = q.get("topic")
+        blocked = q.get("blocked_files") or []
+        if topic:
+            line = "[%s] %s" % (topic, line)
+        if blocked:
+            line += " (bloklayan: %s)" % ", ".join(map(str, blocked))
+        print("%d. %s" % (i, line))
+    else:
+        print("%d. %s" % (i, q))
+PY
+}
+
+p2_questions_back() { # P2 → P1 (state.sh questions); sonsuz döngü koruması
+  QUESTIONS_CYCLES=$((QUESTIONS_CYCLES + 1))
+  if [[ "$QUESTIONS_CYCLES" -gt "$QUESTIONS_MAX" ]]; then
+    echo "orkestratör: QUESTIONS döngüsü aşıldı ($QUESTIONS_CYCLES > $QUESTIONS_MAX) — P1 yanıtlayamadı; $QUESTIONS_FILE içeriğini incele" >&2
+    exit 1
+  fi
+  if [[ "$(state_phase)" != "P2" ]]; then
+    echo "orkestratör: QUESTIONS bekliyor ama faz $(state_phase) (ajan self-advance) — sorular P1'e dönülemeden yanıtlanamaz" >&2
+    exit 1
+  fi
+  bash "$STATE_SH" questions "$PROJECT" >/dev/null
+  echo "==> P2 → P1 (questions-asked) [döngü $QUESTIONS_CYCLES/$QUESTIONS_MAX]"
+}
+
+# A1 whitelist taraması (reporter-only — asla gate/exit değiştirmez): P2 oturumunda
+# read/grep/glob ile whitelist dışı yol okunduysa WARN bas. Çalıştırma (bash) yasak
+# DEĞİLDİR (php -l / sql-dump.sh / qa-gate.sh çalıştırılır) — yalnız içerik okuma.
+whitelist_scan() { # $1=event dosyası $2=phase
+  [[ "$2" == "P2" ]] || return 0
+  python3 - "$1" <<'PY' || true
+import json
+import sys
+
+FORBIDDEN = ("scripts/web/", ".cursor/agents/", ".opencode/agent/",
+             "docs/WEB-EDITION.md", ".cursorrules", "CLAUDE.md")
+
+
+def allowed(target):
+    norm = target if target.startswith("/") else "/" + target
+    if "/.factory/domain-report.json" in norm or "/.factory/contracts/" in norm:
+        return True
+    return any(("/%s/" % d) in norm for d in ("core", "views", "assets", "SQL"))
+
+
+def path_like(value):
+    return "/" in value or value.endswith((".sh", ".md", ".php", ".sql", ".json",
+                                           ".js", ".css", ".py", ".yaml", ".yml"))
+
+
+try:
+    fh = open(sys.argv[1], encoding="utf-8", errors="replace")
+except OSError:
+    sys.exit(0)
+for ln in fh:
+    ln = ln.strip()
+    if not ln:
+        continue
+    try:
+        ev = json.loads(ln)
+    except Exception:
+        continue
+    if not isinstance(ev, dict):
+        continue
+    part = ev.get("part") if isinstance(ev.get("part"), dict) else ev
+    tool = part.get("tool")
+    if tool not in ("read", "grep", "glob"):
+        continue
+    state = part.get("state") if isinstance(part.get("state"), dict) else {}
+    inp = state.get("input") if isinstance(state.get("input"), dict) else {}
+    target = str(inp.get("filePath") or inp.get("path") or inp.get("pattern") or "")
+    if not target:
+        continue
+    if any(f in target for f in FORBIDDEN) or not allowed(target):
+        if tool in ("grep", "glob") and not path_like(target):
+            continue  # patern metni yol değilse WARN üretme (sahte gürültü)
+        print("==> UYARI (A1 whitelist): P2 whitelist dışı okuma: %s: %s"
+              % (tool, target))
+PY
+}
+
 # B2 (E2E-1/2, write SchemaError: Expected string, got {...}) — tüm üretim ajanlarına
 # aynı açık kural; opencode sürümü değil model parametre tipi sorunu.
 # JEV Faz 1.1 (A): JSON content leading-newline kuralı — recovery speedup, prevention değil;
@@ -584,18 +703,29 @@ Kanonik şartname: $ROOT/docs/WEB-EDITION.md (§3 proaktif domain denetimi: RBAC
 Çıktıyı MUTLAKA UTF-8 JSON olarak şu dosyaya yaz: $PROJECT/.factory/domain-report.json
 $WRITE_RULE
 Şema: $CONTRACTS/p1-domain-report.schema.json
-Zorunlu alanlar: schema_version=1, project, entities, roles,
+Zorunlu alanlar: schema_version=1, project, entities (her entity'de fields[] —
+kolon listesi, ≥1), roles,
 module_matrix (≥4 modül; her hücre: {module, status: present|missing|injected|proposed,
 evidence: dosya/satır kaynağı örn. SQL/veritabani.sql:users.role_id veya core/App.php:21 —
 adı geçen dosyalar proje kökünde GERÇEKTEN VAR olmalı (domain-check.py fs doğrulaması),
 justification: ≥20 karakter gerçek gerekçe} — şablon/boş değer yasak,
 qa-gate domain_report denetimini geçirmez),
 injected_modules, approvals, edge_cases, security_context,
-sql_draft.tables, result="requirements-frozen".
+sql_draft.tables,
+file_manifest (P2'nin üreteceği hedef dosyalar: [{path, purpose}], ≥1 —
+P2 dosya listesini tahmin etmez, bu alan bağlayıcıdır),
+acceptance_criteria (bu projenin kabul kriterleri, ≥1 madde, her madde ≥10
+karakter — qa-gate.sh okumak P2'de YASAK olduğu için tek kaynak BU ALANDIR:
+"qa-gate 0 Error, 0 Warning" + modüle özgü kriterler (KVKK view'ları, RBAC
+role_id, sepet/istisna kararı vb.)),
+api_endpoints (REST uçları: [{path, method: GET|POST|PUT|PATCH|DELETE, auth}];
+API yoksa boş dizi yaz),
+result="requirements-frozen".
 compliance: $c — intent.compliance (enum kvkk|gdpr|none; şemada opsiyonel alan) —
 domain-report.compliance alanına aynen yaz; kvkk/gdpr ise module_matrix'te
 kvkk modülünü present/injected olarak gerekçelendir.
 EOF
+  questions_block # A1: varsa P2 sorularını bu analize dahil et
 }
 
 p2_prompt() {
@@ -678,7 +808,7 @@ while true; do
     P1)
       R="$PROJECT/.factory/domain-report.json"
       S="$CONTRACTS/p1-domain-report.schema.json"
-      if [[ -f "$R" ]]; then
+      if [[ -f "$R" ]] && ! questions_pending; then
         if ! p1_gate_ok "$R"; then
           if [[ "$AUTO" -eq 1 ]] && run_agent web-domain-architect "$(p1_prompt)" P1; then
             p1_gate_ok "$R" || { echo "orkestratör: domain-report.json P1 kapısını geçemedi — $S + domain-check.py" >&2; exit 1; }
@@ -688,6 +818,11 @@ while true; do
           fi
         fi
       else
+        # A1: QUESTIONS bekliyorsa rapor geçerli olsa bile ZORLA yeniden üret
+        # (mevcut rapor P2'nin sorularını içermiyor — yanıtsız ilerleme yasak).
+        if questions_pending && [[ "$AUTO" -eq 0 ]]; then
+          wait_for "P1: QUESTIONS.json yanıt bekliyor (web-domain-architect)"
+        fi
         if [[ "$AUTO" -eq 1 ]]; then
           run_agent web-domain-architect "$(p1_prompt)" P1 || wait_for "P1: web-domain-architect çalıştırılamadı"
           [[ -f "$R" ]] || wait_for "P1: $R üretilmedi"
@@ -695,6 +830,11 @@ while true; do
         else
           wait_for "P1: eksik artefakt .factory/domain-report.json (web-domain-architect)"
         fi
+      fi
+      # A1: P2 soruları yanıtlandıysa QUESTIONS.json'ı tüket — P2 temiz başlar.
+      if questions_pending; then
+        rm -f "$QUESTIONS_FILE"
+        echo "==> P1: QUESTIONS.json yanıtlandı ve tüketildi"
       fi
       # Ajan kendi oturumunda faz ilerletmiş olabilir (self-advance); geçersiz-faz
       # hatası set -e ile orkestratörü sessiz öldürür (E2E ab1 att2 israfı) — yalnız
@@ -706,9 +846,19 @@ while true; do
       ;;
 
     P2)
+      # A1 kapı 1: döngüye soruyla girildiyse ajan çağırmadan P1'e dön.
+      if questions_pending; then
+        p2_questions_back
+        continue
+      fi
       if ! scaffold_ok; then
         if [[ "$AUTO" -eq 1 ]]; then
           run_agent web-core-engineer "$(p2_prompt)" P2 || wait_for "P2: web-core-engineer çalıştırılamadı"
+          # A1 kapı 2: ajan QUESTIONS.json yazdıysa P1'e dön (yanıtsız kod yazma yasak).
+          if questions_pending; then
+            p2_questions_back
+            continue
+          fi
           scaffold_ok || wait_for "P2: MVC iskeleti eksik (index.php, core/, views/, SQL/veritabani.sql)"
         else
           wait_for "P2: MVC iskeleti eksik (web-core-engineer)"

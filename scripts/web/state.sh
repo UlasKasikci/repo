@@ -12,14 +12,14 @@ OP="${1:-}"
 PROJECT="${2:-.}"
 
 usage() {
-  echo "kullanım: state.sh <status|start|advance|qa-pass|qa-fail|retry|halt> [proje_dizini]" >&2
+  echo "kullanım: state.sh <status|start|advance|qa-pass|qa-fail|halt|questions> [proje_dizini]" >&2
   exit 1
 }
 
 [[ -n "$OP" ]] || usage
 if [[ "$OP" == "retry" ]]; then OP="qa-fail"; fi
 case "$OP" in
-  status|start|advance|qa-pass|qa-fail|halt) ;;
+  status|start|advance|qa-pass|qa-fail|halt|questions) ;;
   *) echo "state: bilinmeyen işlem: $OP" >&2; usage ;;
 esac
 
@@ -160,6 +160,19 @@ if op == "qa-pass":
     log(state, "qa-pass", **{"from": phase, "to": "P5"})
     save_state(state)
     print(f"state: QA PASS {phase} → P5 (paketleme kapısı açık)")
+    sys.exit(0)
+
+# A1 (K4 runtime güvencesi): P2 → P1 yalnız QUESTIONS.json kanalıyla (tek istisna).
+# Geçiş grafiğinde condition=questions-asked, artifact=.factory/contracts/QUESTIONS.json.
+if op == "questions":
+    if phase != "P2":
+        die(f"questions yalnız P2'de geçerli (şimdi: {phase})")
+    state["current_phase"] = "P1"
+    log(state, "questions", **{"from": "P2", "to": "P1",
+                               "condition": "questions-asked",
+                               "artifact": ".factory/contracts/QUESTIONS.json"})
+    save_state(state)
+    print("state: P2 → P1 (questions-asked)")
     sys.exit(0)
 
 if op == "qa-fail":

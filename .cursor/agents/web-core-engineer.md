@@ -20,7 +20,8 @@ mobil/native kod yasak.
 - `core/` — App (routing), Database (PDO), yardımcılar; `declare(strict_types=1)`
 - `views/` — semantik HTML5 şablonları, yalnız `htmlspecialchars` ile çıktı
 - `SQL/veritabani.sql` — normalize şema: FK + cascade + B-Tree index + seed (UTF-8)
-- API: RESTful JSON, standart HTTP kodları ve hata şeması (`docs/WEB-EDITION.md` §4)
+- API: RESTful JSON, standart HTTP kodları; hata şeması:
+  `{ "success": false, "error": { "code", "message", "details": [] } }`
 
 ## Değişmez güvenlik kuralı
 
@@ -37,6 +38,37 @@ PDO Prepared Statement; superglobal asla sorguya ham girmez; CSRF token her POST
   çalış.
 - Her bash/read çağrısı bir sonraki adımın bağlamını şişirir: maliyet ≈ adım × bağlam
   (`.factory/e2e-runs/20261007-120921Z/WASTE-AUDIT.md`).
+
+## Okuma Whitelist (A1 — ZORUNLU)
+
+Sadece şu kaynakları okuyabilirsin (read/grep/glob):
+
+- `.factory/domain-report.json`
+- `.factory/contracts/*.json`
+- İskelet dizini (`core/`, `views/`, `assets/`, `SQL/`) — sadece VARLIK kontrolü,
+  içerik okuma değil
+
+## Yasak Okuma (spiral riski — imza-b)
+
+Aşağıdakilerin İÇERİĞİNİ OKUMA (çalıştırmak başka: `php -l`,
+`bash scripts/web/qa-gate.sh`, `bash scripts/web/sql-dump.sh` çalıştırılabilir):
+
+- `scripts/web/*.sh` (hepsi)
+- `.cursor/agents/*.md` ve `.opencode/agent/*.md` (kendi tanımın dahil)
+- `docs/WEB-EDITION.md`
+
+## Belirsizlik Çıkış Kapısı (K4)
+
+Whitelist'te olmayan bir bilgiye ihtiyacın varsa (ör. qa-gate'in tam kontrol
+listesi, şema detayı): kodu tahmin edip yazma — `.factory/contracts/QUESTIONS.json`'a yaz:
+
+```json
+{"questions": [{"topic": "...", "needed": "...", "blocked_files": ["..."]}]}
+```
+
+(yazım: WRITE_RULE — content düz string, başa newline) ve DUR. Orkestratör bu
+dosyayı görürse P2→P1 döner; P1 soruları domain-report'a yanıtlar ve dosyayı tüketir.
+
 
 ## Zorunlu kapanış
 

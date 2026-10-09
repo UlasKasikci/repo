@@ -50,6 +50,7 @@
     { "from": "START", "to": "P1", "condition": "intent-locked" },
     { "from": "P1", "to": "P2", "condition": "requirements-frozen" },
     { "from": "P2", "to": "P3", "condition": "code-complete" },
+    { "from": "P2", "to": "P1", "condition": "questions-asked", "artifact": ".factory/contracts/QUESTIONS.json" },
     { "from": "P3", "to": "P5", "condition": "qa-pass" },
     { "from": "P3", "to": "P4", "condition": "qa-fail", "until": "max_retries" },
     { "from": "P4", "to": "P3", "condition": "fix-applied" },
