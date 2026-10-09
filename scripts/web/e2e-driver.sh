@@ -5,17 +5,21 @@
 # att0-0-write erken dönüşleri 6.2 saat duvar israfı — E2E-3 275dk / ab1 71dk).
 # P1/P3/P4/P5'te sayaç sıfırlanır (P1 uzun sessizlikleri meşrudur — domain-report
 # yalnız oturum sonunda yazılır).
-# K1 genişletmesi (Tur 2-2): idle sinyali artık İKİ kanaldan — (a) proje dosya
-# değişikliği, (b) event stream non-empty output (son non-empty output). Reasoning
-# stream'i doluysa (yeni event geliyorsa) idle DEĞİL — kill yok (K1: reasoning
-# sırasında idle-kill yasak). Kill yalnızca her iki kanal da idle_max saniye sessizse.
+# K1 genişletmesi (Tur 2-2/2-3): idle sinyali artık ÜÇ kanaldan + İKİ KADEMELİ kill —
+#   Kanallar: (a) proje dosya değişikliği, (b) event stream non-empty output,
+#            (c) opencode CPU time (reasoning NDJSON stream'i sessiz kalır — pilot1
+#            kanıtı: 36KB'da 900s sabit, 27.4% CPU ile üretken reasoning).
+#   Kademe 1 — idle_max: üç kanal da sessizse kill. Kademe 2 — no_write_cap
+#   (NO_WRITE_CAP env, varsayılan 7200s): dosya yazımı yoksa CPU/stream aktif
+#   olsa bile kill (busy-loop tuzağı — yeni sinyalin kör noktası, Tur2-3 ön koşulu).
 # Stream yolu: orchestrate her ajan çağrısında .factory/e2e-last-ev dosyasına
 # mktemp ev yolunu yazar; watchdog her turda okur.
 # --p2-only: P1'i atla (domain-report.json bootstrap'ta kopyalanmış olmalı),
 # state P2'ye alınır, yalnız P2 koşulur (pilot modu).
 # Kullanım:
 #   e2e-driver.sh [--p2-only] <proje_dizini> <run_dizini> [max_attempts=6] [idle_max=900] [sleep=30]
-#   e2e-driver.sh --watchdog <proje_dizini> <hedef_pid> <idle_max>   # tek başına
+#   NO_WRITE_CAP=7200 e2e-driver.sh ...   # kademe-2 eşiği (env)
+#   e2e-driver.sh --watchdog <proje_dizini> <hedef_pid> <idle_max> [no_write_cap]
 set -u
 
 kill_tree() { # watchdog kill sırası: önce çocuklar (agent/opencode), sonra hedef
@@ -38,20 +42,22 @@ except (OSError, json.JSONDecodeError):
 PY
 }
 
-run_watchdog() { # $1=project $2=target-pid $3=idle_max(s) — P2 idle'da TERM, rc=143
-  # K1 genişletmesi (Tur 2-2 + pilot düzeltmesi): ÜÇ sinyal kanalı —
-  #   (a) proje dosya değişikliği (eski davranış),
-  #   (b) event stream non-empty output (stream boyutu büyüyor mu),
-  #   (c) opencode CPU time ilerlemesi — reasoning token üretimi CPU kullanır.
-  # Pilot bulgusu: NDJSON stream reasoning SIRASINDA sessiz kalır (step-start →
-  # step-finish arası hiçbir event yazılmaz; att1: 36KB'da 900s sabit, 27.4% CPU).
-  # Bu yüzden stream sinyali tek başına yetersiz — CPU kanalı "dolu reasoning"
-  # ile "ölü idle"ı ayırır (K1: reasoning sırasında idle-kill yasak).
-  # Kill yalnızca HER ÜÇ kanal da idle_max saniye sessizse.
-  local project="$1" target="$2" idle_max="$3"
-  local mark last now hit phase idle evpath size lastsize opid ct1 ct2
+run_watchdog() { # $1=project $2=target-pid $3=idle_max $4=no_write_cap(Varsayılan 7200)
+  # K1 genişletmesi (Tur 2-2/2-3): ÜÇ sinyal kanalı + İKİ KADEMELİ kill —
+  #   Kanallar: (a) proje dosya değişikliği, (b) event stream non-empty output,
+  #            (c) opencode CPU time ilerlemesi (reasoning token üretimi CPU kullanır;
+  #                NDJSON stream reasoning sırasında sessiz — pilot1 kanıtı).
+  #   Kademe 1 — idle_max: HER ÜÇ kanal da sessizse kill (ölü süreç).
+  #   Kademe 2 — no_write_cap: DOSYA YAZIMI yoksa CPU/stream aktif olsa bile kill
+  #     (busy-loop tuzağı: CPU yakan ama üretmeyen süreç; K1 korunur çünkü
+  #     üretken reasoning er ya da geç dosya yazar — A2' duvar-saati de bunu zorlar).
+  #   no_write_cap >> tipik reasoning→ilk-write süresi olmalı (varsayılan 7200s=2sa;
+  #   pilot2 ilk write 23dk → ~5× marj).
+  local project="$1" target="$2" idle_max="$3" now_cap="${4:-7200}"
+  local mark last last_write now hit phase idle evpath size lastsize opid ct1 ct2
   mark="$(mktemp)"
   last="$(date +%s)"
+  last_write="$last"
   lastsize=-1
   while kill -0 "$target" 2>/dev/null; do
     # Kanal (c) CPU örneği: uyku ÖNCESİ opencode CPU time'ı
@@ -62,6 +68,7 @@ run_watchdog() { # $1=project $2=target-pid $3=idle_max(s) — P2 idle'da TERM, 
     phase="$(watchdog_phase "$project")"
     if [[ "$phase" != "P2" ]]; then
       last="$(date +%s)" # sayaç yalnız P2'de işler
+      last_write="$last"
       lastsize=-1
       continue
     fi
@@ -70,6 +77,7 @@ run_watchdog() { # $1=project $2=target-pid $3=idle_max(s) — P2 idle'da TERM, 
     if [[ -n "$hit" ]]; then
       touch "$mark"
       last="$(date +%s)"
+      last_write="$last" # dosya ilerlemesi — no-write-cap sayacı sıfırlanır
       continue
     fi
     # Kanal (b): event stream non-empty output — son non-empty output sinyali.
@@ -86,7 +94,7 @@ run_watchdog() { # $1=project $2=target-pid $3=idle_max(s) — P2 idle'da TERM, 
         elif [[ "$size" -gt "$lastsize" ]]; then
           lastsize="$size"
           last="$(date +%s)"
-          continue # stream dolu — idle sıfırla
+          # stream dolu — idle sıfırla; ama CONTINUE YOK (no-write-cap'e düşmeli)
         fi
       fi
     fi
@@ -95,7 +103,7 @@ run_watchdog() { # $1=project $2=target-pid $3=idle_max(s) — P2 idle'da TERM, 
       ct2="$(ps -p "$opid" -o cputime= 2>/dev/null | tr -d ' ')"
       if [[ -n "$ct2" && "$ct1" != "$ct2" ]]; then
         last="$(date +%s)"
-        continue # CPU çalışıyor — model reasoning/üretimde, idle değil
+        # CPU çalışıyor — idle sıfırla; ama CONTINUE YOK (no-write-cap'e düşmeli)
       fi
     fi
     now="$(date +%s)"
@@ -106,14 +114,21 @@ run_watchdog() { # $1=project $2=target-pid $3=idle_max(s) — P2 idle'da TERM, 
       rm -f "$mark"
       return 143
     fi
+    # Kademe 2: busy-loop tuzağı — dosya ilerlemesi yoksa CPU/stream yetmez
+    if [[ $((now - last_write)) -ge "$now_cap" ]]; then
+      echo "WATCHDOG: P2 no-write $((now - last_write))s ≥ ${now_cap}s (CPU/stream aktif olsa bile dosya yok) — TERM (pid $target)" >&2
+      kill_tree "$target"
+      rm -f "$mark"
+      return 143
+    fi
   done
   rm -f "$mark"
   return 0
 }
 
 if [[ "${1:-}" == "--watchdog" ]]; then
-  [[ $# -ge 4 ]] || { echo "kullanım: e2e-driver.sh --watchdog <proje> <pid> <idle_max>" >&2; exit 1; }
-  run_watchdog "$2" "$3" "$4"
+  [[ $# -ge 4 ]] || { echo "kullanım: e2e-driver.sh --watchdog <proje> <pid> <idle_max> [no_write_cap]" >&2; exit 1; }
+  run_watchdog "$2" "$3" "$4" "${5:-${NO_WRITE_CAP:-7200}}"
   exit $?
 fi
 
@@ -133,6 +148,7 @@ RUN="${2:-}"
 MAX_ATTEMPTS="${3:-6}"
 IDLE_MAX="${4:-900}"
 SLEEP_BETWEEN="${5:-30}"
+NO_WRITE_CAP="${NO_WRITE_CAP:-7200}"
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 [[ -n "$PROJ" && -n "$RUN" ]] || {
   echo "kullanım: e2e-driver.sh [--p2-only] <proje> <run-dir> [max_attempts] [idle_max] [sleep]" >&2
@@ -156,8 +172,8 @@ LOG="$RUN/orchestrate.log"
 attempt=0
 rc=0
 WD_KILLS=0
-printf 'DRIVER header: max_attempts=%s idle_max=%s launched=%s\n' \
-  "$MAX_ATTEMPTS" "$IDLE_MAX" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LOG"
+printf 'DRIVER header: max_attempts=%s idle_max=%s no_write_cap=%s launched=%s\n' \
+  "$MAX_ATTEMPTS" "$IDLE_MAX" "$NO_WRITE_CAP" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LOG"
 while [[ "$attempt" -lt "$MAX_ATTEMPTS" ]]; do
   attempt=$((attempt + 1))
   wd_fired=0
@@ -165,7 +181,7 @@ while [[ "$attempt" -lt "$MAX_ATTEMPTS" ]]; do
   rc=0
   bash "$REPO/scripts/web/orchestrate.sh" "$PROJ" --auto >> "$LOG" 2>&1 &
   opid=$!
-  run_watchdog "$PROJ" "$opid" "$IDLE_MAX" 2>> "$LOG" &
+  run_watchdog "$PROJ" "$opid" "$IDLE_MAX" "$NO_WRITE_CAP" 2>> "$LOG" &
   wpid=$!
   wait "$opid" || rc=$?
   kill "$wpid" 2>/dev/null || true

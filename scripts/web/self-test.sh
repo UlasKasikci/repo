@@ -25,7 +25,7 @@ set -euo pipefail
 # A1 QUESTIONS.json exit gate (P2 soru → P2→P1 dönüşü + P1 yanıtı tüketir) →
 # A1 whitelist read scan (whitelist dışı read → WARN, reporter-only) →
 # frontmatter validator (kırık imza → standalone FAIL + qa-gate 14. kontrol FAIL) +
-# manifest-onaylı okuma (file_manifest yolu sessiz, manifest dışı WARN) — 29 senaryo
+# manifest-onaylı okuma (file_manifest yolu sessiz, manifest dışı WARN) — 30 senaryo
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FIX="$ROOT/tests/fixtures/web-sample"
@@ -1581,6 +1581,77 @@ grep -q "WATCHDOG" "$TMP/mp29b-err.txt" || die "WATCHDOG log satırı basılmad�
 kill -0 "$TID29B" 2>/dev/null && { kill -TERM "$TID29B" 2>/dev/null || true; die "watchdog: boş stream hedefi öldürmedi"; }
 wait "$TID29B" 2>/dev/null || true
 echo "    dolu reasoning stream'de kill YOK (K1) · boş stream'de idle kill VAR (rc=143)"
+
+step "30) L3 no-write-cap (busy-loop tuzağı): CPU yakan ama dosya yazmayan süreç kill edilir; dosya yazan süreç korunur"
+# 30A: CPU yakan stub (cmdline 'opencode run' içerir → pgrep kanal-c'yı görür),
+# proje dosyası YAZMAZ. idle_max=8 kısa, no_write_cap=15.
+# Beklenen: CPU kanalı her tur idle'ı sıfırlar (idle kill YOK) AMA no-write-cap
+# 15s'te kill eder → mesaj "P2 no-write", "P2 idle" DEĞİL.
+# (Eğer CPU kanalı ölü olsaydı idle 10s civarında "P2 idle" ile kill ederdi — test
+# bu çapraz kontrolle iki kademenin etkileşimini kanıtlar.)
+MP30A="$TMP/mp30a"
+mkdir -p "$MP30A/.factory"
+python3 -c "import json; json.dump({'current_phase':'P2','status':'in_progress'}, open('$MP30A/.factory/web-state.json','w'))"
+CPU30A="$TMP/cpu-burner-opencode"
+cat > "$CPU30A" <<'EOF'
+#!/bin/bash
+while :; do :; done
+EOF
+bash "$CPU30A" --agent web-core-engineer "opencode run burn-stub" &
+TID30A=$!
+bash "$WD29" --watchdog "$MP30A" "$TID30A" 8 15 2> "$TMP/mp30a-err.txt" &
+WPID30A=$!
+rc30a=0
+for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
+  kill -0 "$WPID30A" 2>/dev/null || break
+  sleep 1
+done
+if kill -0 "$WPID30A" 2>/dev/null; then
+  kill -TERM "$WPID30A" 2>/dev/null || true
+  wait "$WPID30A" 2>/dev/null || true
+  kill -TERM "$TID30A" 2>/dev/null || true
+  wait "$TID30A" 2>/dev/null || true
+  die "watchdog: CPU yakan busy-loop 30s'te kill edilmedi (no-write-cap tetiklenmedi)"
+fi
+wait "$WPID30A" 2>/dev/null || rc30a=$?
+[[ "$rc30a" == "143" ]] || { kill -TERM "$TID30A" 2>/dev/null || true; die "watchdog: busy-loop kill → rc143 beklenir, gelen $rc30a"; }
+grep -q "P2 no-write" "$TMP/mp30a-err.txt" || { kill -TERM "$TID30A" 2>/dev/null || true; die "watchdog: no-write-cap mesajı basılmadı (busy-loop)"; }
+if grep -q "P2 idle" "$TMP/mp30a-err.txt"; then
+  kill -TERM "$TID30A" 2>/dev/null || true
+  die "watchdog: busy-loop idle ile kill edildi — CPU kanalı idle'ı sıfırlamıyor (kanal-c bozuk)"
+fi
+kill -0 "$TID30A" 2>/dev/null && { kill -TERM "$TID30A" 2>/dev/null || true; die "watchdog: busy-loop hedefi öldürmedi"; }
+wait "$TID30A" 2>/dev/null || true
+# 30B: kontrol — dosya YAZAN süreç korunmalı (18s'de kill YOK)
+MP30B="$TMP/mp30b"
+mkdir -p "$MP30B/.factory"
+python3 -c "import json; json.dump({'current_phase':'P2','status':'in_progress'}, open('$MP30B/.factory/web-state.json','w'))"
+CPU30B="$TMP/producer-stub"
+cat > "$CPU30B" <<EOF
+#!/bin/bash
+i=0
+while [[ \$i -lt 12 ]]; do
+  echo "progress \$i" > "$MP30B/progress.txt"
+  i=\$((i+1))
+  sleep 2
+done
+EOF
+bash "$CPU30B" &
+TID30B=$!
+bash "$WD29" --watchdog "$MP30B" "$TID30B" 8 15 2> "$TMP/mp30b-err.txt" &
+WPID30B=$!
+sleep 18
+alive30b=0
+kill -0 "$WPID30B" 2>/dev/null && alive30b=1
+kill -TERM "$WPID30B" 2>/dev/null || true
+wait "$WPID30B" 2>/dev/null || true
+kill -TERM "$TID30B" 2>/dev/null || true
+wait "$TID30B" 2>/dev/null || true
+[[ "$alive30b" == "1" ]] || die "watchdog: dosya yazan süreç 18s'de kill edildi (aşırı-kill — no-write-cap kanal-a'yı saymıyor)"
+if grep -q "WATCHDOG" "$TMP/mp30b-err.txt"; then
+  die "watchdog: üretken süreçte WATCHDOG tetiklendi (false-positive)"
+fi
+echo "    busy-loop (CPU aktif, dosya yok) no-write-cap ile kill (rc=143, idle DEĞİL) · üretken süreç 18s'de korundu"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

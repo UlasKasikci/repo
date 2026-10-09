@@ -190,7 +190,7 @@ Bir yaklaşım başarısız olduysa, dosyayı silme — `REVIEW-NOTES`'a
 |--------|-------|
 | Net token tasarrufu | ≥0 (tur tasarruf üretmeli, sıfır kabul; negatif YASAK) |
 | Denetim kapsamı | Değişmemeli (14 QA kontrol + smoke + drift) |
-| Self-test | 29/29 PASS (kırılma yok) |
+| Self-test | 30/30 PASS (kırılma yok) |
 | CI | Yeşil |
 
 ### Proje Başına (3-6 ay)

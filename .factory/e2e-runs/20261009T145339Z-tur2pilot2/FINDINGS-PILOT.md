@@ -62,3 +62,24 @@ Model 15 dakika saf reasoning yapıp sonra config dosyası yazdı; skeleton dalg
 
 **Öneri:** (1) — K1 fix ana hedefi karşıladı; tam E2E'de glm-5.3'ün üretebilirliği
 kanıtlanmış (E2E-3). Pilot bütçesi gerçekçi değildi, watchdog artık kill yapmıyor.
+
+## 6. Karar: (1) tam E2E — üç hazırlıkla (kullanıcı onayı)
+
+Kullanıcı seçimi: **(1) tam E2E'ye geç**. Gerekçe: K1 27dk kill-yok ile doğrulandı;
+A2' 3. call=write ile tuttu; (2)/(3) için veri yok; K7 asimetri ihlali olurdu.
+
+Üç hazırlık (Tur 2-3 öncesi, zorunlu):
+
+1. **CPU kanalı kör noktası testi (no-write-cap):** busy-loop (CPU yakan ama dosya
+   yazmayan) süresiz kill'siz kalırdı — CPU kanalı idle'ı sıfırlarken no-write
+   sayacını da atlıyordu (`continue` bug'ı). Düzeltme: iki kademeli kill —
+   `idle_max` (üç kanal sessiz) + `no_write_cap` (NO_WRITE_CAP env, default 7200s;
+   dosya yoksa CPU/stream aktif olsa bile kill). self-test senaryo 30A/30B.
+2. **Gerçekçi kabul kriterleri (Tur 2-3):** att ≤ 3 · P2 süre < 8 saat ·
+   P2 token < 12.23M (E2E-3 att2 bazı) · write > 0 · **L3 kill = 0** (K1 doğrulaması).
+3. **Karşılaştırma baz notu:** E2E-3 (WRITE_RULE) → Tur2-3 arasında **ÜÇ değişken**
+   (A1 + K1 CPU/no-write + A2') — izolasyon mümkün değil; sonuç yalnızca
+   "sistem çalışıyor mu" sorusunu yanıtlar, "A2' tek başına işe yaradı mı" yanıtlamaz.
+
+Tur 2-3 koşusu: tam E2E (P1→P2→P3→P5), intent 2e4816… (bazlarla birebir),
+kill → otomatik retry, koşu sırasında dosya değişikliği yok.
