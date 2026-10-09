@@ -11,5 +11,20 @@
       "auth-rbac": "allow",
       "experimental-*": "deny"
     }
+  },
+  "provider": {
+    "nvidia": {
+      "models": {
+        "z-ai/glm-5.3": {
+          "options": {
+            "reasoning_effort": "high"
+          },
+          "limit": {
+            "context": 1048576,
+            "output": 65536
+          }
+        }
+      }
+    }
   }
 }
