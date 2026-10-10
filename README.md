@@ -10,7 +10,7 @@ her proje aynı kapılardan geçer — domain analizi → kod → QA → paketle
 
 [![CI](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml/badge.svg)](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![self-test](https://img.shields.io/badge/self--test-40%2F40%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
+[![self-test](https://img.shields.io/badge/self--test-41%2F41%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
 
 ---
 
@@ -140,10 +140,13 @@ git clone https://github.com/UlasKasikci/repo.git && cd repo
 composer global require phpstan/phpstan phpunit/phpunit
 
 # fabrika kendini sınamalı
-bash scripts/web/self-test.sh          # hedef: 40/40 PASS
+bash scripts/web/self-test.sh          # hedef: 41/41 PASS
 ```
 
 ### Yeni proje
+
+Tek komut (iki IDE — Cursor `/kur`, opencode `/kur`): kontrat okur, bootstrap eder,
+state'i P1'e alır, QA doğrular, özet sunar. IDE yoksa terminal eşdeğeri:
 
 ```bash
 # dry-run (default) — ne kopyalanacağını gösterir
@@ -151,6 +154,8 @@ bash scripts/web/bootstrap-project.sh ../my-project
 
 # uygula
 bash scripts/web/bootstrap-project.sh ../my-project --yes
+
+# sonra: state start + qa-gate (veya IDE'de /kur + /web-baslat)
 ```
 
 ### Üretim hattı
@@ -251,14 +256,15 @@ Yukleme/
 
 ### v1 — Starter Kit (Şimdi)
 
-- Bootstrap + üç IDE config + QA gate (14) + paketleme + self-test (30)
-- **Tamamlandı:** A1 okuma yasağı + QUESTIONS kapısı (`e946064`) + A2 spike→write
-  (`801dbef`) + A2' duvar-saati (`fa45b28`) + L3 watchdog idle+stream+CPU+no-write-cap
-  (`72bbee7`) + frontmatter kontratı + manifest-onaylı whitelist + `.cursor/rules`
-  5 mdc + `.opencode/skills` iskeleti
-- **Kalan:** Tur 2-3 tam E2E doğrulaması (canlı, 2026-10-09T15:52Z) — kabul:
-  att≤3 · P2<8sa · P2 token<12.23M · write>0 · L3 kill=0 (aynı intent `2e4816…`;
-  FINDINGS-PILOT §6) · sonuç gelince v1.0 final kararı
+- Bootstrap + üç IDE config + QA gate (14) + paketleme + self-test (41)
+- **Tamamlandı:** A1 okuma yasağı + QUESTIONS kapısı + A2 spike→write + A2' duvar-saati
+  + L3 watchdog (idle+stream+CPU+no-write-cap+cpu_time_pid) + frontmatter kontratı
+  + manifest-onaylı whitelist + K1a-fix plugin (`nim-stall-retry`, bun:sqlite DB polling)
+  + tek-turn iskelet promptu (A.2) + `/kur` komutu (iki IDE) + CJK-check CI
+- **Bilinen kısıt (Tur 2-9):** P2 kod üretimi glm-5.3'te **0/7** (7/7 run rc=1,
+  write=0). Prompt katmanı (tek-turn + context disiplini) sonucu değiştirmedi —
+  duvar model/sağlayıcı tarafında (F5 stall). v1.0 final = P2'yi yazabilen bir
+  model/sağlayıcı bulunana kadar ertelendi (JEV v2 MCP de erteli).
 
 ### v2 — Optimize (2-3 ay)
 
@@ -318,7 +324,7 @@ Tam metin: [`docs/MASTER-PROMPT-V2.md`](docs/MASTER-PROMPT-V2.md)
 
 ## Katkı
 
-1. Issue aç veya PR gönder — PR'da `bash scripts/web/self-test.sh` **40/40 PASS**
+1. Issue aç veya PR gönder — PR'da `bash scripts/web/self-test.sh` **41/41 PASS**
    ve CI yeşil olmalı.
 2. Yeni QA kontrolü yalnız somut bir bug raporuyla eklenir (K6).
 3. Doküman güncellemeleri kanıttan türetilir (K5).
