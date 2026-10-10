@@ -46,6 +46,7 @@
 1. **P2 completion 0** — provider kalitesi sorunu; remedy altyapısı hazır, tekrar denenmeli (farklı gün/model envanteri; `MODEL_P2` env override).
 2. **A2'' saha tetiklenmesi** — P2'de ilk başarılı partial-write needed; completion olmadan blok boş kalmaya devam ediyor.
 3. Plugin `client.app.log` görünürlüğü — opencode daemon log yolu araştırılabilir (cosmetic).
+4. **CPU sampling teorik riski (not):** senaryo 34 CI race'i (bu tur fix'lendi) CPU örnekleme mantığının timing-hassas olduğunu gösterdi. Gerçek watchdog'ta pencereler 60-120s (testte 2-3s) olduğu için yanlış sınıflandırma olasılığı düşük ama teorik olarak mevcut — ileriki turda pencerelerin daha stabil hale getirilmesi değerlendirilebilir.
 
 ## Commit'ler
 

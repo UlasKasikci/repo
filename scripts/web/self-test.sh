@@ -1829,26 +1829,41 @@ c.execute("CREATE TABLE session (id TEXT, directory TEXT, time_created INTEGER, 
 c.execute("INSERT INTO session VALUES ('ses34', ?, 1, 900, 32000)", (sys.argv[2],))
 c.commit()
 PY
-# ~%10 CPU (50ms burn / 450ms sleep) — K1b strict eşiğin üstü, K1b-2 eşiğin altı.
+# ~%10 CPU (10ms burn / 90ms sleep) — K1b strict eşiğin üstü, K1b-2 eşiğin altı.
 # Burn, HEDEFİN ÇOCUĞU olmalı (gerçek hayatta opencode orchestrate'in çocuğu —
 # tree_cpu_sum hedef ağacını ölçer; sibling değil).
+# CI race fix (Tur 2-7): 50ms/450ms döngüde CPU örnekleme penceresi 450ms'lik saf
+# uyku fazına denk gelince ölçülen CPU≈0 oluyor → busy-hang yanlışlıkla stream-stall
+# (K1b) sanılıp 'zero-prod' marker'ı yazılmadan kill ediliyordu (CI run 38052451758).
+# 10ms/90ms: 100ms periyot, ≥100ms'lik HER pencerenin en az bir burn yakalamasını
+# garanti eder — ortalama CPU korunur, örnekleme race'i kapanır.
 cat > "$TMP/mp34-target.sh" <<'EOF'
 #!/bin/bash
 python3 -c "
 import time
 while True:
     t = time.time()
-    while time.time() - t < 0.05:
+    while time.time() - t < 0.01:
         pass
-    time.sleep(0.45)
+    time.sleep(0.09)
 " opencode run burn10 &
 BURN=$!
 sleep 300
 EOF
 bash "$TMP/mp34-target.sh" &
 TID34=$!
+# Sızıntı fix (Tur 2-7): target script'i TERM'leyince python burn çocuğu yetim kalıyor
+# ve %10 CPU ile suite'in geri kalanını bozuyor (senaryo 24 idle-flake kanıtı — 5 yetim
+# burn = ~%50 CPU). Her temizlik noktasında burn de öldürülür (argv marker eşleşir).
+sc34_cleanup() {
+  kill -TERM "$TID34" 2>/dev/null || true
+  wait "$TID34" 2>/dev/null || true
+  pkill -f "opencode run burn10" 2>/dev/null || true
+}
 WD34_MARK="$TMP/mp34-killmark"
-STREAM_STALL_MAX=2 ZERO_PROD_CAP=8 OPENCODE_DB="$TMP/mp34-tok.db" E2E_WD_KILL_MARK="$WD34_MARK" \
+# STREAM_STALL_MAX=3: test-accelerated değer (prod: e2e-driver'da 90s) — race payı için
+# 2→3; ZERO_PROD_CAP=8 hâlâ belirleyici (K1b-2 bu senaryonun doğru kanalı).
+STREAM_STALL_MAX=3 ZERO_PROD_CAP=8 OPENCODE_DB="$TMP/mp34-tok.db" E2E_WD_KILL_MARK="$WD34_MARK" \
   bash "$WD29" --watchdog "$MP34" "$TID34" 90 300 2> "$TMP/mp34-err.txt" &
 WPID34=$!
 rc34=0
@@ -1859,29 +1874,23 @@ done
 if kill -0 "$WPID34" 2>/dev/null; then
   kill -TERM "$WPID34" 2>/dev/null || true
   wait "$WPID34" 2>/dev/null || true
-  kill -TERM "$TID34" 2>/dev/null || true
-  wait "$TID34" 2>/dev/null || true
+  sc34_cleanup
   die "watchdog: zero-prod 30s içinde kill etmedi (K1b-2 kanalı çalışmıyor)"
 fi
 wait "$WPID34" 2>/dev/null || rc34=$?
-kill -TERM "$TID34" 2>/dev/null || true
-wait "$TID34" 2>/dev/null || true
 if [[ "$rc34" != "143" ]]; then
-  kill -TERM "$TID34" 2>/dev/null || true
-  wait "$TID34" 2>/dev/null || true
+  sc34_cleanup
   die "watchdog: zero-prod kill rc=143 beklenir, gelen $rc34"
 fi
 if ! grep -q "zero-prod" "$WD34_MARK" 2>/dev/null; then
-  kill -TERM "$TID34" 2>/dev/null || true
-  wait "$TID34" 2>/dev/null || true
+  sc34_cleanup
   die "watchdog: marker 'zero-prod' içermeli (busy-hang K1b ile değil K1b-2 ile kesilir)"
 fi
 if grep -q "stream-stall" "$WD34_MARK" 2>/dev/null; then
-  kill -TERM "$TID34" 2>/dev/null || true
-  wait "$TID34" 2>/dev/null || true
+  sc34_cleanup
   die "watchdog: busy-hang stream-stall (K1b strict) ile kesilmemeli — K1b-2 görevi"
 fi
-wait "$TID34" 2>/dev/null || true
+sc34_cleanup
 echo "    %10 CPU busy-hang → ZERO_PROD_CAP'de TERM (marker: zero-prod, stream-stall DEĞİL)"
 
 step "35) A2'' devam bloğu (Tur 2-6): mevcut üretim dosyası → prompt'ta dosya listesi + KALDIĞIN YERDEN"
