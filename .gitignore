@@ -120,3 +120,4 @@ metrics.jsonl
 # Web Edition — E2E run artefaktları (kalıcı bulgular docs/findings/ altına taşınır;
 # run dir'leri commit edilmez — takip edilen dosyalar tarihsel kayıt olarak yerinde kalır)
 .factory/e2e-runs/
+.factory/test-runs/

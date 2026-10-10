@@ -10,7 +10,7 @@ her proje aynı kapılardan geçer — domain analizi → kod → QA → paketle
 
 [![CI](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml/badge.svg)](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![self-test](https://img.shields.io/badge/self--test-41%2F41%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
+[![self-test](https://img.shields.io/badge/self--test-42%2F42%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
 
 ---
 
@@ -140,7 +140,7 @@ git clone https://github.com/UlasKasikci/repo.git && cd repo
 composer global require phpstan/phpstan phpunit/phpunit
 
 # fabrika kendini sınamalı
-bash scripts/web/self-test.sh          # hedef: 41/41 PASS
+bash scripts/web/self-test.sh          # hedef: 42/42 PASS
 ```
 
 ### Yeni proje
@@ -171,6 +171,23 @@ bash scripts/web/state.sh status         # aktif faz
 ```
 
 Çıkış kodları: `0` OK · `1` FAIL · `2` HALT · `3` orkestratör bekleme (LLM adımı).
+
+### Test projesi temizliği
+
+Saha testleri için bootstrapped izole dizinler `../test-project-<ts>/` altında
+yaşar. Silmeden önce raporlar `.factory/test-runs/<ts>/` altına kopyalanır
+(zaten oradadır):
+
+```bash
+# onay isteyerek (default)
+bash scripts/web/test-project-clean.sh ../test-project-20261010T155312Z
+
+# onaysız
+bash scripts/web/test-project-clean.sh ../test-project-20261010T155312Z --yes
+```
+
+Güvenlik: `.factory/web-state.json` olmayan dizin, ana repo içi dizin ve
+kök/home silinemez (RED, exit 1). Log: `.factory/test-runs/cleanup.log`.
 
 ### Ortam Değişkenleri
 
@@ -324,7 +341,7 @@ Tam metin: [`docs/MASTER-PROMPT-V2.md`](docs/MASTER-PROMPT-V2.md)
 
 ## Katkı
 
-1. Issue aç veya PR gönder — PR'da `bash scripts/web/self-test.sh` **41/41 PASS**
+1. Issue aç veya PR gönder — PR'da `bash scripts/web/self-test.sh` **42/42 PASS**
    ve CI yeşil olmalı.
 2. Yeni QA kontrolü yalnız somut bir bug raporuyla eklenir (K6).
 3. Doküman güncellemeleri kanıttan türetilir (K5).

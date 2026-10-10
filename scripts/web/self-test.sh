@@ -1937,6 +1937,7 @@ echo "    CI guard mevcut; README badge $badge == TOTAL_STEPS $TOTAL_STEPS"
 
 step "39) CJK encoding check (Tur 2-8 C): isabet → rc=1; temiz+Türkçe → rc=0"
 CJK="$ROOT/scripts/web/cjk-check.sh"
+CLEANER="$ROOT/scripts/web/test-project-clean.sh"
 [[ -f "$CJK" ]] || die "cjk-check.sh yok"
 CJKD="$TMP/cjk"
 mkdir -p "$CJKD/sub"
@@ -1963,6 +1964,28 @@ for f in .opencode/command/kur.md .cursor/commands/kur.md; do
 done
 rm -rf "$BOOT41"
 echo "    iki IDE'de mevcut; bootstrap kopyalıyor ✓"
+
+step "41) test-project-clean.sh (Tur 2-10): onay/RED mantığı"
+CLEAN="$TMP/clean-test"
+# sahte test projesi (bootstrapped işareti: .factory/web-state.json)
+mkdir -p "$CLEAN/proj/.factory"
+printf '{"current_phase":"P1"}\n' > "$CLEAN/proj/.factory/web-state.json"
+printf 'dummy\n' > "$CLEAN/proj/x.txt"
+# --yes OLMADAN → silinmemeli (stdin 'n' ile iptal)
+echo "n" | bash "$CLEANER" "$CLEAN/proj" >/dev/null 2>&1
+[[ -d "$CLEAN/proj" ]] || die "--yes OLMADAN hedef silindi (iptal yolu)"
+# --yes ile → silinmeli
+bash "$CLEANER" "$CLEAN/proj" --yes >/dev/null 2>&1 || die "--yes silme başarısız"
+[[ ! -d "$CLEAN/proj" ]] || die "--yes ile hedef silinmedi"
+# ana repo yolu → RED
+rc_repo="$(run_rc bash "$CLEANER" "$ROOT" --yes 2>/dev/null)"
+[[ "$rc_repo" == "1" ]] || die "ana repo yolu RED=1 beklenir, gelen $rc_repo"
+# web-state.json OLMAYAN dizin → RED
+mkdir -p "$CLEAN/notest"
+rc_nostate="$(run_rc bash "$CLEANER" "$CLEAN/notest" --yes 2>/dev/null)"
+[[ "$rc_nostate" == "1" ]] || die "web-state'siz RED=1 beklenir, gelen $rc_nostate"
+rm -rf "$CLEAN"
+echo "    iptal korur · --yes siler · repo yolu RED · statesiz RED"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"
