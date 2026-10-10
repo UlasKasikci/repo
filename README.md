@@ -10,7 +10,7 @@ her proje aynı kapılardan geçer — domain analizi → kod → QA → paketle
 
 [![CI](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml/badge.svg)](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![self-test](https://img.shields.io/badge/self--test-42%2F42%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
+[![self-test](https://img.shields.io/badge/self--test-43%2F43%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
 
 ---
 
@@ -140,7 +140,7 @@ git clone https://github.com/UlasKasikci/repo.git && cd repo
 composer global require phpstan/phpstan phpunit/phpunit
 
 # fabrika kendini sınamalı
-bash scripts/web/self-test.sh          # hedef: 42/42 PASS
+bash scripts/web/self-test.sh          # hedef: 43/43 PASS
 ```
 
 ### Yeni proje
@@ -157,6 +157,10 @@ bash scripts/web/bootstrap-project.sh ../my-project --yes
 
 # sonra: state start + qa-gate (veya IDE'de /kur + /web-baslat)
 ```
+
+Bootstrap ~1.3M (Tur 2-11: denylist `.opencode/{node_modules,sessions,storage,logs,cache}`
++ `.cursor/{snapshots,history,cache}` + `.factory/{e2e-runs,test-runs}` — 7.9G runtime
+bloat'ı kopyalanmaz).
 
 ### Üretim hattı
 
@@ -200,6 +204,22 @@ kök/home silinemez (RED, exit 1). Log: `.factory/test-runs/cleanup.log`.
 | `SMOKE_PORT` / `SMOKE_PATHS` | 18000+ | Smoke test portu / ek rotalar |
 | `LIGHTHOUSE_URL` | — | Tanımlı değilse Lighthouse SKIPPED |
 | `E2E_TIMEOUT_SEC` / `E2E_MAX_TOKENS` | 10.800 / 15M | E2E driver dış watchdog bütçesi |
+| `P2_HUMAN_ASSIST` | `false` | `true` → P2 hybrid mod (aşağıda) |
+
+### P2 Hybrid Mod — model uyumsuzluğunda manuel üretim
+
+P2 kod üretimi model uyumsuzluğunda (Tur 2-9/2-10: glm-5.3 0/10 write) kullanılır:
+otomatik LLM kapalı, iskeleti insan yazar, P3-P5 otomatik devam eder.
+
+```bash
+P2_HUMAN_ASSIST=true bash orchestrate.sh --auto   # → "manuel P2 gerekli" + exit 3
+# (iskeleti elle yaz)
+bash state.sh advance .                            # P2 → P3
+bash orchestrate.sh . --auto                       # P3-P5 otomatik
+```
+
+Claude 5.5 çıktığında: `MODEL_P2=claude-sonnet-5.5` tek pilotu — PASS ise hybrid
+devre dışı (tam otomatik), FAIL ise hybrid kalıcı.
 
 ---
 
@@ -341,7 +361,7 @@ Tam metin: [`docs/MASTER-PROMPT-V2.md`](docs/MASTER-PROMPT-V2.md)
 
 ## Katkı
 
-1. Issue aç veya PR gönder — PR'da `bash scripts/web/self-test.sh` **42/42 PASS**
+1. Issue aç veya PR gönder — PR'da `bash scripts/web/self-test.sh` **43/43 PASS**
    ve CI yeşil olmalı.
 2. Yeni QA kontrolü yalnız somut bir bug raporuyla eklenir (K6).
 3. Doküman güncellemeleri kanıttan türetilir (K5).

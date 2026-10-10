@@ -14,6 +14,9 @@ set -euo pipefail
 #            2× sert katman: eşiklerin ikikatını aşan durumda "SERT AŞIM" satırı
 #            + exit 1 (duraklatılmış fazdan yeniden çalıştırarak devam edilir).
 #            Eşikler env ile override edilebilir (aşağıda varsayılanlar).
+#   P2_HUMAN_ASSIST=true — Hybrid mod (Tur 2-11): P2 otomatik LLM kod üretimi
+#            KAPALI; iskeleti insan yazar, state.sh advance + --auto ile P3-P5
+#            otomatik devam eder. Model uyumsuzluğu (P2 0/10) durumunda kullanılır.
 # Exit: 0 = DONE · 1 = hata/geçersiz artefakt · 2 = HALT · 3 = bekleme (LLM adımı gerekli)
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -904,6 +907,15 @@ while true; do
       ;;
 
     P2)
+      # C — Hybrid mod (Tur 2-11): P2_HUMAN_ASSIST=true ise iskeleti insan yazar.
+      if [[ "${P2_HUMAN_ASSIST:-false}" == "true" ]] && ! scaffold_ok; then
+        echo "==> P2 HYBRID (P2_HUMAN_ASSIST=true): otomatik kod üretimi kapalı."
+        echo "    Manuel P2 gerekli: iskeleti elle yaz (index.php, core/, views/, SQL/veritabani.sql,)"
+        echo "    phpstan.neon.dist, .eslintrc.json, phpunit.xml + tests/). Sonra:"
+        echo "      bash scripts/web/state.sh advance $PROJECT   # P2 → P3"
+        echo "      bash scripts/web/orchestrate.sh $PROJECT --auto   # P3-P5 otomatik devam"
+        exit 3
+      fi
       # A1 kapı 1: döngüye soruyla girildiyse ajan çağırmadan P1'e dön.
       if questions_pending; then
         p2_questions_back
