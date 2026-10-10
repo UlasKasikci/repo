@@ -1935,6 +1935,20 @@ badge="$(grep -oE 'self--test-[0-9]+%2F[0-9]+%20PASS' "$ROOT/README.md" | head -
 [[ "$badge" == "$TOTAL_STEPS" ]] || die "K5 B.3: README badge ($badge) != self-test senaryo sayısı ($TOTAL_STEPS)"
 echo "    CI guard mevcut; README badge $badge == TOTAL_STEPS $TOTAL_STEPS"
 
+step "39) CJK encoding check (Tur 2-8 C): isabet → rc=1; temiz+Türkçe → rc=0"
+CJK="$ROOT/scripts/web/cjk-check.sh"
+[[ -f "$CJK" ]] || die "cjk-check.sh yok"
+CJKD="$TMP/cjk"
+mkdir -p "$CJKD/sub"
+printf 'test 参照工作中\n' > "$CJKD/sub/bad.md"
+rc_cjk="$(run_rc bash "$CJK" "$CJKD")"
+[[ "$rc_cjk" == "1" ]] || die "CJK isbet tespiti rc=1 beklenir, gelen $rc_cjk"
+printf 'Türkçe: ç ş ğ ü ö ı İ — meşru; " referans " kelimesi de temiz\n' > "$CJKD/sub/ok.md"
+rm -f "$CJKD/sub/bad.md"
+rc_ok="$(run_rc bash "$CJK" "$CJKD")"
+[[ "$rc_ok" == "0" ]] || die "CJK temiz repo rc=0 beklenir, gelen $rc_ok"
+echo "    isabet→1, Türkçe-muş temiz→0"
+
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"
 exit 0

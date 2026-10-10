@@ -49,5 +49,8 @@ jobs:
           python3 -m pip install --quiet jsonschema
           echo "tools ready"
 
+      - name: CJK encoding check (Tur 2-8 C — AI edit sızıntısı kalıcı koruma)
+        run: bash scripts/web/cjk-check.sh .
+
       - name: State Graph + QA + Packaging self-test
         run: bash scripts/web/self-test.sh

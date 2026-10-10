@@ -47,7 +47,7 @@
 2. **A2'' saha tetiklenmesi** — P2'de ilk başarılı partial-write needed; completion olmadan blok boş kalmaya devam ediyor.
 3. Plugin `client.app.log` görünürlüğü — opencode daemon log yolu araştırılabilir (cosmetic).
 4. **CPU sampling platform-kırılganlığı (senaryo 34 CI race — bu tur fix'lendi):** CI'da busy-hang yanlışlıkla stream-stall sanılıyordu (marker 'zero-prod' hiç yazılmadan kill). Root cause: **Linux `ps -o cputime` 1s granularity truncate eder** (macOS 0.01s) — %10 duty'de ilk pencerelerde birikmiş CPU 0.6s → Linux `00:00:00` gösterir → cdelta≈0. Fix (kalıcı): `e2e-driver.sh` → `cpu_time_pid()` — Linux'ta `/proc/<pid>/stat` utime+stime (10ms çözünürlük); macOS'ta ps yolu korunur. Prod kazancı: gerçek watchdog'un kısa CPU pencereleri de Linux'ta artık doğru ölçülür.
-5. **CJK encoding sızıntısı (bu tur temizlendi + kalıcı koruma notu):** AI edit'leri üç eski dokümanda CJK karakter sızmıştı (`工作中`, `参照` ×2) — repo-wide tarama sonrası düzeltildi (CJK=0). Kalıcı koruma: CI'a opsiyonel CJK-check adımı (yalnız `.sh`/`.md`, Türkçe karakterler meşru) — sonraki tur.
+5. **CJK encoding sızıntısı (bu tur temizlendi + kalıcı koruma notu):** AI edit'leri üç eski dokümanda CJK karakter sızmıştı (hanzi "çalışma sırasında" ve "referans" karşılıkları — 3 satır) — repo-wide tarama sonrası düzeltildi (CJK=0). Kalıcı koruma: CI'a opsiyonel CJK-check adımı (yalnız `.sh`/`.md`, Türkçe karakterler meşru) — sonraki tur → Tur 2-8 C'de `cjk-check.sh` olarak uygulandı.
 
 ## Commit'ler
 
