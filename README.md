@@ -8,9 +8,9 @@ Eksik CRUD, unutulan RBAC, kırık bağımlılık ve token israfı problemlerini
 her proje aynı kapılardan geçer — domain analizi → kod → QA → paketleme.
 Üç IDE (Cursor / OpenCode / Claude Code) aynı `.factory/` state'ini okur/yazar.
 
-[![CI](https://github.com/clariongemini/APP-FABRIKA/actions/workflows/validate.yml/badge.svg)](https://github.com/clariongemini/APP-FABRIKA/actions/workflows/validate.yml)
+[![CI](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml/badge.svg)](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![self-test](https://img.shields.io/badge/self--test-31%2F31%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
+[![self-test](https://img.shields.io/badge/self--test-34%2F34%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
 
 ---
 
@@ -134,7 +134,7 @@ app-fabrika/
 ### Kurulum
 
 ```bash
-git clone https://github.com/clariongemini/APP-FABRIKA.git && cd APP-FABRIKA
+git clone https://github.com/UlasKasikci/repo.git && cd repo
 
 # phpstan + phpunit (qa-gate'in asimetrik çekirdeği)
 composer global require phpstan/phpstan phpunit/phpunit
