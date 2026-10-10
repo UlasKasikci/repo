@@ -518,8 +518,11 @@ run_agent() { # $1=agent $2=prompt $3=phase(P1|P2|P4)
   printf '%s' "$ev" > "$PROJECT/.factory/e2e-last-ev"
   start_ms="$(python3 -c 'import time; print(int(time.time() * 1000))')"
   CURRENT_EV="$ev" CURRENT_AGENT="$agent" CURRENT_PHASE="$phase" CURRENT_START_MS="$start_ms" CURRENT_MODEL="$model"
-  # --model prompt'tan ÖNCE (self-test stub'ı son argümanı prompt sayar); boşta --model verilmez.
-  (cd "$PROJECT" && opencode run --format json --agent "$agent" ${model_args[@]+"${model_args[@]}"} "$prompt") > "$ev" || rc=$?
+  # F4 (Tur 2-5c): opencode gizli 32K output cap — OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX
+  # set edilmezse max_tokens = min(limit.output, 32000) kırpılır (FINDINGS-TUR2-5b F4;
+  # 5b pilot turn 4: reas=32000 TAM, out=0). 131072 = model üst sınırı; limit.output=65536
+  # (opencode.json) hâlâ geçerli — opencode ikisinden küçük olanı seçer.
+  (cd "$PROJECT" && OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX=131072 opencode run --format json --agent "$agent" ${model_args[@]+"${model_args[@]}"} "$prompt") > "$ev" || rc=$?
   end_ms="$(python3 -c 'import time; print(int(time.time() * 1000))')"
   record_agent_metrics "$agent" "$phase" "$rc" "$start_ms" "$end_ms" "$ev" "$model" || true
   whitelist_scan "$ev" "$phase" "$PROJECT" || true # A1: P2 okuma taraması — reporter-only WARN
