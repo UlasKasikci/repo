@@ -25,7 +25,7 @@ set -euo pipefail
 # A1 QUESTIONS.json exit gate (P2 soru → P2→P1 dönüşü + P1 yanıtı tüketir) →
 # A1 whitelist read scan (whitelist dışı read → WARN, reporter-only) →
 # frontmatter validator (kırık imza → standalone FAIL + qa-gate 14. kontrol FAIL) +
-# manifest-onaylı okuma (file_manifest yolu sessiz, manifest dışı WARN) — 34 senaryo
+# manifest-onaylı okuma (file_manifest yolu sessiz, manifest dışı WARN) — 36 senaryo
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FIX="$ROOT/tests/fixtures/web-sample"
@@ -1872,6 +1872,27 @@ if grep -q "stream-stall" "$WD34_MARK" 2>/dev/null; then
 fi
 wait "$TID34" 2>/dev/null || true
 echo "    %10 CPU busy-hang → ZERO_PROD_CAP'de TERM (marker: zero-prod, stream-stall DEĞİL)"
+
+step "35) A2'' devam bloğu (Tur 2-6): mevcut üretim dosyası → prompt'ta dosya listesi + KALDIĞIN YERDEN"
+eval "$(sed -n '/^continuation_block()/,/^}/p' "$ROOT/scripts/web/orchestrate.sh")"
+PROJ35="$(mktemp -d "$TMP/ap35.XXXXXX")"
+mkdir -p "$PROJ35/core" "$PROJ35/views"
+printf '<?php\n' > "$PROJ35/core/App.php"
+printf '<html>\n' > "$PROJ35/views/home.php"
+out35="$(continuation_block "$PROJ35")"
+grep -q "core/App.php" <<<"$out35" || die "A2'': dosya listesinde core/App.php yok"
+grep -q "views/home.php" <<<"$out35" || die "A2'': dosya listesinde views/home.php yok"
+grep -q "KALDIĞIN YERDEN DEVAM ET" <<<"$out35" || die "A2'': 'KALDIĞIN YERDEN DEVAM ET' metni yok"
+PROJ35b="$(mktemp -d "$TMP/ap35b.XXXXXX")"
+out35b="$(continuation_block "$PROJ35b")"
+[[ -z "$out35b" ]] || die "A2'': boş projede continuation bloğu olmamalı"
+echo "    dolu proje → dosya listesi + devam metni; boş proje → blok yok"
+
+step "36) A2'' davranış metinleri: TEKRAR YAZMA yasağı + Baştan planlama yasağı"
+grep -q "TEKRAR YAZMA" <<<"$out35" || die "A2'': 'TEKRAR YAZMA' yasağı metni yok"
+grep -q "Baştan planlama YAPMA" <<<"$out35" || die "A2'': 'Baştan planlama YAPMA' metni yok"
+grep -q "write/edit tool çağrısı" <<<"$out35" || die "A2'': 'write/edit' ilk-iş zorlaması yok"
+echo "    TEKRAR YAZMA yasağı + Baştan planlama yasağı + write/edit ilk-iş: mevcut"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

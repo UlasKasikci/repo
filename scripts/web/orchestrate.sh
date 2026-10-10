@@ -758,6 +758,30 @@ EOF
   questions_block # A1: varsa P2 sorularını bu analize dahil et
 }
 
+# A2'' (Tur 2-6, devam stratejisi): P2 kill sonrası retry SIFIRDAN BAŞLAMAZ —
+# proje dizinindeki mevcut üretim dosyalarını prompt'a gömer. F5 (Tur 2-5d: 3/3
+# mid-turn hang) stokastik; her asılma boşuna olmasın: önceki oturumun dosyaları
+# + "KALDIĞIN YERDEN UYGULA" + "TEKRAR YAZMA, eksikleri tamamla".
+continuation_block() { # $1=proje_kökü
+  local root="$1" p targets="" files n
+  for p in core views assets SQL index.php .htaccess robots.txt sitemap.xml \
+           phpstan.neon.dist .eslintrc.json phpunit.xml tests; do
+    [[ -e "$root/$p" ]] && targets="$targets $p"
+  done
+  [[ -z "${targets// /}" ]] && return 0
+  files="$(cd "$root" && find $targets -type f 2>/dev/null | grep -v '/\._' | LC_ALL=C sort | head -40)"
+  [[ -z "$files" ]] && return 0
+  n="$(printf '%s\n' "$files" | wc -l | tr -d ' ')"
+  cat <<EOF
+
+ÖNCEKİ OTURUMDAN DEVAM (A2''): Bu proje dizininde ÜRETİM DOSYALARI ZATEN VAR ($n adet):
+$files
+KALDIĞIN YERDEN DEVAM ET. İlk iş: eksik dosyalara write/edit tool çağrısı.
+Baştan planlama YAPMA — uygula. Mevcut dosyaları TEKRAR YAZMA; yalnız eksikleri
+tamamla ve iskeleti bitir (index.php, core/, views/, assets/, SQL/veritabani.sql).
+EOF
+}
+
 p2_prompt() {
   local c
   c="$(compliance_mode)"
@@ -791,6 +815,7 @@ KVKK/GDPR bloğu (intent.compliance=$c — zorunlu, qa-gate kvkk kanalı denetle
   ardından \`bash scripts/web/sql-dump.sh .\` ile dump'ı yeniden üret (drift FAIL)
 EOF
   fi
+  continuation_block "$PROJECT"
 }
 
 p4_prompt() {

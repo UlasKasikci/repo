@@ -88,6 +88,10 @@ dosyayı görürse P2→P1 döner; P1 soruları domain-report'a yanıtlar ve dos
   zaten proje köküdür; elle path yazma — typo izin reddine ve oturum halt'ına yol açar
   (Tur 2-5a pilot 1 kanıtı).
 - Bu bir hız kuralıdır, kesme/hard-kill DEĞİLDİR (K1 — reasoning idle-kill de yasak).
+- **A2'' — kaldığın yerden devam (Tur 2-6):** Prompt'ta "ÖNCEKİ OTURUMDAN DEVAM"
+  bloğu ve dosya listesi VARSA sıfırdan başlama. Mevcut dosyaları oku (tek bash
+  `cat` ile), TEKRAR YAZMA; eksik dosyalara ilk 3 çağrıda write/edit bas. Baştan
+  planlama/iskelet yeniden kurma YASAK (F5 asılmalarında birikim bu kurala bağlı).
 
 ## Zorunlu kapanış
 
