@@ -25,7 +25,8 @@ set -euo pipefail
 # A1 QUESTIONS.json exit gate (P2 soru → P2→P1 dönüşü + P1 yanıtı tüketir) →
 # A1 whitelist read scan (whitelist dışı read → WARN, reporter-only) →
 # frontmatter validator (kırık imza → standalone FAIL + qa-gate 14. kontrol FAIL) +
-# manifest-onaylı okuma (file_manifest yolu sessiz, manifest dışı WARN) — 36 senaryo
+# manifest-onaylı okuma (file_manifest yolu sessiz, manifest dışı WARN)
+# K5 (Tur 2-7): senaryo sayısı otomatik (grep -c '^step "') + README badge tutarlılığı
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FIX="$ROOT/tests/fixtures/web-sample"
@@ -51,6 +52,11 @@ run_rc() {
   printf '%s' "$rc"
 }
 
+# K5 (Tur 2-7 B.3): senaryo sayısı TEK KAYNAK — bu dosyadaki '^step "' sayacı;
+# README badge'i bu sayı ile tutarlı olmalı (tutarsızlık = die, K5 ihlali).
+TOTAL_STEPS="$(grep -c '^step "' "$0")"
+echo "SELF-TEST header: $TOTAL_STEPS senaryo"
+
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -70,7 +76,12 @@ bash "$ROOT/scripts/web/frontmatter-check.sh" "$ROOT" || die "frontmatter kontra
 
 if [[ ! -d "$FIX" ]]; then
   echo
-  echo "SELF-TEST: SKIP — fixture yok (tests/ bu repoya dahil edilmedi)"
+  # K5 (Tur 2-7 B.2): CI modunda fixture yokluğu sessiz PASS üretmez — FAIL.
+  # Yerel modda SKIP korunur (geliştirme kolaylığı); CI'da K5 ihlali (SKIP→PASS).
+  if [[ "${CI:-}" == "true" || "${CI:-}" == "1" ]]; then
+    die "CI modunda fixture yokluğu FAIL (K5: tests/fixtures/web-sample eksik)"
+  fi
+  echo "SELF-TEST: SKIP — fixture yok (yerel mod; CI=true iken FAIL olurdu)"
   exit 0
 fi
 command -v php >/dev/null 2>&1 || die "php-cli yok"
@@ -1893,6 +1904,28 @@ grep -q "TEKRAR YAZMA" <<<"$out35" || die "A2'': 'TEKRAR YAZMA' yasağı metni y
 grep -q "Baştan planlama YAPMA" <<<"$out35" || die "A2'': 'Baştan planlama YAPMA' metni yok"
 grep -q "write/edit tool çağrısı" <<<"$out35" || die "A2'': 'write/edit' ilk-iş zorlaması yok"
 echo "    TEKRAR YAZMA yasağı + Baştan planlama yasağı + write/edit ilk-iş: mevcut"
+
+step "37) K5 B.1: phpunit config uyumsuzluğu — phpunit.xml VEA .dist hangisi varsa"
+PU_SNIP="$(mktemp -d "$TMP/pu.XXXXXX")"
+mkdir -p "$PU_SNIP/projA" "$PU_SNIP/projB"
+# projA: yalnız phpunit.xml.dist → --configuration phpunit.xml.dist kullanılmalı
+touch "$PU_SNIP/projA/phpunit.xml.dist"
+# projB: yalnız phpunit.xml → --configuration phpunit.xml kullanılmalı
+touch "$PU_SNIP/projB/phpunit.xml"
+for pair in "projA:phpunit.xml.dist" "projB:phpunit.xml"; do
+  d="${pair%%:*}"; want="${pair##*:}"
+  PU_CFG="phpunit.xml"
+  [[ -f "$PU_SNIP/$d/phpunit.xml" ]] || PU_CFG="phpunit.xml.dist"
+  [[ "$PU_CFG" == "$want" ]] || die "K5 B.1: $d için config=$PU_CFG, beklenen $want"
+done
+grep -q 'PU_CFG="phpunit.xml.dist"' "$ROOT/scripts/web/qa-gate.sh" || die "K5 B.1: qa-gate.sh'te PU_CFG seçimi yok"
+echo "    yalnız .dist → .dist; yalnız xml → xml; qa-gate PU_CFG seçimi mevcut"
+
+step "38) K5 B.2+B.3: CI fixture guard kontratı + README badge sayaç tutarlılığı"
+grep -q 'CI modunda fixture yokluğu FAIL' "$ROOT/scripts/web/self-test.sh" || die "K5 B.2: CI fixture guard satırı yok"
+badge="$(grep -oE 'self--test-[0-9]+%2F[0-9]+%20PASS' "$ROOT/README.md" | head -1 | grep -oE '[0-9]+' | head -1)"
+[[ "$badge" == "$TOTAL_STEPS" ]] || die "K5 B.3: README badge ($badge) != self-test senaryo sayısı ($TOTAL_STEPS)"
+echo "    CI guard mevcut; README badge $badge == TOTAL_STEPS $TOTAL_STEPS"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

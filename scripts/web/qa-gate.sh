@@ -352,8 +352,12 @@ if [[ -f "$PROJECT/phpunit.xml" || -f "$PROJECT/phpunit.xml.dist" ]]; then
     PU="phpunit"
   fi
   if [[ -n "$PU" ]]; then
+    # K5 (Tur 2-7 B.1): hangi config dosyası varsa onu kullan — phpunit.xml.dist
+    # olan projede sabit "phpunit.xml" testin ÇALIŞMAMASINA (sessiz skip) yol açıyordu.
+    PU_CFG="phpunit.xml"
+    [[ -f "$PROJECT/phpunit.xml" ]] || PU_CFG="phpunit.xml.dist"
     check_begin
-    if ! (cd "$PROJECT" && "$PU" --configuration phpunit.xml >/dev/null 2>&1); then
+    if ! (cd "$PROJECT" && "$PU" --configuration "$PU_CFG" >/dev/null 2>&1); then
       _hint=""
       if find "$PROJECT" -type f -name '._*Test.php' -not -path '*/node_modules/*' 2>/dev/null | grep -q .; then
         _hint=" — AppleDouble ikizi (._*Test.php) PHPUnit tarayıcısını bozar; find . -name '._*' -delete (exFAT)"
