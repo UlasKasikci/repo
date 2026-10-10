@@ -1950,6 +1950,20 @@ rc_ok="$(run_rc bash "$CJK" "$CJKD")"
 [[ "$rc_ok" == "0" ]] || die "CJK temiz repo rc=0 beklenir, gelen $rc_ok"
 echo "    isabet→1, Türkçe-muş temiz→0"
 
+step "40) /kur komutu (Tur 2-9 B): iki IDE'de mevcut + bootstrap ile kopyalanır"
+for f in .opencode/command/kur.md .cursor/commands/kur.md; do
+  [[ -f "$ROOT/$f" ]] || die "/kur eksik: $f"
+  grep -q "MASTER-PROMPT-V2" "$ROOT/$f" || die "/kur kontrat referansı yok: $f"
+  grep -q "qa-gate" "$ROOT/$f" || die "/kur QA adımı yok: $f"
+done
+BOOT41="$TMP/boot41"
+bash "$BOOTER" "$BOOT41" --yes >/dev/null 2>&1 || die "/kur bootstrap kopyası başarısız"
+for f in .opencode/command/kur.md .cursor/commands/kur.md; do
+  [[ -f "$BOOT41/$f" ]] || die "/kur bootstrap'a kopyalanmadı: $f"
+done
+rm -rf "$BOOT41"
+echo "    iki IDE'de mevcut; bootstrap kopyalıyor ✓"
+
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"
 exit 0
