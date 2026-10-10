@@ -117,7 +117,7 @@
       "type": "array",
       "minItems": 1,
       "items": { "type": "string", "minLength": 10 },
-      "description": "P2'nin neyi başaracağı (qa-gate.sh okumak yasak → tek kaynak bu alan)"
+      "description": "P2'nin neyi başaracağı (qa-gate.sh okumak yasak → tek kaynak bu alan). İzlenebilirlik (K5/Tur 2-7 notu): her kriter tekil ve test edilebilir yazılmalı; md5/UUID gibi izole token veya tekrar eden kopya metin kabul edilmez (traceability: gereksinim → kabul kriteri → test senaryosu)."
     },
     "api_endpoints": {
       "type": "array",
