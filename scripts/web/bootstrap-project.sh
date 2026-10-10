@@ -18,10 +18,11 @@ set -euo pipefail
 #   opencode.json, .gitignore
 # KOPYALANMAZ:
 #   tests/ (fabrika fixture), .github/ (fabrika CI), scripts/web/{self-test,bootstrap-project}.sh,
-#   .factory/{context,freeze.json} + runtime (web-state.json, domain-report.json,
+#   .factory/{context,e2e-runs,test-runs,freeze.json} + runtime (web-state.json, domain-report.json,
 #   lighthouse-report.json, smoke-report.json, qa/debug/packaging-report.json,
-#   yukleme-{staging,archive,failed}/), .cursor/{skills,snapshots,mcp.json},
-#   .opencode/{plans,node_modules,package*.json}, .git/, node_modules/, Yukleme/, ._*, .DS_Store
+#   yukleme-{staging,archive,failed}/), .cursor/{skills,snapshots,history,cache,mcp.json},
+#   .opencode/{plans,node_modules,sessions,storage,logs,cache,package*.json}, .git/,
+#   node_modules/, Yukleme/, ._*, .DS_Store
 #
 # Git izi: hedefte taze `git init`; ilk commit
 #   "bootstrap from app-fabrika@<12-hex>"  (fabrika deposunun HEAD'i — sürüm izlenebilirliği)
@@ -94,12 +95,20 @@ PRUNE_DIRS = {".git", "node_modules", "Yukleme", "__pycache__", ".DS_Store"}
 PRUNE_REL_DIRS = {
     os.path.join(".factory", "context"),
     os.path.join(".factory", "e2e-runs"),
+    os.path.join(".factory", "test-runs"),
     os.path.join(".factory", "yukleme-staging"),
     os.path.join(".factory", "yukleme-archive"),
     os.path.join(".factory", "yukleme-failed"),
     ".cursor/skills",
     ".cursor/snapshots",
+    ".cursor/history",
+    ".cursor/cache",
     ".opencode/plans",
+    ".opencode/node_modules",
+    ".opencode/sessions",
+    ".opencode/storage",
+    ".opencode/logs",
+    ".opencode/cache",
     ".github",
     "tests",
 }
@@ -160,8 +169,10 @@ total = sum(os.path.getsize(os.path.join(source, f)) for f in files)
 
 EXCLUDED_NOTE = (
     "hariç: tests/, .github/, scripts/web/{self-test,bootstrap-project}.sh, "
-    ".factory/{context,freeze.json,runtime raporlar}, .cursor/{skills,snapshots,mcp.json}, "
-    ".opencode/{plans,node_modules,package*.json}, .git/, node_modules/, Yukleme/, ._*, .DS_Store"
+    ".factory/{context,e2e-runs,test-runs,yukleme-*,freeze.json,runtime}, "
+    ".cursor/{skills,snapshots,history,cache,mcp.json}, "
+    ".opencode/{plans,node_modules,sessions,storage,logs,cache,package*.json}, "
+    ".git/, node_modules/, Yukleme/, ._*, .DS_Store"
 )
 
 if mode == "dry-run":

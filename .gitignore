@@ -121,3 +121,10 @@ metrics.jsonl
 # run dir'leri commit edilmez — takip edilen dosyalar tarihsel kayıt olarak yerinde kalır)
 .factory/e2e-runs/
 .factory/test-runs/
+.opencode/node_modules/
+.opencode/sessions/
+.opencode/storage/
+.opencode/logs/
+.opencode/cache/
+.cursor/history/
+.cursor/cache/
