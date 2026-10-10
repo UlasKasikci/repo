@@ -1987,6 +1987,30 @@ rc_nostate="$(run_rc bash "$CLEANER" "$CLEAN/notest" --yes 2>/dev/null)"
 rm -rf "$CLEAN"
 echo "    iptal korur · --yes siler · repo yolu RED · statesiz RED"
 
+step "42) bootstrap bloat fix + P2_HUMAN_ASSIST (Tur 2-11)"
+BLOAT="$TMP/bloat-boot"
+bash "$BOOTER" "$BLOAT" --yes >/dev/null 2>&1 || die "bloat-fix bootstrap başarısız"
+BSIZE_KB="$(du -sk "$BLOAT" | cut -f1)"
+[[ "$BSIZE_KB" -lt 51200 ]] || die "bootstrap ${BSIZE_KB}KB > 50MB (bloat)"
+for d in .factory/contracts .opencode/agent .opencode/command .opencode/plugins .cursor/agents .cursor/commands docs scripts/web; do
+  [[ -d "$BLOAT/$d" ]] || die "bloat-fix bootstrap'ta korunaklı dizin eksik: $d"
+done
+for d in .factory/e2e-runs .factory/test-runs .cursor/snapshots .opencode/node_modules .opencode/plans; do
+  [[ ! -e "$BLOAT/$d" ]] || die "bloat-fix prune edilmedi: $d"
+done
+rm -rf "$BLOAT"
+# human-assist: orchestrate P2 bloğunda P2_HUMAN_ASSIST=true → exit 3 + "HYBRID" mesajı
+HA_PROJ="$TMP/ha-proj"
+mkdir -p "$HA_PROJ/.factory"
+printf '{"current_phase":"P2","retry_count":0,"max_retries":3,"history":[]}\n' > "$HA_PROJ/.factory/web-state.json"
+# scaffold eksik (index.php yok) → hybrid devreye girmeli
+rc_ha=0
+P2_HUMAN_ASSIST=true bash "$ROOT/scripts/web/orchestrate.sh" "$HA_PROJ" >"$TMP/ha.out" 2>&1 || rc_ha=$?
+[[ "$rc_ha" == "3" ]] || die "P2_HUMAN_ASSIST exit 3 beklenir, gelen $rc_ha"
+grep -q "HYBRID" "$TMP/ha.out" || die "P2_HUMAN_ASSIST HYBRID mesajı yok"
+rm -rf "$HA_PROJ"
+echo "    bootstrap ${BSIZE_KB}KB (<50MB) · prune'lar temiz · HYBRID exit=3"
+
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"
 exit 0
