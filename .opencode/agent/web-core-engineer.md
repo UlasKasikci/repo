@@ -76,6 +76,18 @@ dosyayı görürse P2→P1 döner; P1 soruları domain-report'a yanıtlar ve dos
   `cat` ile), TEKRAR YAZMA; eksik dosyalara ilk 3 çağrıda write/edit bas. Baştan
   planlama/iskelet yeniden kurma YASAK (F5 asılmalarında birikim bu kurala bağlı).
 
+## Tek-turn iskelet stratejisi (Tur 2-9 · A2 — verimlilik zorunluluğu)
+
+- İskelet dosyalarını **TEK TURN'DE** üret — sırayla değil, **PARALEL write**: tek
+  assistant adımı içinde art arda write çağrısı (1 adım = 1 dosya değil; 1 adım =
+  tüm dosya dalgası). Kanıt: E2E-3 att0 = tek oturumda 21 paralel write.
+- **Plan todowrite'ta, reasoning'de değil:** write öncesi todowrite'a üretilecek
+  dosya listesini bas (1 satır/dosya); reasoning'de uzun "ne yazacağım" planı kurma
+  — reasoning'i write'a harca.
+- **Scaffold'ta tekrar okuma YASAK:** iskelet boşken dosya okuma (read) çağıрма —
+  domain-report + file_manifest yeterli; içeriği zaten biliyorsun. Okuma yalnız
+  manifest-onaylı TAMAMLAMA'da (A1).
+
 ## Mandatory close-out
 
 ```bash

@@ -790,6 +790,9 @@ P2 (Code Generation) — App-Fabrika Web Edition MVC iskeletini tamamla.
 Proje dizini: $PROJECT
 $WRITE_RULE
 $BATCH_RULE
+TEK-TURN İSKELET (Tur 2-9): dosyaları sırayla değil PARALEL write ile tek dalgada bas
+(todowrite'a dosya listesini önce bas, 1 satır/dosya); scaffold'ta tekrar okuma YASAK
+(domain-report + file_manifest yeterli); reasoning'de uzun plan kurma — plan todowrite'ta.
 Girdi kontratı: $PROJECT/.factory/domain-report.json (P1 çıktısı) — entities[] tablo
 adları ve module_matrix kararları (present|injected|missing|proposed) P2 şemasına,
 SQL migrations/ ve views/ akışına bağlayıcıdır; görmezden gelme.
