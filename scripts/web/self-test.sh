@@ -1832,11 +1832,9 @@ PY
 # ~%10 CPU (10ms burn / 90ms sleep) — K1b strict eşiğin üstü, K1b-2 eşiğin altı.
 # Burn, HEDEFİN ÇOCUĞU olmalı (gerçek hayatta opencode orchestrate'in çocuğu —
 # tree_cpu_sum hedef ağacını ölçer; sibling değil).
-# CI race fix (Tur 2-7): 50ms/450ms döngüde CPU örnekleme penceresi 450ms'lik saf
-# uyku fazına denk gelince ölçülen CPU≈0 oluyor → busy-hang yanlışlıkla stream-stall
-# (K1b) sanılıp 'zero-prod' marker'ı yazılmadan kill ediliyordu (CI run 38052451758).
-# 10ms/90ms: 100ms periyot, ≥100ms'lik HER pencerenin en az bir burn yakalamasını
-# garanti eder — ortalama CPU korunur, örnekleme race'i kapanır.
+# 10ms/90ms (Tur 2-7): 100ms periyot, ≥100ms'lik HER pencerenin en az bir burn
+# yakalamasını garanti eder (eski 50/450'de pencere saf uyku fazına denk gelebiliyordu).
+# ASIL CI root-cause bu değil — cputime truncation; STREAM_STALL_MAX notuna bak.
 cat > "$TMP/mp34-target.sh" <<'EOF'
 #!/bin/bash
 python3 -c "
@@ -1861,8 +1859,9 @@ sc34_cleanup() {
   pkill -f "opencode run burn10" 2>/dev/null || true
 }
 WD34_MARK="$TMP/mp34-killmark"
-# STREAM_STALL_MAX=3: test-accelerated değer (prod: e2e-driver'da 90s) — race payı için
-# 2→3; ZERO_PROD_CAP=8 hâlâ belirleyici (K1b-2 bu senaryonun doğru kanalı).
+# STREAM_STALL_MAX=3: test-accelerated (prod: 90s) — cpu_time_pid /proc hızlı yolu
+# (e2e-driver.sh) Linux'ta 10ms çözünürlük verdiği için %10 burn cdelta≈%10 okunur,
+# K1b (<%0.55) tetiklenmez; ZERO_PROD_CAP=8 hâlâ belirleyici kanal (K1b-2).
 STREAM_STALL_MAX=3 ZERO_PROD_CAP=8 OPENCODE_DB="$TMP/mp34-tok.db" E2E_WD_KILL_MARK="$WD34_MARK" \
   bash "$WD29" --watchdog "$MP34" "$TID34" 90 300 2> "$TMP/mp34-err.txt" &
 WPID34=$!

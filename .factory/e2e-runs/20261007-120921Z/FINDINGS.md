@@ -179,7 +179,7 @@ Referanslar→§11).
   `modelID=z-ai/glm-5.3-flash` kanıtıyla dolduruldu (`model_used` yoktu, yönlü ölçüm).
 - **Temiz kontrol (E2E-2, flash):** P2 4,194,591/55 adım → 6,825,044/74 adım = **+%62.7 /
   +%34.5 adım** — glm-5.3 flash'a göre daha çok harcıyor; P2 duvar süresi ise 112.5→69.5 dk.
-  KARAR verisi iki参照 ile raporlandı (brief kriteri: −44% → yeşil ışık; kontrol: +63% →
+  KARAR verisi iki referans ile raporlandı (brief kriteri: −44% → yeşil ışık; kontrol: +63% →
   model seçimi gözden geçirme eşiği de tetikleniyor — karar kullanıcı/Faz 1.3, n=1).
 - **S1 steps:** E2E-3'e göre 113→74 (−34.5% ✓) · E2E-2'ye göre 55→74 (arttı).
 - **S2 QA FAIL:** 0 → 0 değişmedi (ilk geçişte PASS, her i turda).

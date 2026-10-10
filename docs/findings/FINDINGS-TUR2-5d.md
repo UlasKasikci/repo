@@ -54,7 +54,7 @@ Asılma konumu şans işi: 5c pilot'ta write'tan SONRA (turn 4), 5d'de write'dan
 | **Tur 2-5d** | 10-10 | **35dk** | **3** | **0** | 45k | **3 zero-prod ✓** | **F5 sistematik (write öncesi)** |
 
 Trend okuması: H1 (32k cap) KAPANDI (5c+5d kanıtı). F3/K1b-2 altyapısı KAPANDI
-(kesme工作中). Geriye kalan tek duvar: **F5 — NIM mid-turn stream stall**, stokastik
+(kesme sırasında). Geriye kalan tek duvar: **F5 — NIM mid-turn stream stall**, stokastik
 frekansta; write'a VARIP-VARMAMASI şans. Devamsızlık (A2'') ile birleşince her asılma
 boşuna: attempt'ler birikim yapmıyor (session sıfır, dosya yok).
 

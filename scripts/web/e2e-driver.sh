@@ -62,18 +62,29 @@ tree_pids() { # $1=pid — stdout: pid + torunlar (satır satır; kill_tree ile 
   for c in $(pgrep -P "$pid" 2>/dev/null); do tree_pids "$c"; done
 }
 
+cpu_time_pid() { # $1=pid → stdout: birikmiş CPU saniye (2 hane, yüksek çözünürlük)
+  # Linux: /proc/<pid>/stat utime+stime (10ms çözünürlük) — `ps -o cputime` 1s truncate
+  # eder; kısa pencere cdelta'sını 0'a düşürüp busy-hang'i stream-stall sanabiliyordu
+  # (CI kanıtı: senaryo 34, run 38052451758+38053946442). macOS: /proc yok → ps (0.01s).
+  local p="$1"
+  if [[ -r "/proc/$p/stat" ]]; then
+    sed 's/.*) //' "/proc/$p/stat" 2>/dev/null | awk '{ printf "%.2f\n", ($12 + $13) / 100 }'
+  else
+    ps -p "$p" -o cputime= 2>/dev/null | tr -d ' ' | awk '
+      NF {
+        n = split($0, a, ":"); s = 0
+        if (n == 1) s = a[1]
+        else if (n == 2) s = a[1] * 60 + a[2]
+        else s = a[1] * 3600 + a[2] * 60 + a[3]
+        printf "%.2f\n", s
+      }'
+  fi
+}
+
 tree_cpu_sum() { # $1=pid — stdout: ağaç toplam cputime saniye (float, 2 hane)
   tree_pids "$1" 2>/dev/null | while read -r p; do
-    ps -p "$p" -o cputime= 2>/dev/null
-  done | tr -d ' ' | awk '
-    NF {
-      n = split($0, a, ":"); s = 0
-      if (n == 1) s = a[1]
-      else if (n == 2) s = a[1] * 60 + a[2]
-      else s = a[1] * 3600 + a[2] * 60 + a[3]
-      t += s
-    }
-    END { printf "%.2f", t + 0 }'
+    cpu_time_pid "$p"
+  done | awk 'NF { t += $1 } END { printf "%.2f", t + 0 }'
 }
 
 tokens_sum() { # $1=project — stdout: son oturum (output+reasoning) | NA (bilinmiyorsa K1b kapalı)

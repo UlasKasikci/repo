@@ -46,7 +46,8 @@
 1. **P2 completion 0** — provider kalitesi sorunu; remedy altyapısı hazır, tekrar denenmeli (farklı gün/model envanteri; `MODEL_P2` env override).
 2. **A2'' saha tetiklenmesi** — P2'de ilk başarılı partial-write needed; completion olmadan blok boş kalmaya devam ediyor.
 3. Plugin `client.app.log` görünürlüğü — opencode daemon log yolu araştırılabilir (cosmetic).
-4. **CPU sampling teorik riski (not):** senaryo 34 CI race'i (bu tur fix'lendi) CPU örnekleme mantığının timing-hassas olduğunu gösterdi. Gerçek watchdog'ta pencereler 60-120s (testte 2-3s) olduğu için yanlış sınıflandırma olasılığı düşük ama teorik olarak mevcut — ileriki turda pencerelerin daha stabil hale getirilmesi değerlendirilebilir.
+4. **CPU sampling platform-kırılganlığı (senaryo 34 CI race — bu tur fix'lendi):** CI'da busy-hang yanlışlıkla stream-stall sanılıyordu (marker 'zero-prod' hiç yazılmadan kill). Root cause: **Linux `ps -o cputime` 1s granularity truncate eder** (macOS 0.01s) — %10 duty'de ilk pencerelerde birikmiş CPU 0.6s → Linux `00:00:00` gösterir → cdelta≈0. Fix (kalıcı): `e2e-driver.sh` → `cpu_time_pid()` — Linux'ta `/proc/<pid>/stat` utime+stime (10ms çözünürlük); macOS'ta ps yolu korunur. Prod kazancı: gerçek watchdog'un kısa CPU pencereleri de Linux'ta artık doğru ölçülür.
+5. **CJK encoding sızıntısı (bu tur temizlendi + kalıcı koruma notu):** AI edit'leri üç eski dokümanda CJK karakter sızmıştı (`工作中`, `参照` ×2) — repo-wide tarama sonrası düzeltildi (CJK=0). Kalıcı koruma: CI'a opsiyonel CJK-check adımı (yalnız `.sh`/`.md`, Türkçe karakterler meşru) — sonraki tur.
 
 ## Commit'ler
 

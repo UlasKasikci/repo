@@ -75,7 +75,7 @@ adımları P2'nin kendi seçimidir.)
   geçir" eşiği de karşılanıyor.glm-5.3, flash'a göre belirgin daha pahalı (token bakımından;
   USD değil — NIM ücretsiz). Muhtemel ayar: `MODEL_P2=nvidia/z-ai/glm-5.3-flash` (env ile
   anında denenebilir) veya glm-5.3 medium/variant ayarı.
-- Her iki参照 da n=1 ve kontrollü değil (brief kabulü: E2E-3'te `model_used` yok, arıza yılı);
+- Her iki referans da n=1 ve kontrollü değil (brief kabulü: E2E-3'te `model_used` yok, arıza yılı);
   kesin A/B → Faz 1.3'te iki-koşu tekrarı (aynı commit, iki env).
 - **P1 notu:** flash→flash aynı model; +%26.5 artış_WRITE_RULE + doğrulama adımlarından
   (steps 19→16 ama adım başı 41.1k→61.7k) — P1 küçük model katmanı zaten flash'tı, ekstra
