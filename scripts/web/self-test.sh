@@ -25,7 +25,7 @@ set -euo pipefail
 # A1 QUESTIONS.json exit gate (P2 soru → P2→P1 dönüşü + P1 yanıtı tüketir) →
 # A1 whitelist read scan (whitelist dışı read → WARN, reporter-only) →
 # frontmatter validator (kırık imza → standalone FAIL + qa-gate 14. kontrol FAIL) +
-# manifest-onaylı okuma (file_manifest yolu sessiz, manifest dışı WARN) — 31 senaryo
+# manifest-onaylı okuma (file_manifest yolu sessiz, manifest dışı WARN) — 34 senaryo
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FIX="$ROOT/tests/fixtures/web-sample"
@@ -1696,6 +1696,182 @@ if grep -q "WATCHDOG" "$TMP/mp31-err.txt"; then
 fi
 wait "$TID31" 2>/dev/null || true
 echo "    hedef doğal çıkınca watchdog rc=0 + marker YOK (driver wd_fired=0 sayar)"
+
+step "32) K1b stream-stall (Tur 2-5b · F3): boş stream + CPU ≈0 + token sabit → STREAM_STALL_MAX içinde TERM"
+# F3 kanıtı (Tur 2-5a pilot 2): boş assistant msg + 8dk token-0 asılı HTTP stream —
+# idle_max=900s uyumsuz. K1b: stream sessiz + hedef ağaç CPU <0.5s/pencere + token
+# sabit + opencode/ev mevcut → STALL_MAX içinde TERM. Guard: token kanalı NA ise K1b kapalı.
+MP32="$TMP/mp32"
+mkdir -p "$MP32/.factory"
+python3 -c "import json; json.dump({'current_phase':'P2','status':'in_progress'}, open('$MP32/.factory/web-state.json','w'))"
+# sabit (büyümesiz) event stream ev dosyası + pointer
+echo '{"type":"step_start"}' > "$TMP/mp32-ev.ndjson"
+echo "$TMP/mp32-ev.ndjson" > "$MP32/.factory/e2e-last-ev"
+# token fixture DB: statik token'lı oturum (K1b token kanalı biliniyor)
+python3 - "$TMP/mp32-tok.db" "$MP32" <<'PY'
+import sqlite3, sys
+c = sqlite3.connect(sys.argv[1])
+c.execute("CREATE TABLE session (id TEXT, directory TEXT, time_created INTEGER, tokens_output INTEGER, tokens_reasoning INTEGER)")
+c.execute("INSERT INTO session VALUES ('ses32', ?, 1, 500, 1200)", (sys.argv[2],))
+c.commit()
+PY
+# sahte "opencode run" (pgrep -f "opencode run" eşleşmesi için argüman olarak)
+cat > "$TMP/fake-opencode-run.sh" <<'EOF'
+#!/bin/bash
+sleep 300
+EOF
+bash "$TMP/fake-opencode-run.sh" opencode run idle-stub &
+FAKE32=$!
+sleep 30 & TID32=$!
+WD32_MARK="$TMP/mp32-killmark"
+STREAM_STALL_MAX=3 OPENCODE_DB="$TMP/mp32-tok.db" E2E_WD_KILL_MARK="$WD32_MARK" \
+  bash "$WD29" --watchdog "$MP32" "$TID32" 90 300 2> "$TMP/mp32-err.txt" &
+WPID32=$!
+rc32=0
+for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
+  kill -0 "$WPID32" 2>/dev/null || break
+  sleep 1
+done
+if kill -0 "$WPID32" 2>/dev/null; then
+  kill -TERM "$WPID32" 2>/dev/null || true
+  wait "$WPID32" 2>/dev/null || true
+  kill -TERM "$TID32" "$FAKE32" 2>/dev/null || true
+  wait "$TID32" 2>/dev/null || true
+  wait "$FAKE32" 2>/dev/null || true
+  die "watchdog: stream-stall 30s içinde kill etmedi (K1b kanalı çalışmıyor)"
+fi
+wait "$WPID32" 2>/dev/null || rc32=$?
+kill -TERM "$FAKE32" 2>/dev/null || true
+wait "$FAKE32" 2>/dev/null || true
+if [[ "$rc32" != "143" ]]; then
+  kill -TERM "$TID32" 2>/dev/null || true
+  wait "$TID32" 2>/dev/null || true
+  die "watchdog: stream-stall kill rc=143 beklenir, gelen $rc32"
+fi
+if ! grep -q "stream-stall" "$WD32_MARK" 2>/dev/null; then
+  kill -TERM "$TID32" 2>/dev/null || true
+  wait "$TID32" 2>/dev/null || true
+  die "watchdog: stream-stall marker 'stream-stall' içermeli"
+fi
+if ! grep -q "stream-stall" "$TMP/mp32-err.txt"; then
+  kill -TERM "$TID32" 2>/dev/null || true
+  wait "$TID32" 2>/dev/null || true
+  die "watchdog: stream-stall WATCHDOG log satırı basılmadı"
+fi
+wait "$TID32" 2>/dev/null || true
+echo "    boş stream + CPU ≈0 + token sabit → 3s stall_max içinde TERM (marker: stream-stall)"
+
+step "33) K1a korunması (Tur 2-5b): DOLU stream'de stream-stall kill YOK — üretken süreç 14s'de korunur"
+MP33="$TMP/mp33"
+mkdir -p "$MP33/.factory"
+python3 -c "import json; json.dump({'current_phase':'P2','status':'in_progress'}, open('$MP33/.factory/web-state.json','w'))"
+echo '{"type":"step_start"}' > "$TMP/mp33-ev.ndjson"
+echo "$TMP/mp33-ev.ndjson" > "$MP33/.factory/e2e-last-ev"
+python3 - "$TMP/mp33-tok.db" "$MP33" <<'PY'
+import sqlite3, sys
+c = sqlite3.connect(sys.argv[1])
+c.execute("CREATE TABLE session (id TEXT, directory TEXT, time_created INTEGER, tokens_output INTEGER, tokens_reasoning INTEGER)")
+c.execute("INSERT INTO session VALUES ('ses33', ?, 1, 100, 400)", (sys.argv[2],))
+c.commit()
+PY
+cat > "$TMP/fake-opencode-run33.sh" <<'EOF'
+#!/bin/bash
+sleep 300
+EOF
+bash "$TMP/fake-opencode-run33.sh" opencode run idle-stub &
+FAKE33=$!
+# büyüyen stream (her saniye +8 byte) — K1a: dolu stream'e kill yasak
+( while :; do echo "01234567" >> "$TMP/mp33-ev.ndjson"; sleep 1; done ) &
+GROW33=$!
+sleep 30 & TID33=$!
+WD33_MARK="$TMP/mp33-killmark"
+STREAM_STALL_MAX=2 OPENCODE_DB="$TMP/mp33-tok.db" E2E_WD_KILL_MARK="$WD33_MARK" \
+  bash "$WD29" --watchdog "$MP33" "$TID33" 90 300 2> "$TMP/mp33-err.txt" &
+WPID33=$!
+sleep 14
+alive33=1
+kill -0 "$TID33" 2>/dev/null || alive33=0
+kill -TERM "$WPID33" 2>/dev/null || true
+wait "$WPID33" 2>/dev/null || true
+kill -TERM "$TID33" "$FAKE33" "$GROW33" 2>/dev/null || true
+wait "$TID33" 2>/dev/null || true
+wait "$FAKE33" 2>/dev/null || true
+wait "$GROW33" 2>/dev/null || true
+[[ "$alive33" == "1" ]] || die "watchdog: dolu stream'de 14s'de kill edildi (K1a ihlali — stream-stall aşırı-kill)"
+if grep -q "stream-stall" "$WD33_MARK" 2>/dev/null; then
+  die "watchdog: dolu stream'de stream-stall marker yazılmamalı (K1a ihlali)"
+fi
+echo "    dolu stream (1/s büyüme) → 14s'de kill YOK (K1a: stream-stall aşırı-kill yok)"
+
+step "34) K1b-2 zero-prod (Tur 2-5b · busy-hang): üretim sıfır + CPU %10 → ZERO_PROD_CAP'de TERM"
+# 5b pilot turn 4 kanıtı: 17.5dk turn, reas=32000 TAM, out=0 — CPU %2-10 (K1b strict
+# eşiğin üstü, %25 altı), stream/token/dosya sabit. K1b-2 bu imzayı ZERO_PROD_CAP'de keser.
+MP34="$TMP/mp34"
+mkdir -p "$MP34/.factory"
+python3 -c "import json; json.dump({'current_phase':'P2','status':'in_progress'}, open('$MP34/.factory/web-state.json','w'))"
+echo '{"type":"step_start"}' > "$TMP/mp34-ev.ndjson"
+echo "$TMP/mp34-ev.ndjson" > "$MP34/.factory/e2e-last-ev"
+python3 - "$TMP/mp34-tok.db" "$MP34" <<'PY'
+import sqlite3, sys
+c = sqlite3.connect(sys.argv[1])
+c.execute("CREATE TABLE session (id TEXT, directory TEXT, time_created INTEGER, tokens_output INTEGER, tokens_reasoning INTEGER)")
+c.execute("INSERT INTO session VALUES ('ses34', ?, 1, 900, 32000)", (sys.argv[2],))
+c.commit()
+PY
+# ~%10 CPU (50ms burn / 450ms sleep) — K1b strict eşiğin üstü, K1b-2 eşiğin altı.
+# Burn, HEDEFİN ÇOCUĞU olmalı (gerçek hayatta opencode orchestrate'in çocuğu —
+# tree_cpu_sum hedef ağacını ölçer; sibling değil).
+cat > "$TMP/mp34-target.sh" <<'EOF'
+#!/bin/bash
+python3 -c "
+import time
+while True:
+    t = time.time()
+    while time.time() - t < 0.05:
+        pass
+    time.sleep(0.45)
+" opencode run burn10 &
+BURN=$!
+sleep 300
+EOF
+bash "$TMP/mp34-target.sh" &
+TID34=$!
+WD34_MARK="$TMP/mp34-killmark"
+STREAM_STALL_MAX=2 ZERO_PROD_CAP=8 OPENCODE_DB="$TMP/mp34-tok.db" E2E_WD_KILL_MARK="$WD34_MARK" \
+  bash "$WD29" --watchdog "$MP34" "$TID34" 90 300 2> "$TMP/mp34-err.txt" &
+WPID34=$!
+rc34=0
+for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
+  kill -0 "$WPID34" 2>/dev/null || break
+  sleep 1
+done
+if kill -0 "$WPID34" 2>/dev/null; then
+  kill -TERM "$WPID34" 2>/dev/null || true
+  wait "$WPID34" 2>/dev/null || true
+  kill -TERM "$TID34" 2>/dev/null || true
+  wait "$TID34" 2>/dev/null || true
+  die "watchdog: zero-prod 30s içinde kill etmedi (K1b-2 kanalı çalışmıyor)"
+fi
+wait "$WPID34" 2>/dev/null || rc34=$?
+kill -TERM "$TID34" 2>/dev/null || true
+wait "$TID34" 2>/dev/null || true
+if [[ "$rc34" != "143" ]]; then
+  kill -TERM "$TID34" 2>/dev/null || true
+  wait "$TID34" 2>/dev/null || true
+  die "watchdog: zero-prod kill rc=143 beklenir, gelen $rc34"
+fi
+if ! grep -q "zero-prod" "$WD34_MARK" 2>/dev/null; then
+  kill -TERM "$TID34" 2>/dev/null || true
+  wait "$TID34" 2>/dev/null || true
+  die "watchdog: marker 'zero-prod' içermeli (busy-hang K1b ile değil K1b-2 ile kesilir)"
+fi
+if grep -q "stream-stall" "$WD34_MARK" 2>/dev/null; then
+  kill -TERM "$TID34" 2>/dev/null || true
+  wait "$TID34" 2>/dev/null || true
+  die "watchdog: busy-hang stream-stall (K1b strict) ile kesilmemeli — K1b-2 görevi"
+fi
+wait "$TID34" 2>/dev/null || true
+echo "    %10 CPU busy-hang → ZERO_PROD_CAP'de TERM (marker: zero-prod, stream-stall DEĞİL)"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

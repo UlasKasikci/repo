@@ -12,6 +12,17 @@
 #   Kademe 1 — idle_max: üç kanal da sessizse kill. Kademe 2 — no_write_cap
 #   (NO_WRITE_CAP env, varsayılan 7200s): dosya yazımı yoksa CPU/stream aktif
 #   olsa bile kill (busy-loop tuzağı — yeni sinyalin kör noktası, Tur2-3 ön koşulu).
+# K1b (Tur 2-5b, F3): stream-stall kanalı — stream sessiz + hedef ağaç CPU ≈0 +
+#   token sabitse STREAM_STALL_MAX (env, varsayılan 90s) içinde TERM. F3 kanıtı
+#   (Tur 2-5a pilot 2): boş assistant msg + 8dk token-0 asılı HTTP stream —
+#   idle_max=900s bu gecikmeyle uyumsuz. Üretken reasoning CPU üretir (K1a korunur;
+#   dolu stream'e kill yasak). Token bilinmiyorsa (DB yok) K1b DEVRE DIŞI (false-kill yasak).
+# K1b-2 (Tur 2-5b sıkılaştırma — busy-hang): üretim (stream/token/dosya) sıfır +
+#   CPU pencere deltası < 22.5s/90s (%25 — ağır reasoning ≈%27 üstü korunur) ise
+#   ZERO_PROD_CAP (env, varsayılan 420s) içinde TERM "zero-prod". Kanıt: 5b pilot
+#   turn 4 — 17.5dk turn, reas delta=32000 TAM, out=0 (busy-hang, CPU %2-10,
+#   stream/token/dosya sabit); K1b strict CPU eşiğiyle doğru korudu ama kesmedi.
+#   420s > ölçülen max üretken tek-turn (291s, 5b turn 3) — K1a marjı korunur.
 # Stream yolu: orchestrate her ajan çağrısında .factory/e2e-last-ev dosyasına
 # mktemp ev yolunu yazar; watchdog her turda okur.
 # --p2-only: P1'i atla (domain-report.json bootstrap'ta kopyalanmış olmalı),
@@ -19,6 +30,9 @@
 # Kullanım:
 #   e2e-driver.sh [--p2-only] <proje_dizini> <run_dizini> [max_attempts=6] [idle_max=900] [sleep=30]
 #   NO_WRITE_CAP=7200 e2e-driver.sh ...   # kademe-2 eşiği (env)
+#   STREAM_STALL_MAX=90 e2e-driver.sh ... # K1b stream-stall eşiği (env; 60-120)
+#   ZERO_PROD_CAP=420 e2e-driver.sh ...   # K1b-2 zero-prod eşiği (env; busy-hang)
+#   OPENCODE_DB=<path> e2e-driver.sh ...  # K1b token kanalı DB (env; default data dir)
 #   e2e-driver.sh --watchdog <proje_dizini> <hedef_pid> <idle_max> [no_write_cap]
 set -u
 
@@ -42,12 +56,55 @@ except (OSError, json.JSONDecodeError):
 PY
 }
 
+tree_pids() { # $1=pid — stdout: pid + torunlar (satır satır; kill_tree ile aynı derinlik ailesi)
+  local pid="$1" c
+  echo "$pid"
+  for c in $(pgrep -P "$pid" 2>/dev/null); do tree_pids "$c"; done
+}
+
+tree_cpu_sum() { # $1=pid — stdout: ağaç toplam cputime saniye (float, 2 hane)
+  tree_pids "$1" 2>/dev/null | while read -r p; do
+    ps -p "$p" -o cputime= 2>/dev/null
+  done | tr -d ' ' | awk '
+    NF {
+      n = split($0, a, ":"); s = 0
+      if (n == 1) s = a[1]
+      else if (n == 2) s = a[1] * 60 + a[2]
+      else s = a[1] * 3600 + a[2] * 60 + a[3]
+      t += s
+    }
+    END { printf "%.2f", t + 0 }'
+}
+
+tokens_sum() { # $1=project — stdout: son oturum (output+reasoning) | NA (bilinmiyorsa K1b kapalı)
+  local db="${OPENCODE_DB:-$HOME/.local/share/opencode/opencode.db}"
+  [[ -f "$db" ]] || { echo "NA"; return 0; }
+  python3 - "$db" "$1" <<'PY'
+import sqlite3, sys
+try:
+    c = sqlite3.connect("file:%s?mode=ro" % sys.argv[1], uri=True)
+    row = c.execute(
+        "SELECT COALESCE(tokens_output,0)+COALESCE(tokens_reasoning,0)"
+        " FROM session WHERE directory LIKE ?"
+        " ORDER BY time_created DESC LIMIT 1",
+        ("%" + sys.argv[2] + "%",),
+    ).fetchone()
+    print(row[0] if row else "NA")
+except Exception:
+    print("NA")
+PY
+}
+
 run_watchdog() { # $1=project $2=target-pid $3=idle_max $4=no_write_cap(Varsayılan 7200)
   # K1 genişletmesi (Tur 2-2/2-3): ÜÇ sinyal kanalı + İKİ KADEMELİ kill —
   #   Kanallar: (a) proje dosya değişikliği, (b) event stream non-empty output,
   #            (c) opencode CPU time ilerlemesi (reasoning token üretimi CPU kullanır;
   #                NDJSON stream reasoning sırasında sessiz — pilot1 kanıtı).
   #   Kademe 1 — idle_max: HER ÜÇ kanal da sessizse kill (ölü süreç).
+  #   Kademe 1b (Tur 2-5b F3) — stream-stall: stream sessiz + hedef ağaç CPU pencere
+  #     deltası < 0.5s (≈%0.5) + token sabit + opencode/asıl ev dosyası mevcut →
+  #     STREAM_STALL_MAX (90s) içinde TERM. Asılı HTTP stream (token 0, CPU ~0)
+  #     için; üretken reasoning CPU ürettiği için K1a'yı İHLAL ETMEZ.
   #   Kademe 2 — no_write_cap: DOSYA YAZIMI yoksa CPU/stream aktif olsa bile kill
   #     (busy-loop tuzağı: CPU yakan ama üretmeyen süreç; K1 korunur çünkü
   #     üretken reasoning er ya da geç dosya yazar — A2' duvar-saati de bunu zorlar).
@@ -55,10 +112,18 @@ run_watchdog() { # $1=project $2=target-pid $3=idle_max $4=no_write_cap(Varsayı
   #   pilot2 ilk write 23dk → ~5× marj).
   local project="$1" target="$2" idle_max="$3" now_cap="${4:-7200}"
   local mark last last_write now hit phase idle evpath size lastsize opid ct1 ct2
+  local stall_max last_stream_grow last_tok last_tok_val cpu_win_t cpu_win_sum
+  local csum cdelta prod_last tok wlen
   mark="$(mktemp)"
   last="$(date +%s)"
   last_write="$last"
   lastsize=-1
+  stall_max="${STREAM_STALL_MAX:-90}"
+  last_stream_grow="$last"
+  last_tok="$last"
+  last_tok_val=""
+  cpu_win_t="$last"
+  cpu_win_sum=""
   while kill -0 "$target" 2>/dev/null; do
     # Kanal (c) CPU örneği: uyku ÖNCESİ opencode CPU time'ı
     opid="$(pgrep -f "opencode run" 2>/dev/null | head -1)"
@@ -70,14 +135,19 @@ run_watchdog() { # $1=project $2=target-pid $3=idle_max $4=no_write_cap(Varsayı
       last="$(date +%s)" # sayaç yalnız P2'de işler
       last_write="$last"
       lastsize=-1
+      last_stream_grow="$last"
+      last_tok="$last"
       continue
     fi
+    now="$(date +%s)"
     # Kanal (a): proje dosya değişikliği
     hit="$(find "$project" -type f -newer "$mark" ! -path '*/.git/*' -print -quit 2>/dev/null)"
     if [[ -n "$hit" ]]; then
       touch "$mark"
-      last="$(date +%s)"
-      last_write="$last" # dosya ilerlemesi — no-write-cap sayacı sıfırlanır
+      last="$now" # dosya ilerlemesi — no-write-cap sayacı sıfırlanır
+      last_write="$now"
+      last_stream_grow="$now"
+      last_tok="$now"
       continue
     fi
     # Kanal (b): event stream non-empty output — son non-empty output sinyali.
@@ -89,24 +159,34 @@ run_watchdog() { # $1=project $2=target-pid $3=idle_max $4=no_write_cap(Varsayı
         if [[ "$lastsize" -lt 0 ]]; then
           lastsize="$size" # baseline
           if [[ "$size" -gt 0 ]]; then
-            last="$(date +%s)" # mevcut stream içeriği aktivite kredisi (K1)
+            last="$now" # mevcut stream içeriği aktivite kredisi (K1)
+            last_stream_grow="$now"
           fi
         elif [[ "$size" -gt "$lastsize" ]]; then
           lastsize="$size"
-          last="$(date +%s)"
+          last="$now"
+          last_stream_grow="$now"
           # stream dolu — idle sıfırla; ama CONTINUE YOK (no-write-cap'e düşmeli)
         fi
       fi
+    fi
+    # K1b token kanalı: oturum token toplamı değişti mi? (NA → K1b kapalı — false-kill yasak)
+    tok="$(tokens_sum "$project")"
+    if [[ "$tok" == "NA" ]]; then
+      last_tok="$now"
+      last_tok_val=""
+    elif [[ "$tok" != "$last_tok_val" ]]; then
+      last_tok_val="$tok"
+      last_tok="$now"
     fi
     # Kanal (c): opencode CPU time ilerledi mi? (reasoning token üretimi CPU kullanır)
     if [[ -n "$opid" && -n "$ct1" ]]; then
       ct2="$(ps -p "$opid" -o cputime= 2>/dev/null | tr -d ' ')"
       if [[ -n "$ct2" && "$ct1" != "$ct2" ]]; then
-        last="$(date +%s)"
+        last="$now"
         # CPU çalışıyor — idle sıfırla; ama CONTINUE YOK (no-write-cap'e düşmeli)
       fi
     fi
-    now="$(date +%s)"
     idle=$((now - last))
     if [[ "$idle" -ge "$idle_max" ]]; then
       echo "WATCHDOG: P2 idle ${idle}s ≥ ${idle_max}s (dosya+stream+CPU sessiz) — TERM (pid $target)" >&2
@@ -114,6 +194,44 @@ run_watchdog() { # $1=project $2=target-pid $3=idle_max $4=no_write_cap(Varsayı
       kill_tree "$target"
       rm -f "$mark"
       return 143
+    fi
+    # Kademe 1b (K1b · F3) + K1b-2 (zero-prod · busy-hang) — üretim sinyalleri:
+    #   stream/token kanalları sessiz + opencode çalışıyor + ev dosyası var +
+    #   token kanalı biliniyor. CPU pencere örneği (stall_max aralıkla) iki
+    #   hükmün ortak girdisidir: K1b strict (<0.5s ≈%0.5 — asılı idle), K1b-2
+    #   geniş (<22.5s ≈%25 — busy-hang; ağır reasoning %27 üstü, korunur).
+    if [[ -n "$opid" && -n "$evpath" && -f "$evpath" && -n "$last_tok_val" ]]; then
+      prod_last="$last_stream_grow"
+      [[ "$last_tok" -gt "$prod_last" ]] && prod_last="$last_tok"
+      cdelta="NA"
+      if [[ $((now - cpu_win_t)) -ge "$stall_max" ]]; then
+        csum="$(tree_cpu_sum "$target")"
+        wlen=$((now - cpu_win_t))
+        if [[ -n "$cpu_win_sum" && "$wlen" -gt 0 ]]; then
+          # cdelta = CPU YÜZDESİ (pencere uzunluğuna normalize) — K1b <%0.55, K1b-2 <%25
+          cdelta="$(awk -v a="$csum" -v b="$cpu_win_sum" -v w="$wlen" 'BEGIN { d = a - b; if (d < 0) d = -d; printf "%.3f", d * 100 / w }')"
+        fi
+        cpu_win_sum="$csum"
+        cpu_win_t="$now"
+      fi
+      # K1b: asılı idle stream — CPU ≈%0 → STREAM_STALL_MAX'de TERM
+      if [[ $((now - prod_last)) -ge "$stall_max" && "$cdelta" != "NA" ]] \
+        && awk -v d="$cdelta" 'BEGIN { exit !(d < 0.55) }'; then
+        echo "WATCHDOG: P2 stream-stall $((now - prod_last))s (stream sessiz, CPU ${cdelta}%<0.55%, token sabit) — TERM (pid $target)" >&2
+        [[ -n "${E2E_WD_KILL_MARK:-}" ]] && echo "stream-stall" >> "$E2E_WD_KILL_MARK"
+        kill_tree "$target"
+        rm -f "$mark"
+        return 143
+      fi
+      # K1b-2: busy-hang — üretim sıfır + CPU %25 altı → ZERO_PROD_CAP'de TERM
+      if [[ $((now - prod_last)) -ge "${ZERO_PROD_CAP:-420}" && "$cdelta" != "NA" ]] \
+        && awk -v d="$cdelta" 'BEGIN { exit !(d < 25) }'; then
+        echo "WATCHDOG: P2 zero-prod $((now - prod_last))s ≥ ${ZERO_PROD_CAP:-420}s (stream/token/dosya sabit, CPU ${cdelta}%<25%) — TERM (pid $target)" >&2
+        [[ -n "${E2E_WD_KILL_MARK:-}" ]] && echo "zero-prod" >> "$E2E_WD_KILL_MARK"
+        kill_tree "$target"
+        rm -f "$mark"
+        return 143
+      fi
     fi
     # Kademe 2: busy-loop tuzağı — dosya ilerlemesi yoksa CPU/stream yetmez
     if [[ $((now - last_write)) -ge "$now_cap" ]]; then

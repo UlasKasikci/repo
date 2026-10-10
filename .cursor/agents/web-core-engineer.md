@@ -84,6 +84,9 @@ dosyayı görürse P2→P1 döner; P1 soruları domain-report'a yanıtlar ve dos
   0-write → hepsi L3 idle kill (ölü).
 - **ÇOK DOSYA OKUMA:** tek bash çağrısında `cat dosya1 dosya2 ...` — read tool ile
   bölme; truncation "tam raporu alamadım" döngüsü yaratır (Tur2 att6).
+- **bash workdir YASAK (F2):** bash çağrılarında `workdir` BELİRTME. Çalışma dizini
+  zaten proje köküdür; elle path yazma — typo izin reddine ve oturum halt'ına yol açar
+  (Tur 2-5a pilot 1 kanıtı).
 - Bu bir hız kuralıdır, kesme/hard-kill DEĞİLDİR (K1 — reasoning idle-kill de yasak).
 
 ## Zorunlu kapanış

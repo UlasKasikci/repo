@@ -125,6 +125,23 @@ Yani L3, pratikte bir reasoning-kill aracıydı — K1'in kör noktası.
   DEĞİL. Kill yalnızca: (tool çağrısı yok) VE (stream 60s+ boş) VE (toplam idle_max+).
 Bu hem Tur 2'nin hem gelecekteki JEV (v2) karmaşık reasoning'inin altyapı güvencesidir.
 
+**K1 kanal ayrımı (Tur 2-5b — F3 sonrası netleştirme):**
+
+| Kanal | Koşul | Hükm |
+|-------|-------|------|
+| **K1a** | Stream **dolu** (non-empty output/event artışı) | **Kill yasak** (mevcut kural) |
+| **K1b** | Stream **boş** + CPU ≈%0 (ağaç <0.55%/pencere) + token sabit | **STREAM_STALL_MAX (60-120s) TERM** (asılı idle HTTP stream — F3; Tur 2-5a pilot 2: boş msg + 8dk token-0) |
+| **K1b-2** | Stream/token/dosya **üretimi sıfır** + CPU <%25 (ağır reasoning ≈%27 üstü korunur) | **ZERO_PROD_CAP (420s) TERM** (busy-hang — 5b pilot turn 4: 17.5dk, reas=32000 TAM, out=0, CPU %2-10) |
+| **K1c** | Stream boş/o kadar dolu, CPU **yüksek**, dosya yok | no-write-cap kill (busy-loop — mevcut kademe 2) |
+
+Ayrım ölçütü: "stream dolu mu boş mu" — son N saniyede stream event büyümesi var mı.
+K1b/K1b-2 üretken reasoning'i KORUR: reasoning CPU üretir (pilot1 kanıtı %27.4 —
+K1b-2 eşiğinin üstü) ve/veya tek-turn süresi ölçülen max'ın (291s) altında kalır;
+token kanalı bilinmiyorsa (DB yok) K1b/K1b-2 devre dışıdır (false-kill yasak).
+K1a'ya mutlak dokunulmaz: dolu stream'e kill yalnızca no-write-cap (K1c) ile mümkündür.
+CPU eşikleri **pencere-yüzdesi** olarak normalize edilir (test kısa pencere = production
+90s pencere ile aynı semantik).
+
 ### K2 — İmza-bazlı tedavi (yüzey değil kök)
 Aynı görünen spike (b)'de ölü, (c)'de canlı. Tek eşikle ikisine müdahale etmek
 = birini tedavi edip diğerini öldürmek. Her müdahale imza etiketiyle commit'lenir:
@@ -190,7 +207,7 @@ Bir yaklaşım başarısız olduysa, dosyayı silme — `docs/audits/REVIEW-NOTE
 |--------|-------|
 | Net token tasarrufu | ≥0 (tur tasarruf üretmeli, sıfır kabul; negatif YASAK) |
 | Denetim kapsamı | Değişmemeli (14 QA kontrol + smoke + drift) |
-| Self-test | 31/31 PASS (kırılma yok) |
+| Self-test | 34/34 PASS (kırılma yok) |
 | CI | Yeşil |
 
 ### Proje Başına (3-6 ay)
