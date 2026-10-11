@@ -1,0 +1,8 @@
+parameters:
+    level: 8
+    paths:
+        - core
+        - index.php
+    excludePaths:
+        - vendor/*
+        - tests/*

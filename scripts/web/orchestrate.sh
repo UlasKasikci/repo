@@ -560,6 +560,11 @@ scaffold_ok() {
   [[ -d "$PROJECT/core" ]] && [[ -n "$(ls -A "$PROJECT/core" 2>/dev/null)" ]] || return 1
   [[ -d "$PROJECT/views" ]] && [[ -n "$(ls -A "$PROJECT/views" 2>/dev/null)" ]] || return 1
   [[ -f "$PROJECT/SQL/veritabani.sql" ]] || return 1
+  # F3 (Tur 2-12): asimetrik çekirdek + test dosyası da zorunlu —
+  # kısmi scaffold (config/test eksik) tam sayılmaz, hybrid mod devreye girer.
+  { [[ -f "$PROJECT/phpstan.neon.dist" ]] || [[ -f "$PROJECT/phpstan.neon" ]]; } || return 1
+  { [[ -f "$PROJECT/phpunit.xml" ]] || [[ -f "$PROJECT/phpunit.xml.dist" ]]; } || return 1
+  [[ -d "$PROJECT/tests" ]] && [[ -n "$(ls -A "$PROJECT/tests" 2>/dev/null)" ]] || return 1
   return 0
 }
 
@@ -910,8 +915,19 @@ while true; do
       # C — Hybrid mod (Tur 2-11): P2_HUMAN_ASSIST=true ise iskeleti insan yazar.
       if [[ "${P2_HUMAN_ASSIST:-false}" == "true" ]] && ! scaffold_ok; then
         echo "==> P2 HYBRID (P2_HUMAN_ASSIST=true): otomatik kod üretimi kapalı."
+        # F4 (Tur 2-12): config template'lerini hedefe kopyala (bootstrap'tan gelir).
+        TPL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/templates"
+        if [[ -d "$TPL_DIR" ]]; then
+          for tpl in phpstan.neon.dist phpunit.xml .eslintrc.json; do
+            if [[ -f "$TPL_DIR/$tpl" ]] && [[ ! -f "$PROJECT/$tpl" ]]; then
+              cp "$TPL_DIR/$tpl" "$PROJECT/$tpl"
+              echo "    template kopyalandı: $tpl"
+            fi
+          done
+        fi
         echo "    Manuel P2 gerekli: iskeleti elle yaz (index.php, core/, views/, SQL/veritabani.sql,)"
-        echo "    phpstan.neon.dist, .eslintrc.json, phpunit.xml + tests/). Sonra:"
+        echo "    tests/). Config template'leri (phpstan/phpunit/eslint) yukarıda kopyalandı."
+        echo "    Sonra:"
         echo "      bash scripts/web/state.sh advance $PROJECT   # P2 → P3"
         echo "      bash scripts/web/orchestrate.sh $PROJECT --auto   # P3-P5 otomatik devam"
         exit 3
