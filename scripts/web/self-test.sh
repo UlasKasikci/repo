@@ -2228,6 +2228,58 @@ a50_rc="$(run_rc bash "$QA" "$A50_FX")"
 rm -rf "$A50_FX"
 echo "    düz kalıplar rbac+cart ✓ · mevcut fixture PASS (rc=0) ✓"
 
+step "51) A.4 CSRF: \$_POST + doğrulamasız dosya → security_policy FAIL (Tur 2-16)"
+# ChatGPT 2.1: eski kontrol "csrf" kelimesi geçiyor mu diye bakıyordu — yorum
+# satırı bile PASS veriyordu. Yeni: her \$_POST/$_REQUEST dosyasında doğrulama
+# ÇAĞRISI zorunlu (negatif fixture + duyarlılık testi birlikte).
+A51="$TMP/a51-csrf"
+cp -R "$FIX" "$A51"
+cp "$ROOT/tests/fixtures/bad_csrf.php" "$A51/bad_csrf.php"
+a51_rc="$(run_rc bash "$QA" "$A51")"
+[[ "$a51_rc" == "1" ]] || die "A.4: bad_csrf ile qa-gate FAIL (1) beklenir, gelen $a51_rc"
+python3 - "$A51/qa-report.json" <<'PY' || die "A.4: security_policy FAIL kanıtı yok"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["result"] == "FAIL", r["result"]
+assert r["checks"]["security_policy"] == "FAIL", r["checks"]
+PY
+grep -q "CSRF token doğrulama çağrısı yok" "$A51/debug_report.json" \
+  || die "A.4: CSRF hata mesajı debug_report'ta yok"
+A51G="$TMP/a51-good"
+cp -R "$FIX" "$A51G"
+a51g_rc="$(run_rc bash "$QA" "$A51G")"
+[[ "$a51g_rc" == "0" ]] || die "A.4: temiz fixture PASS (0) beklenir, gelen $a51g_rc"
+python3 - "$A51G/qa-report.json" <<'PY' || die "A.4: temiz fixture security_policy PASS değil"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["checks"]["security_policy"] == "PASS", r["checks"]
+PY
+rm -rf "$A51" "$A51G"
+echo "    bad_csrf → security_policy FAIL · temiz fixture → PASS (duyarlılık) ✓"
+
+step "52) A.3 oturum: eksik cookie param + ini_set yetersiz → FAIL (Tur 2-16)"
+# ChatGPT 2.3: session_set_cookie_params üç param zorunlu + sıra; ini_set alone
+# yetersiz. İki ihlal tek koşuda: eksik parametre dosyası + ini_set-only dosya.
+A52="$TMP/a52-session"
+cp -R "$FIX" "$A52"
+cp "$ROOT/tests/fixtures/bad_session.php" "$A52/bad_session.php"
+printf '<?php\nini_set("session.cookie_httponly", "1");\nsession_start();\n' \
+  > "$A52/weak_session.php"
+a52_rc="$(run_rc bash "$QA" "$A52")"
+[[ "$a52_rc" == "1" ]] || die "A.3: eksik oturum yapılandırması ile FAIL (1) beklenir, gelen $a52_rc"
+python3 - "$A52/qa-report.json" <<'PY' || die "A.3: security_policy FAIL kanıtı yok"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["result"] == "FAIL", r["result"]
+assert r["checks"]["security_policy"] == "FAIL", r["checks"]
+PY
+grep -q "eksik parametre (HttpOnly + Secure + SameSite" "$A52/debug_report.json" \
+  || die "A.3: eksik parametre hatası yok"
+grep -q "session_set_cookie_params() yok" "$A52/debug_report.json" \
+  || die "A.3: ini_set yetersizlik hatası yok"
+rm -rf "$A52"
+echo "    eksik parametre FAIL · ini_set-only FAIL ✓"
+
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"
 exit 0

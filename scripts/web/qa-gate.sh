@@ -202,16 +202,36 @@ fi
 check_end security_grep
 
 # --- 5) CSRF / oturum / parola politikası ---
+# Tur 2-16 (ChatGPT 2.1/2.3): kelime araması YETMEZ (yorum satırındaki "csrf"
+# false-positive). Yeni kurallar (aynı set_check: security_policy, K6 7→7):
+#   (a) $_POST/$_REQUEST KULLANAN her dosyada token doğrulama ÇAĞRISI olmalı
+#   (b) session_set_cookie_params: HttpOnly + Secure + SameSite üçü de parametrede
+#   (c) parametre çağrısı session_start()'den ÖNCE olmalı
+#   (d) ini_set('session.cookie_httponly') tek başına yetersiz
 check_begin
 if [[ "$PHP_COUNT" -gt 0 ]]; then
-  if grep -lE '\$_POST|\$_REQUEST' "${PHP_FILES[@]}" >/dev/null 2>&1; then
-    grep -Eiq 'csrf' "${PHP_FILES[@]}" \
-      || err "güvenlik: POST/REQUEST kullanımı var ama CSRF token doğrulaması yok"
-  fi
-  if grep -l 'session_start' "${PHP_FILES[@]}" >/dev/null 2>&1; then
-    grep -Eiq 'httponly|session_set_cookie_params|session\.cookie_httponly' "${PHP_FILES[@]}" \
-      || err "güvenlik: session_start() var ama HttpOnly/Secure çerez yapılandırması yok"
-  fi
+  CSRF_CALL_RE='(csrf[_-]?verify|verify[_-]?csrf|check[_-]?csrf)[[:space:]]*\('
+  for f in "${PHP_FILES[@]}"; do
+    grep -qE '\$_(POST|REQUEST)' "$f" || continue
+    grep -qiE "$CSRF_CALL_RE" "$f" \
+      || err "güvenlik: \$_POST/\$_REQUEST kullanımı var ama dosyada CSRF token doğrulama çağrısı yok: $(rel "$f")"
+  done
+  for f in "${PHP_FILES[@]}"; do
+    if grep -q 'session_set_cookie_params' "$f"; then
+      if ! { grep -qi 'httponly' "$f" \
+             && grep -qiE "'secure'|\"secure\"|secure[[:space:]]*=>" "$f" \
+             && grep -qiE "'samesite'|\"samesite\"|samesite[[:space:]]*=>" "$f"; }; then
+        err "güvenlik: session_set_cookie_params() eksik parametre (HttpOnly + Secure + SameSite zorunlu): $(rel "$f")"
+      fi
+      p_ln="$(grep -n -m1 'session_set_cookie_params' "$f" | cut -d: -f1)"
+      s_ln="$(grep -n -m1 'session_start[[:space:]]*(' "$f" | cut -d: -f1)"
+      if [[ -n "${p_ln:-}" && -n "${s_ln:-}" ]] && [[ "$p_ln" -gt "$s_ln" ]]; then
+        err "güvenlik: session_set_cookie_params() session_start()'den SONRA çağrılıyor: $(rel "$f")"
+      fi
+    elif grep -q 'session_start[[:space:]]*(' "$f"; then
+      err "güvenlik: session_start() var ama dosyada session_set_cookie_params() yok (ini_set('session.cookie_httponly') yetersiz): $(rel "$f")"
+    fi
+  done
 fi
 check_end security_policy
 
