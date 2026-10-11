@@ -2098,6 +2098,46 @@ kill -9 "$LEAF" 2>/dev/null || true
 rm -f "$TMP/f9leaf"
 echo "    tree_pids $DEPTH_PIDS pid (3+ seviye) · kill_tree özyinelemeli"
 
+step "47) B-1 kvkk regex IF NOT EXISTS false negative (Tur 2-14)"
+# qa-gate kvkk kanalı `CREATE TABLE IF NOT EXISTS ...` biçimini yakalamıyordu
+# (RUN-REPORT-2 §6 B-1). Üç biçim: düz (regresyon), IF NOT EXISTS (fix),
+# tablo yok (duyarlılık — test gerçekten fail edebilmeli).
+b1_build() { # $1=dizin $2=plain|ifne|missing
+  local d="$1" form="$2" f
+  rm -rf "$d"
+  cp -R "$FIX" "$d"
+  mkdir -p "$d/.factory"
+  printf '{"project":"b1-test","compliance":"kvkk"}\n' > "$d/.factory/project-intent.json"
+  for f in views/legal/aydinlatma.php views/legal/gizlilik.php views/legal/cerez.php \
+           views/partials/cookie-consent.php; do
+    mkdir -p "$d/$(dirname "$f")"
+    printf '<?php\n// kvkk yasal metin\n' > "$d/$f"
+  done
+  mkdir -p "$d/assets/js"
+  printf '/* cookie consent */\n' > "$d/assets/js/cookie-consent.js"
+  if [[ "$form" == "plain" ]]; then
+    printf 'CREATE TABLE `user_consents` (id INT);\nCREATE TABLE `anonymization_log` (id INT);\n' \
+      > "$d/SQL/migrations/schema/999_kvkk.sql"
+    bash "$ROOT/scripts/web/sql-dump.sh" "$d" >/dev/null
+  elif [[ "$form" == "ifne" ]]; then
+    printf 'CREATE TABLE IF NOT EXISTS user_consents (id INT);\nCREATE TABLE IF NOT EXISTS anonymization_log (id INT);\n' \
+      > "$d/SQL/migrations/schema/999_kvkk.sql"
+    bash "$ROOT/scripts/web/sql-dump.sh" "$d" >/dev/null
+  fi
+}
+b1_kvkk() { # $1=dizin → qa-report checks.kvkk
+  run_rc bash "$QA" "$1" >/dev/null 2>&1 || true
+  python3 -c 'import json,sys; print(json.load(open(sys.argv[1]+"/qa-report.json"))["checks"].get("kvkk"))' "$1"
+}
+b1_build "$TMP/b1-plain" plain
+[[ "$(b1_kvkk "$TMP/b1-plain")" == "PASS" ]] || die "B-1 regresyon: düz CREATE TABLE → kvkk=PASS beklenir"
+b1_build "$TMP/b1-ifne" ifne
+[[ "$(b1_kvkk "$TMP/b1-ifne")" == "PASS" ]] || die "B-1 fix: IF NOT EXISTS → kvkk=PASS beklenir (false negative)"
+b1_build "$TMP/b1-miss" missing
+[[ "$(b1_kvkk "$TMP/b1-miss")" == "FAIL" ]] || die "B-1 duyarlılık: tablo yok → kvkk=FAIL beklenir"
+rm -rf "$TMP/b1-plain" "$TMP/b1-ifne" "$TMP/b1-miss"
+echo "    düz=PASS (regresyon) · IF NOT EXISTS=PASS (fix) · tablo yok=FAIL (duyarlılık)"
+
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"
 exit 0

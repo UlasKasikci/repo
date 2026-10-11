@@ -10,7 +10,7 @@ her proje aynı kapılardan geçer — domain analizi → kod → QA → paketle
 
 [![CI](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml/badge.svg)](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![self-test](https://img.shields.io/badge/self--test-47%2F47%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
+[![self-test](https://img.shields.io/badge/self--test-48%2F48%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
 
 ---
 
@@ -140,7 +140,7 @@ git clone https://github.com/UlasKasikci/repo.git && cd repo
 composer global require phpstan/phpstan phpunit/phpunit
 
 # fabrika kendini sınamalı
-bash scripts/web/self-test.sh          # hedef: 47/47 PASS
+bash scripts/web/self-test.sh          # hedef: 48/48 PASS
 ```
 
 ### Yeni proje
@@ -386,7 +386,7 @@ Tam metin: [`docs/MASTER-PROMPT-V2.md`](docs/MASTER-PROMPT-V2.md)
 
 ## Katkı
 
-1. Issue aç veya PR gönder — PR'da `bash scripts/web/self-test.sh` **47/47 PASS**
+1. Issue aç veya PR gönder — PR'da `bash scripts/web/self-test.sh` **48/48 PASS**
    ve CI yeşil olmalı.
 2. Yeni QA kontrolü yalnız somut bir bug raporuyla eklenir (K6).
 3. Doküman güncellemeleri kanıttan türetilir (K5).

@@ -267,9 +267,11 @@ if [[ "$COMPLIANCE" != "none" ]]; then
     [[ -f "$PROJECT/$f" ]] || err "kvkk: $f eksik (compliance=$COMPLIANCE — P2 KVKK bloğu zorunlu)"
   done
   if [[ -f "$PROJECT/SQL/veritabani.sql" ]]; then
-    grep -Eiq 'CREATE TABLE[[:space:]]+`?user_consents' "$PROJECT/SQL/veritabani.sql" \
+    # B-1 (Tur 2-14): `CREATE TABLE IF NOT EXISTS ...` false negative — opsiyonel
+    # grup her iki biçimi de yakalar (manuel yazılan dump'lar sql-dump.sh üretmez).
+    grep -Eiq 'CREATE TABLE([[:space:]]+IF NOT EXISTS)?[[:space:]]+`?user_consents' "$PROJECT/SQL/veritabani.sql" \
       || err "kvkk: user_consents tablosu yok (açık rıza kaydı — SQL/veritabani.sql)"
-    grep -Eiq 'CREATE TABLE[[:space:]]+`?anonymization_log' "$PROJECT/SQL/veritabani.sql" \
+    grep -Eiq 'CREATE TABLE([[:space:]]+IF NOT EXISTS)?[[:space:]]+`?anonymization_log' "$PROJECT/SQL/veritabani.sql" \
       || err "kvkk: anonymization_log tablosu yok (anonimleştirme izi — SQL/veritabani.sql)"
   fi
   check_end kvkk
