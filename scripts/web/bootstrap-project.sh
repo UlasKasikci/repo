@@ -4,11 +4,14 @@ set -euo pipefail
 # App-Fabrika Web Edition — temiz bootstrap: fabrika iskeletini yeni projeye kopyalar
 #
 # Kullanım:
-#   bash scripts/web/bootstrap-project.sh <hedef_dizini> [--yes] [--force]
+#   bash scripts/web/bootstrap-project.sh <hedef_dizini> [--yes] [--force] [--allow-existing-git]
 #
 #   (bayrak yok)  → DRY-RUN: kopyalanacak/kalmayacak listesi + sayı, hedefe DOKUNMAZ
 #   --yes         → kopyalamayı gerçekten yap + git init + ilk commit
 #   --force       → hedef boş DEĞİLSE bile yaz (var olan dosyalar ezilir, fazladan durur)
+#                   (git operasyonlarını kapsamaz — mevcut depo yine B.1'e tabidir)
+#   --allow-existing-git → hedefte mevcut .git deposuna yazmaya izin ver
+#                   (önce stage edilmiş değişiklik kontrolü; varsa yine DUR)
 #
 # KOPYALANIR (karar listesi — kod bunu uygular):
 #   scripts/web/* (self-test.sh ve bu betik hariç), .factory/{contracts,meta.json,
@@ -31,12 +34,14 @@ PROJECT="${1:-}"
 shift || true
 YES=0
 FORCE=0
+ALLOW_EXISTING_GIT=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --yes)   YES=1; shift ;;
     --force) FORCE=1; shift ;;
+    --allow-existing-git) ALLOW_EXISTING_GIT=1; shift ;;
     -h|--help)
-      sed -n '4,30p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+      sed -n '4,35p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *)
@@ -46,7 +51,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-[[ -n "$PROJECT" ]] || { echo "kullanım: bootstrap-project.sh <hedef_dizini> [--yes] [--force]" >&2; exit 1; }
+[[ -n "$PROJECT" ]] || { echo "kullanım: bootstrap-project.sh <hedef_dizini> [--yes] [--force] [--allow-existing-git]" >&2; exit 1; }
 command -v python3 >/dev/null 2>&1 || { echo "bootstrap: python3 gerekli" >&2; exit 1; }
 
 SOURCE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -59,6 +64,39 @@ fi
 if [[ -e "$PROJECT" && ! -d "$PROJECT" ]]; then
   echo "bootstrap: hedef bir dosya: $PROJECT" >&2
   exit 1
+fi
+# Tur 2-16 B.1 (ChatGPT 2.2): veri bütünlüğü ön kontrolleri — kopyalamadan ÖNCE.
+# 1) hedef == fabrika deposu → DUR  2) hedef fabrikanın İÇİNDE → DUR
+# 3) hedefte mevcut .git → DUR (--allow-existing-git ile geçilir; geçildiğinde
+#    stage edilmiş değişiklik varsa yine DUR — bootstrap commit'e karışmasın).
+PROJ_N="${PROJECT%/}"
+PROJ_ABS="$PROJ_N"
+if [[ -d "$PROJ_N" ]]; then
+  PROJ_ABS="$(cd "$PROJ_N" && pwd)"
+elif [[ -d "$(dirname "$PROJ_N")" ]]; then
+  PROJ_ABS="$(cd "$(dirname "$PROJ_N")" && pwd)/$(basename "$PROJ_N")"
+fi
+if [[ "$PROJ_ABS" == "$SOURCE" ]]; then
+  echo "bootstrap: hedef fabrika deposunun KENDİSİ — duruldu: $PROJ_ABS" >&2
+  exit 1
+fi
+case "$PROJ_ABS" in
+  "$SOURCE"/*)
+    echo "bootstrap: hedef fabrika deposunun İÇİNDE — duruldu: $PROJ_ABS (fabrika dışı bir dizin seçin)" >&2
+    exit 1
+    ;;
+esac
+if [[ -e "$PROJ_ABS/.git" ]]; then
+  if [[ "$ALLOW_EXISTING_GIT" -ne 1 ]]; then
+    echo "bootstrap: hedefte mevcut git deposu var — duruldu (--allow-existing-git ile geçilir, mevcut geçmiş korunur): $PROJ_ABS" >&2
+    exit 1
+  fi
+  # B.2: stage edilmiş değişiklikler bootstrap commit'ine KARIŞAMAZ — kopyadan önce DUR.
+  if command -v git >/dev/null 2>&1 \
+     && ! git -C "$PROJ_ABS" diff --cached --quiet 2>/dev/null; then
+    echo "bootstrap: hedefte stage edilmiş değişiklikler var — önce commit veya reset edin (bootstrap commit'e karışmasın)" >&2
+    exit 1
+  fi
 fi
 if [[ -d "$PROJECT" && -n "$(ls -A "$PROJECT" 2>/dev/null)" && "$FORCE" -ne 1 ]]; then
   echo "bootstrap: hedef boş değil: $PROJECT (ezmek için --force)" >&2
@@ -215,7 +253,11 @@ PY
 
 # --- git izi: taze depo + sürüm bağlayıcı ilk commit ---
 if command -v git >/dev/null 2>&1; then
-  git -C "$PROJECT" init -q 2>/dev/null || true
+  # Tur 2-16 B.2: init hatası YUTULMAZ — durulur (sessiz devam = bozuk iz).
+  if ! git -C "$PROJECT" init -q; then
+    echo "bootstrap: git init başarısız — duruldu: $PROJECT" >&2
+    exit 1
+  fi
   git -C "$PROJECT" config user.name >/dev/null 2>&1 \
     || git -C "$PROJECT" config user.name "App-Fabrika Bootstrap"
   git -C "$PROJECT" config user.email >/dev/null 2>&1 \
@@ -246,7 +288,10 @@ if command -v git >/dev/null 2>&1; then
     # manifest'in kendisi de eklensin (izlenebilirlik)
     git -C "$PROJECT" add -- .factory/.bootstrap-manifest 2>/dev/null || true
   else
-    git -C "$PROJECT" add -A
+    # Tur 2-16 B.2: manifest yoksa add -A YASAK — hedefteki her şey commit'e
+    # karışırdı (D7.1 veri bütünlüğü ihlali). Bozuk bootstrap: dur.
+    echo "bootstrap: .bootstrap-manifest yok — git add -A yasak (veri bütünlüğü), duruldu" >&2
+    exit 1
   fi
   if git -C "$PROJECT" diff --cached --quiet 2>/dev/null; then
     echo "  git: içerik aynı — commit atlanmadı (mevcut iz korundu)"

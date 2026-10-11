@@ -623,12 +623,12 @@ BR="$(git -C "$BOOT" rev-parse --abbrev-ref HEAD)"
 echo "    --yes: kritik dosyalar kopyalandı, hariçler temiz, iz: $MSG"
 
 rc="$(run_rc bash "$BOOTER" "$BOOT" --yes)"
-[[ "$rc" == "1" ]] || die "dolu hedef --force'suz red (1) beklenir, gelen $rc"
-rc="$(run_rc bash "$BOOTER" "$BOOT" --yes --force)"
+[[ "$rc" == "1" ]] || die "dolu/bootstrapped hedef --force'suz red (1) beklenir, gelen $rc"
+rc="$(run_rc bash "$BOOTER" "$BOOT" --yes --force --allow-existing-git)"
 [[ "$rc" == "0" ]] || die "--force idempotent (0) beklenir, gelen $rc"
 COMMITS="$(git -C "$BOOT" rev-list --count HEAD)"
 [[ "$COMMITS" == "1" ]] || die "ikinci koşu commit atmamalı (toplam $COMMITS)"
-echo "    dolu hedef: --force'suz red, --force ile idempotent (commit atlandı)"
+echo "    dolu hedef: --force'suz red, --force+override ile idempotent (commit atlandı)"
 
 step "16) smoke-test: lokal katmanlı kapı + canlı raporlayıcı + force-fail guard"
 GOOD="$TMP/smokegood"
@@ -2279,6 +2279,70 @@ grep -q "session_set_cookie_params() yok" "$A52/debug_report.json" \
   || die "A.3: ini_set yetersizlik hatası yok"
 rm -rf "$A52"
 echo "    eksik parametre FAIL · ini_set-only FAIL ✓"
+
+step "53) B.1 hedef mevcut git deposu → DUR + override geçişi (Tur 2-16)"
+B53="$TMP/b53-git"
+mkdir -p "$B53"
+git -C "$B53" init -q
+b53_rc=0
+b53_out="$(bash "$BOOTER" "$B53" --yes 2>&1)" || b53_rc=$?
+[[ "$b53_rc" == "1" ]] || die "B.1: mevcut .git hedef --yes ile DUR (1) beklenir, gelen $b53_rc"
+grep -q "mevcut git deposu" <<<"$b53_out" || die "B.1: .git DUR mesajı yok"
+b53b_rc=0
+bash "$BOOTER" "$B53" --yes --force --allow-existing-git >/dev/null 2>&1 || b53b_rc=$?
+[[ "$b53b_rc" == "0" ]] || die "B.1: --allow-existing-git geçişi PASS (0) beklenir, gelen $b53b_rc"
+rm -rf "$B53"
+echo "    mevcut .git → DUR · override → PASS ✓"
+
+step "54) B.2 stage edilmiş değişiklik → DUR (override dahil) (Tur 2-16)"
+# Mevcut stage işi bootstrap commit'ine KARIŞAMAZ (D7.1) — kopyadan önce dur.
+B54="$TMP/b54-staged"
+mkdir -p "$B54"
+git -C "$B54" init -q
+git -C "$B54" config user.name probe
+git -C "$B54" config user.email probe@local
+echo "devam eden iş" > "$B54/wip.txt"
+git -C "$B54" add wip.txt
+b54_rc=0
+b54_out="$(bash "$BOOTER" "$B54" --yes --force --allow-existing-git 2>&1)" || b54_rc=$?
+[[ "$b54_rc" == "1" ]] || die "B.2: stage edilmiş değişiklik DUR (1) beklenir, gelen $b54_rc"
+grep -q "stage edilmiş değişiklikler" <<<"$b54_out" || die "B.2: staged DUR mesajı yok"
+git -C "$B54" diff --cached --quiet \
+  && die "B.2: staged değişiklik bootstrap tarafından bozulmuş" || true
+[[ -f "$B54/wip.txt" ]] || die "B.2: kullanıcının dosyası silinmiş"
+rm -rf "$B54"
+echo "    stage edilmiş iş → DUR (dosya korundu, commit'e karışmadı) ✓"
+
+step "55) B.1 hedef fabrika deposunun içinde/kendisi → DUR (Tur 2-16)"
+B55="$ROOT/.bootstrap-inside-probe-$$"
+mkdir -p "$B55"
+b55_rc=0
+b55_out="$(bash "$BOOTER" "$B55" --yes 2>&1)" || b55_rc=$?
+[[ "$b55_rc" == "1" ]] || die "B.1: fabrika içi hedef DUR (1) beklenir, gelen $b55_rc"
+grep -q "fabrika deposunun İÇİNDE" <<<"$b55_out" || die "B.1: iç hedef mesajı yok"
+rm -rf "$B55"
+b55b_rc=0
+b55b_out="$(bash "$BOOTER" "$ROOT" 2>&1)" || b55b_rc=$?
+[[ "$b55b_rc" == "1" ]] || die "B.1: fabrika kökü hedef DUR (1) beklenir, gelen $b55b_rc"
+grep -q "KENDİSİ" <<<"$b55b_out" || die "B.1: kök hedef mesajı yok"
+echo "    fabrika içi → DUR · fabrika kökü → DUR ✓"
+
+step "56) B.2 --force altında bootstrap dışı dosya commit'e girmez (Tur 2-16)"
+# D7.1: manifest-tabanlı add — kullanıcının özel dosyası ne commit'e girer ne kaybolur.
+B56="$TMP/b56-manifest"
+mkdir -p "$B56"
+echo "özel not" > "$B56/NOTLARIM.md"
+b56_rc=0
+bash "$BOOTER" "$B56" --yes --force >/dev/null 2>&1 || b56_rc=$?
+[[ "$b56_rc" == "0" ]] || die "B.2: --force + özel dosya PASS (0) beklenir, gelen $b56_rc"
+if git -C "$B56" ls-files | grep -q "NOTLARIM"; then
+  die "B.2: bootstrap dışı dosya commit'e girdi (manifest ihlali)"
+fi
+[[ -f "$B56/NOTLARIM.md" ]] || die "B.2: özel dosya silinmiş (ezilme) — korunmalıydı"
+git -C "$B56" ls-files | grep -q ".factory/.bootstrap-manifest" \
+  || die "B.2: .bootstrap-manifest tracked değil"
+rm -rf "$B56"
+echo "    özel dosya: commit dışı + disk'te korundu · manifest tracked ✓"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"
