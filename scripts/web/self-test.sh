@@ -52,6 +52,68 @@ run_rc() {
   printf '%s' "$rc"
 }
 
+# Tur 2-16 C: P1 → P2 advance kapısı domain-report ister (state.sh →
+# domain-check.py). Tek kaynak seed — senaryo 3/4/5 (PROJ), mp23/mp24/mp26
+# (rm sonrası yeniden tohum) kullanır. İçerik domain-check'ten geçerli.
+seed_domain_report() {
+  local proj="$1"
+  mkdir -p "$proj/.factory"
+  cat > "$proj/.factory/domain-report.json" <<'JSON'
+{
+  "schema_version": 1,
+  "project": "web-sample",
+  "entities": [
+    {"name": "roles", "fields": ["id", "name"]},
+    {"name": "users", "fields": ["id", "role_id", "email", "password_hash"]},
+    {"name": "products", "fields": ["id", "name", "price"]},
+    {"name": "orders", "fields": ["id", "user_id", "total"]}
+  ],
+  "roles": ["admin", "editor", "user"],
+  "module_matrix": [
+    {
+      "module": "rbac",
+      "status": "present",
+      "evidence": "roles/kullanicilar: role_id FK ile rol katmanı P1 analiz kanıtı",
+      "justification": "users tablosunda role_id var ve roles tablosu FK ile bağlı — rol katmanı şemada present"
+    },
+    {
+      "module": "cart",
+      "status": "present",
+      "evidence": "orders/siparis: user_id FK ile sipariş akışı P1 analiz kanıtı",
+      "justification": "orders tablosu user_id FK ile sipariş akışını karşılıyor — sepet/sipariş mekanizması present"
+    },
+    {
+      "module": "seo",
+      "status": "present",
+      "evidence": "sitemap/robots: meta description çıktısı P1 analiz kanıtı",
+      "justification": "robots.txt, sitemap.xml ve meta description çıktısı hazır — SEO modülü present"
+    },
+    {
+      "module": "kvkk",
+      "status": "present",
+      "evidence": "session/cookie: SameSite Strict HttpOnly ayarları P1 analiz kanıtı",
+      "justification": "çerez onayı SameSite/HttpOnly ayarlarıyla yapıldı — KVKK aydınlatma metni home şablonunda"
+    }
+  ],
+  "injected_modules": [],
+  "approvals": [],
+  "edge_cases": ["gecersiz e-posta → 422", "CSRF geçersiz → 419"],
+  "security_context": ["PDO prepared", "Argon2id", "CSRF token"],
+  "sql_draft": {"tables": ["roles", "users", "products", "orders"], "seed_rows": 3},
+  "file_manifest": [
+    {"path": "index.php", "purpose": "front-controller"},
+    {"path": "SQL/veritabani.sql", "purpose": "normalize şema + seed"}
+  ],
+  "acceptance_criteria": [
+    "qa-gate.sh 0 Error, 0 Warning (tüm 13 kontrol)",
+    "RBAC: users.role_id FK + roller seed ile doğrulanır"
+  ],
+  "api_endpoints": [],
+  "result": "requirements-frozen"
+}
+JSON
+}
+
 # K5 (Tur 2-7 B.3): senaryo sayısı TEK KAYNAK — bu dosyadaki '^step "' sayacı;
 # README badge'i bu sayı ile tutarlı olmalı (tutarsızlık = die, K5 ihlali).
 TOTAL_STEPS="$(grep -c '^step "' "$0")"
@@ -153,6 +215,7 @@ PY
 echo "    packaging-report: PASS · exclusion + sha256 manifest OK"
 
 step "3) state graph: start → P3 → qa-pass → P5"
+seed_domain_report "$PROJ"   # C: P1 → P2 kapısı domain-report ister
 bash "$STATE" start "$PROJ" >/dev/null
 bash "$STATE" advance "$PROJ" >/dev/null
 bash "$STATE" advance "$PROJ" >/dev/null
@@ -162,7 +225,7 @@ rc="$(run_rc bash "$STATE" qa-pass "$PROJ")"
 grep -q '"current_phase": "P5"' "$PROJ/.factory/web-state.json" || die "P5 bekleniyordu"
 
 step "4) qa-gate --record entegrasyonu (P3 → PASS → P5)"
-bash "$STATE" start "$PROJ" >/dev/null
+bash "$STATE" start "$PROJ" --reset >/dev/null   # D: mevcut state → yedek + sıfırla
 bash "$STATE" advance "$PROJ" >/dev/null
 bash "$STATE" advance "$PROJ" >/dev/null
 rc="$(run_rc bash "$QA" "$PROJ" --record)"
@@ -170,7 +233,7 @@ rc="$(run_rc bash "$QA" "$PROJ" --record)"
 grep -q '"current_phase": "P5"' "$PROJ/.factory/web-state.json" || die "--record sonrası P5 bekleniyordu"
 
 step "5) retry döngüsü: 3 tolerans + 4. fail HALT"
-bash "$STATE" start "$PROJ" >/dev/null
+bash "$STATE" start "$PROJ" --reset >/dev/null   # D: mevcut state → yedek + sıfırla
 bash "$STATE" advance "$PROJ" >/dev/null
 bash "$STATE" advance "$PROJ" >/dev/null
 for i in 1 2 3; do
@@ -244,7 +307,7 @@ rc="$(run_rc bash "$PKG" "$NEG")"
 echo "    reddedildi (rc=$rc), Yukleme/ oluşturulmadı"
 
 step "10) orkestratör E2E: bekleme(3) → bozuk rapor(1) → DONE(0)"
-bash "$STATE" start "$PROJ" >/dev/null
+bash "$STATE" start "$PROJ" --reset >/dev/null   # D: sc5 HALT sonrası state → yedek + sıfırla
 rm -f "$PROJ/.factory/domain-report.json" "$PROJ/packaging-report.json"
 rc="$(run_rc bash "$ORCH" "$PROJ")"
 [[ "$rc" == "3" ]] || die "P1 bekleme exit 3 beklenir, gelen $rc"
@@ -1145,6 +1208,7 @@ rm -f "$SA/index.php" "$SA/SQL/veritabani.sql"
 rm -rf "$SA/core" "$SA/views"
 rm -f "$SA/.factory/domain-report.json" "$SA/.factory/metrics.jsonl" "$SA/.factory/web-state.json"
 bash "$STATE" start "$SA" >/dev/null
+seed_domain_report "$SA"   # C: rm sonrası yeniden tohum — advance kapısı P1 raporu ister
 bash "$STATE" advance "$SA" >/dev/null # P1 → P2
 STUB4="$TMP/ocbin4"
 mkdir -p "$STUB4"
@@ -1178,10 +1242,12 @@ chmod +x "$STUB4/opencode"
 SA_LOG="$TMP/mp23-orch.log"
 env PATH="$STUB4:$PATH" ORCH_STATE_SH="$STATE" bash "$ORCH" "$SA" --auto > "$SA_LOG" 2>&1 &
 SA_PID=$!
-for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+# Tur 2-16: kill yarısı — 0.5s poll qa-gate'ın P3→P4/P5 yazmasına yetişiyordu
+# (seed ms kayması bu yarışı çevirdi). 0.1s poll + sonra deterministik onarım.
+for _ in $(seq 1 60); do
   grep -q "P2 → P3 (code-complete)" "$SA_LOG" 2>/dev/null && break
   kill -0 "$SA_PID" 2>/dev/null || break
-  sleep 0.5
+  sleep 0.1
 done
 for c in $(pgrep -P "$SA_PID" || true); do
   for g in $(pgrep -P "$c" || true); do kill -TERM "$g" 2>/dev/null || true; done
@@ -1193,6 +1259,22 @@ grep -q "P2 → P3 (code-complete)" "$SA_LOG" \
   || { cat "$SA_LOG"; die "self-advance toleransı: 'P2 → P3 (code-complete)' basılmadı (sessiz set -e ölümü)"; }
 if grep -q "P3 → P5 yalnız" "$SA_LOG"; then
   die "geçersiz-faz hatası yine tetiklendi — advance guard çalışmıyor"
+fi
+# Guard sözü: state asla çift/geçersiz advance ile BOZULMADI (advance çiftleri
+# tam P1→P2, P2→P3). QA yarışı fazı meşru olarak P4/P5'e taşımış olabilir.
+python3 - "$SA/.factory/web-state.json" <<'PY' || die "self-advance: çift-advance state'i bozdu"
+import json, sys
+s = json.load(open(sys.argv[1], encoding="utf-8"))
+assert s["current_phase"] in ("P3", "P4", "P5"), s
+adv = [(h.get("from"), h.get("to")) for h in s.get("history", []) if h.get("event") == "advance"]
+assert adv == [("P1", "P2"), ("P2", "P3")], adv
+PY
+# Kanal kontratı P3'te: qa-fail/qa-pass yarışta devreye girdiyse --reset ile
+# deterministik geri dön (seed hâlâ duruyor — tekrar tohum gerekmez).
+if ! grep -q '"current_phase": "P3"' "$SA/.factory/web-state.json"; then
+  bash "$STATE" start "$SA" --reset >/dev/null
+  bash "$STATE" advance "$SA" >/dev/null # P1 → P2
+  bash "$STATE" advance "$SA" >/dev/null # P2 → P3
 fi
 python3 - "$SA/.factory/web-state.json" <<'PY' || die "self-advance: durak P3'te kalmalı"
 import json, sys
@@ -1222,6 +1304,7 @@ rm -f "$MP24/index.php" "$MP24/SQL/veritabani.sql"
 rm -rf "$MP24/core" "$MP24/views"
 rm -f "$MP24/.factory/domain-report.json" "$MP24/.factory/metrics.jsonl" "$MP24/.factory/web-state.json"
 bash "$STATE" start "$MP24" >/dev/null
+seed_domain_report "$MP24"   # C: rm sonrası yeniden tohum
 bash "$STATE" advance "$MP24" >/dev/null # P1 → P2
 sleep 60 &
 TID=$!
@@ -1392,6 +1475,7 @@ rm -f "$M26/index.php" "$M26/SQL/veritabani.sql"
 rm -rf "$M26/core" "$M26/views"
 rm -f "$M26/.factory/metrics.jsonl" "$M26/.factory/web-state.json" "$M26/.factory/domain-report.json"
 bash "$STATE" start "$M26" >/dev/null
+seed_domain_report "$M26"   # C: rm sonrası yeniden tohum
 bash "$STATE" advance "$M26" >/dev/null # P1 → P2
 STUB6="$TMP/ocbin6"
 mkdir -p "$STUB6"
@@ -1483,13 +1567,7 @@ M28="$TMP/mp28"
 cp -R "$FIX" "$M28"
 rm -rf "$M28/core" "$M28/views" "$M28/SQL"
 rm -f "$M28/.factory/metrics.jsonl" "$M28/.factory/web-state.json"
-cat > "$M28/.factory/domain-report.json" <<'JSON'
-{
-  "file_manifest": [
-    {"path": "index.php", "purpose": "front-controller"}
-  ]
-}
-JSON
+seed_domain_report "$M28"   # C: advance kapısı geçerli rapor ister (whitelist testi içerikten bağımsız)
 bash "$STATE" start "$M28" >/dev/null
 bash "$STATE" advance "$M28" >/dev/null # P1 → P2
 STUB8="$TMP/ocbin8"
@@ -2343,6 +2421,95 @@ git -C "$B56" ls-files | grep -q ".factory/.bootstrap-manifest" \
   || die "B.2: .bootstrap-manifest tracked değil"
 rm -rf "$B56"
 echo "    özel dosya: commit dışı + disk'te korundu · manifest tracked ✓"
+
+step "57) C: P1 → P2 advance kapısı — domain-report yok → DUR (Tur 2-16)"
+C57="$TMP/c57-advance-gate"
+cp -R "$FIX" "$C57"
+bash "$STATE" start "$C57" >/dev/null
+c57_rc=0
+c57_out="$(bash "$STATE" advance "$C57" 2>&1)" || c57_rc=$?
+[[ "$c57_rc" == "1" ]] || die "C: raporsuz advance rc=1 beklenir, gelen $c57_rc"
+grep -q "kapı artefaktı yok" <<<"$c57_out" || die "C: kapı artefaktı mesajı yok"
+python3 - "$C57/.factory/web-state.json" <<'PY' || die "C: state mutation öncesi P1'de kalmalı"
+import json, sys
+s = json.load(open(sys.argv[1]))
+assert s["current_phase"] == "P1" and s["status"] == "in_progress", s
+PY
+echo "    raporsuz advance → rc=1 + mesaj · state P1'de değişmedi ✓"
+
+step "58) C: bozuk domain-report → DUR (mutation öncesi) (Tur 2-16)"
+echo '{ bozuk' > "$C57/.factory/domain-report.json"
+c58_rc=0
+c58_out="$(bash "$STATE" advance "$C57" 2>&1)" || c58_rc=$?
+[[ "$c58_rc" == "1" ]] || die "C: bozuk rapor rc=1 beklenir, gelen $c58_rc"
+grep -q "advance engellendi" <<<"$c58_out" || die "C: 'advance engellendi' mesajı yok"
+python3 - "$C57/.factory/web-state.json" <<'PY' || die "C: bozuk raporda state değişmemeli"
+import json, sys
+s = json.load(open(sys.argv[1]))
+assert s["current_phase"] == "P1" and s["status"] == "in_progress", s
+PY
+echo "    bozuk rapor → rc=1 + domain-check reddi · state hâlâ P1 ✓"
+
+step "59) C: geçerli domain-report → P2 kapısı açılır (Tur 2-16)"
+seed_domain_report "$C57"
+c59_rc=0
+c59_out="$(bash "$STATE" advance "$C57" 2>&1)" || c59_rc=$?
+[[ "$c59_rc" == "0" ]] || die "C: geçerli raporda advance rc=0 beklenir, gelen $c59_rc"
+grep -q "P1 → P2" <<<"$c59_out" || die "C: P1 → P2 geçiş mesajı yok"
+python3 - "$C57/.factory/web-state.json" <<'PY' || die "C: P2 bekleniyordu"
+import json, sys
+s = json.load(open(sys.argv[1]))
+assert s["current_phase"] == "P2", s
+PY
+echo "    geçerli rapor → rc=0 · P1 → P2 ✓"
+
+step "60) D: mevcut state'te start (reset'siz) → DUR + state korunur (Tur 2-16)"
+# C57 şu an P2'de — reset'siz start yasak; state hiçbir şekilde silinmemeli.
+d60_rc=0
+d60_out="$(bash "$STATE" start "$C57" 2>&1)" || d60_rc=$?
+[[ "$d60_rc" == "1" ]] || die "D: reset'siz start rc=1 beklenir, gelen $d60_rc"
+grep -q "start --reset" <<<"$d60_out" || die "D: --reset ipucu mesajı yok"
+python3 - "$C57/.factory/web-state.json" <<'PY' || die "D: reset'siz start state'i bozdu"
+import json, sys
+s = json.load(open(sys.argv[1]))
+assert s["current_phase"] == "P2" and s["status"] == "in_progress", s
+PY
+echo "    reset'siz start → rc=1 + ipucu · state P2'de korundu ✓"
+
+step "61) D: start --reset → yedek + sıfırla (Tur 2-16)"
+d61_out="$(bash "$STATE" start "$C57" --reset 2>&1)" \
+  || die "D: start --reset rc=0 beklenir, gelen $?"
+grep -q "yedeklendi" <<<"$d61_out" || die "D: yedek mesajı yok"
+BACKUPS="$(ls "$C57/.factory/"web-state.backup-*.json 2>/dev/null | wc -l | tr -d ' ')"
+[[ "$BACKUPS" == "1" ]] || die "D: 1 yedek beklenir, gelen $BACKUPS"
+python3 - "$C57/.factory/web-state.json" "$C57/.factory/web-state.backup-"*.json <<'PY' || die "D: reset içerik doğrulaması"
+import json, sys
+s = json.load(open(sys.argv[1]))
+assert s["current_phase"] == "P1" and s["retry_count"] == 0, s
+assert any(h.get("event") == "reset-backup" for h in s.get("history", [])), s["history"]
+b = json.load(open(sys.argv[2]))
+assert b["current_phase"] == "P2", b   # yedek öncesi state (P2) kurtarılabilir durumda
+PY
+echo "    --reset → yedek (öncesi P2) + yeni P1(retry=0) + history event ✓"
+
+step "62) D: --reset yalnız start + HALT kurtarma zinciri (Tur 2-16)"
+d62_rc=0
+d62_out="$(bash "$STATE" status "$C57" --reset 2>&1)" || d62_rc=$?
+[[ "$d62_rc" == "1" ]] || die "D: status --reset rc=1 beklenir, gelen $d62_rc"
+grep -q "yalnız start" <<<"$d62_out" || die "D: 'yalnız start' mesajı yok"
+# HALT → advance rc=2 (require_state) → start --reset → advance kapısı tekrar
+# geçerli raporla P2'ye açılır (kurtarma E2E).
+d62_halt="$(run_rc bash "$STATE" halt "$C57")"
+[[ "$d62_halt" == "2" ]] || die "D: halt rc=2 beklenir, gelen $d62_halt"
+d62_adv1="$(run_rc bash "$STATE" advance "$C57")"
+[[ "$d62_adv1" == "2" ]] || die "D: halted advance rc=2 beklenir, gelen $d62_adv1"
+bash "$STATE" start "$C57" --reset >/dev/null
+d62_adv2=0
+d62_out2="$(bash "$STATE" advance "$C57" 2>&1)" || d62_adv2=$?
+[[ "$d62_adv2" == "0" ]] || die "D: kurtarma sonrası advance rc=0 beklenir, gelen $d62_adv2"
+grep -q "P1 → P2" <<<"$d62_out2" || die "D: kurtarma P1 → P2 mesajı yok"
+rm -rf "$C57"
+echo "    --reset yalnız start'a özel · HALT → --reset → advance zinciri ✓"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

@@ -8,13 +8,24 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 GRAPH="$ROOT/.factory/web-state-graph.json"
 
+usage() {
+  echo "kullanım: state.sh <status|start|advance|qa-pass|qa-fail|halt|questions> [proje_dizini] [--reset (yalnız start)]" >&2
+  exit 1
+}
+
 OP="${1:-}"
 PROJECT="${2:-.}"
 
-usage() {
-  echo "kullanım: state.sh <status|start|advance|qa-pass|qa-fail|halt|questions> [proje_dizini]" >&2
-  exit 1
-}
+# Tur 2-16 D: `--reset` yalnız start ile (varolan state'i yedekleyip sıfırlar).
+RESET=0
+if [[ $# -gt 2 ]]; then
+  for _ARG in "${@:3}"; do
+    case "$_ARG" in
+      --reset) RESET=1 ;;
+      *) echo "state: bilinmeyen argüman: $_ARG" >&2; usage ;;
+    esac
+  done
+fi
 
 [[ -n "$OP" ]] || usage
 if [[ "$OP" == "retry" ]]; then OP="qa-fail"; fi
@@ -22,13 +33,17 @@ case "$OP" in
   status|start|advance|qa-pass|qa-fail|halt|questions) ;;
   *) echo "state: bilinmeyen işlem: $OP" >&2; usage ;;
 esac
+if [[ "$RESET" -eq 1 && "$OP" != "start" ]]; then
+  echo "state: --reset yalnız start ile kullanılır" >&2
+  usage
+fi
 
 command -v python3 >/dev/null 2>&1 || { echo "state: python3 gerekli" >&2; exit 1; }
 [[ -d "$PROJECT" ]] || { echo "state: dizin yok: $PROJECT" >&2; exit 1; }
 [[ -f "$GRAPH" ]] || { echo "state: kontrat yok: $GRAPH" >&2; exit 1; }
 
 PROJECT="$(cd "$PROJECT" && pwd)"
-export _ST_OP="$OP" _ST_PROJECT="$PROJECT" _ST_GRAPH="$GRAPH"
+export _ST_OP="$OP" _ST_PROJECT="$PROJECT" _ST_GRAPH="$GRAPH" _ST_RESET="$RESET"
 
 # C.2 (Tur 2-15): advance öncesi fazı yakala — hybrid marker'ından manel P2
 # süresi python geçişten sonra (başarılı ise) hesaplanacak.
@@ -42,7 +57,7 @@ except Exception:
 fi
 
 python3 - <<'PY'
-import datetime, json, os, sys
+import datetime, json, os, shutil, subprocess, sys
 
 op = os.environ["_ST_OP"]
 project = os.environ["_ST_PROJECT"]
@@ -99,7 +114,7 @@ def require_state():
     if state is None:
         die(f"state yok: {state_path} — önce `state.sh start`")
     if state.get("status") == "halted" and op != "status":
-        die(f"HALT durumu (retry={state.get('retry_count')}) — yeniden `state.sh start` gerekir", 2)
+        die(f"HALT durumu (retry={state.get('retry_count')}) — yeniden `state.sh start --reset` gerekir", 2)
     return state
 
 
@@ -111,6 +126,18 @@ if op == "status":
     sys.exit(0)
 
 if op == "start":
+    # Tur 2-16 D (ChatGPT 3.2): varolan state SİLGİ — yalnız açık `--reset` ile;
+    # önce web-state.backup-<ts>.json'a yedek (geri alınabilirlik).
+    existing = load_state()
+    reset = os.environ.get("_ST_RESET", "0") == "1"
+    if existing is not None and not reset:
+        die("state zaten var: %s — kaybı önlemek için `state.sh start --reset` "
+            "(mevcut durum .factory/web-state.backup-<ts>.json'a yedeklenir)" % state_path)
+    backup_path = None
+    if existing is not None:
+        ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%SZ")
+        backup_path = os.path.join(project, ".factory", f"web-state.backup-{ts}.json")
+        shutil.copy2(state_path, backup_path)
     state = {
         "schema_version": 1,
         "project": os.path.basename(project),
@@ -122,8 +149,13 @@ if op == "start":
         "history": [],
     }
     log(state, "start", phase="P1")
+    if backup_path:
+        log(state, "reset-backup", backup=os.path.basename(backup_path))
     save_state(state)
-    print("state: P1 başladı (retry=0)")
+    msg = "state: P1 başladı (retry=0)"
+    if backup_path:
+        msg += f" · önceki state yedeklendi: {backup_path}"
+    print(msg)
     sys.exit(0)
 
 state = require_state()
@@ -156,6 +188,27 @@ if op == "advance":
             print("state: P5 → DONE (yukleme-verified)")
             sys.exit(0)
         die(f"geçersiz faz: {phase}")
+    # Tur 2-16 C (ChatGPT 3.1): P1 → P2 kapı artefaktı — MUTATION ÖNCESİ,
+    # state değiştirmeden durur (exit 1 + stderr; stdout boş kanal kontratı).
+    if phase == "P1":
+        report_path = os.path.join(project, ".factory", "domain-report.json")
+        if not os.path.exists(report_path):
+            die("P1 → P2 kapı artefaktı yok: .factory/domain-report.json "
+                "(Domain Architect raporu zorunlu — domain-report olmadan P2'ye geçilmez)")
+        checker = os.path.join(os.path.dirname(graph_path), os.pardir,
+                               "scripts", "web", "domain-check.py")
+        if not os.path.isfile(checker):
+            die(f"domain-check.py bulunamadı: {checker}")
+        proc = subprocess.run(
+            ["python3", checker, report_path, project],
+            capture_output=True, text=True,
+        )
+        if proc.returncode != 0:
+            detail = next(
+                (ln for ln in (proc.stderr + "\n" + proc.stdout).splitlines() if ln.strip()),
+                f"exit {proc.returncode}",
+            )
+            die(f"P1 domain raporu geçersiz — advance engellendi: {detail}")
     state["current_phase"] = nxt
     log(state, "advance", **{"from": phase, "to": nxt})
     save_state(state)
