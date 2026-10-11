@@ -346,6 +346,7 @@ Yukleme/
 | **v1.0-rc4** | **Release Candidate** (2026-10-11) | Tur 2-14 son fix turu: B-1 kvkk regex `IF NOT EXISTS` + B-2 hybrid'de P2 LLM çağrısı 0 (o tarihte self-test 49/49) |
 | v1.0-rc5 | Release Candidate (2026-10-11) | Tur 2-16 güvenlik/bütünlük kapıları (A-F) — self-test 63/63 |
 | **v1.0** | **Final (2026-10-11)** | **İlk gerçek proje PASS: envanter-app** — kalite garantili üretim |
+| **v1.1** | **Final (2026-10-11)** | **Hız kanıtı: randevu-app, 27 dk** — pattern reuse ile rutinleşme (P2 235→12 dk) |
 | v2 | Planlı | JEV routing + modül kütüphanesi |
 | v3 | Vizyon | Şablonlaşma |
 
@@ -354,6 +355,8 @@ rc2, Tur 2-9/2-10 P2 pilotundan **bağımsız**dır: kod tabanı CI yeşil + sel
 rc3, **hybrid akışın** (P1 → `P2_HUMAN_ASSIST` → manel iskelet → P3 → P5 → DONE)
 Tur 2-13 e-ticaret projesinde 27 dk'da uçtan uca PASS'ı ile etiketlendi.
 **v1.0**, envanter-app gerçek projesinin PASS/DONE'ı ile etiketlendi (aşağıda).
+**v1.1**, ikinci gerçek proje (randevu-app) ile hız kanıtı: aynı operator +
+aynı fabrika, ikinci benzer domain — toplam **27 dk** (v1.0: 4s48dk).
 
 ## Production Readiness
 
@@ -366,37 +369,60 @@ Tur 2-13 e-ticaret projesinde 27 dk'da uçtan uca PASS'ı ile etiketlendi.
 | Manuel müdahale (P2 hariç) | ≤ 3 | 2 | ✓ |
 | QA gate | 0 Error / 0 Warning (14 kanal) | PASS (2. turda) | ✓ |
 
-### Gerçek proje kanıtı — envanter-app
+### Gerçek proje kanıtı — envanter-app (v1.0) + randevu-app (v1.1)
 
-Mini envanter takip (PHP 8.1 MVC + MySQL, 8 tablo, auth + RBAC + stok hareketleri):
-**P1 PASS** (2 deneme, hybrid flash model) → **P2 hybrid manel iskelet** (235 dk;
-9 controller, 14 view, 12 unit test, phpstan L8 + phpunit 12/12) → **P3 QA PASS**
+| Proje | Domain | Süre | Yeni token | Müdahale | Sonuç |
+|-------|--------|------|------------|----------|-------|
+| **envanter-app** (v1.0) | Mini envanter takip (8 tablo, stok hareketleri) | **4s 48dk** | 165k | 2 | PASS/DONE — **kalite garantisi** |
+| **randevu-app** (v1.1) | Klinik/kuaför randevu (7 tablo, çakışma kurallı) | **27 dk** | 109k | 1 | PASS/DONE — **hız kanıtı** |
+
+**v1.0 — envanter-app:** P1 PASS (2 deneme) → P2 hybrid manel iskelet (235 dk;
+9 controller, 14 view, 12 unit test, phpstan L8 + phpunit 12/12) → P3 QA PASS
 (Tur 2-16 per-file `verifyCsrf(` kapısı ilk sahada 7 hata yakaladı, 1 turda 0/0) →
-**P5 `Yukleme/` + smoke PASS** → **DONE**. Ayrıntı: proje kökünde `RUN-REPORT.md`.
+P5 `Yukleme/` + smoke PASS → **DONE**. Ayrıntı: proje kökünde `RUN-REPORT.md`.
+
+**v1.1 — randevu-app:** P1 PASS (1 deneme, 14 dk; attempt-1 fail'i tekrarlanmadı) →
+P2 hybrid manel (**12 dk** — envanter-app pattern'lerinden doğrudan adaptasyon,
+**19× rutinleşme**) → P3 tek tur (qa-gate `csrf_verify(` desen düzeltmesi) →
+P5 PASS. Ayrıntı: randevu-app/RUN-REPORT.md.
+
+**Dürüst not:** 27 dk, **benzer domain** (CRUD+auth+RBAC) ve **pattern reuse**
+ile ölçüldü — operator ilk projede yazdığı iskeleti adapte etti. Farklı
+domain'lerde (ör. real-time, payment, raporlama yoğun) hız test edilmedi —
+**üçüncü proje adayı**. Hız vaadi "benzer CRUD işlerinde tekrar" ile sınırlıdır.
 
 | Faz | Durum | Kanıt |
 |-----|-------|-------|
-| P1 (Domain) | ✓ Çalışıyor | envanter-app: 2 deneme (attempt-1 bütçe fail → resume), ~46 dk, 10 modül |
-| P2 (Kod) | ⚠ Model sınırı + ✓ hybrid | auto write **0/10** (glm-5.3 0/7, kimi-k3 halüsinasyon); hybrid mod envanter-app'ta **235 dk manel iskelet → P3-P5 PASS** |
-| P3 (QA) | ✓ Çalışıyor | 14/14 kanal; Tur 2-16 kapıları ilk gerçek projede sahada doğrulandı |
-| P5 (Paketleme) | ✓ Çalışıyor | envanter-app: staging + smoke + MANIFEST → `Yukleme/` → DONE |
+| P1 (Domain) | ✓ Çalışıyor | envanter-app 2 deneme/46 dk · randevu-app **1 deneme/14 dk** |
+| P2 (Kod) | ⚠ Model sınırı + ✓ hybrid | auto write **0/10**; hybrid: envanter 235 dk → randevu **12 dk** (19×) |
+| P3 (QA) | ✓ Çalışıyor | 14/14 kanal; iki gerçek projede de sahada doğrulandı |
+| P5 (Paketleme) | ✓ Çalışıyor | iki projede de staging + smoke + MANIFEST → `Yukleme/` → DONE |
 
-**Kalite belirgin, hız marjinal:** ilk gerçek projede üretim tamamlandı ama
-hız (4s48dk) hâlâ manel/hybrid P2 ağırlıklı; iddia **kalite garantili üretimdir**
-(hız optimizasyonu v2/JEV'in işidir).
+**Kalite belirgin, hız kanıtlandı (benzer domain):** v1.0 kalite garantisi
+(envanter-app), v1.1 hız kanıtı (randevu-app 27 dk). Hız iddiası **benzer
+CRUD+auth işlerinde pattern reuse ile** sınırlıdır; iddia **kalite garantili
+üretimdir** — hız, kalitenin bozulmadan tekrarlanabildiğini gösterir.
 
 ---
 
 ## Bilinen Sorunlar
 
-- **P1 token yapısal (envanter-app kanıtı):** P1 tek başına ~165k yeni token
-  (cache hariç) / ~918k total harcadı — attempt-1 bütçe yetersizliğiyle fail olup
-  resume gerekti. Token bütçesinin %90+'ı P1'de. v1.x fix adayı: doğrulayıcı
-  okuma turu sınırı (RUN-REPORT §5).
+- **qa-gate `CSRF_CALL_RE` OOP deseni eksik (v1.x):** statik gate `csrf_verify(`/`
+  `verify_csrf(` arıyor; OOP `Csrf::verify(` eşleşmiyor (randevu-app P3'te 2
+  false-negative/positive yakalandı, `csrf_verify()` helper ile geçildi). K6 somut
+  bug kanıtı mevcut.
+- **`--allow-no-cart` semantik yanlış (v1.x):** randevu gibi sepet-anlamsız
+  domain'lerde flag işlevsel ama adı yanıltıcı; v1.x'te domain-aware flag.
+- **P1 attempt-1 fail (izlemede):** envanter-app'ta 1/2 fail (312k boşa gitti),
+  randevu-app'ta temiz (n=2: 1 fail, 1 success) → **sistematik değil**. P1 prompt
+  fix (doğrulayıcı turu sınırı) v1.x yığınında, acil değil.
+- **Hız kanıtı benzer domain ile sınırlı:** 27 dk, CRUD+auth pattern reuse ile
+  ölçüldü; farklı domain (real-time, payment) test edilmedi — üçüncü proje adayı.
 - **P2 model hızı/auto-write:** glm-5.3 pilotda 30dk'da iskeleti tamamlayamadı
   (kill yok — yavaş ama üretken); auto write 0/10. Hybrid mod kalıcı çözüm.
 - **B2 write SchemaError ~%6.8:** harness-side NDJSON şema kayması (prompt ile
-  çözülemez; schema-recovery devrede — P1'de 3× tetiklendi, kurtarıldı).
+  çözülemez; schema-recovery devrede — P1'de 3× tetiklendi, kurtarıldı; randevu-app
+  P1'inde heredoc recovery ile ilk denemede aşıldı).
 - **acceptance_criteria → test eşlemesi henüz enforce edilmiyor (v1.x):**
   `p1-domain-report.schema.json` alanın "traceability" vaadini şimdilik
   "future work" olarak işaretler; qa-gate bu eşlemeyi henüz işletmiyor.
