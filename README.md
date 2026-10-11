@@ -106,7 +106,7 @@ app-fabrika/
 │   ├── bootstrap-project.sh  # Yeni proje başlatma
 │   ├── e2e-driver.sh         # E2E driver + idle watchdog (L3)
 │   ├── lighthouse-verify.sh  # Lighthouse (raporlayıcı, opsiyonel)
-│   └── self-test.sh          # 47 senaryo
+│   └── self-test.sh          # 63 senaryo
 ├── docs/                     # Kanonik dokümanlar
 │   ├── WEB-EDITION.md        # Teknik spesifikasyon
 │   ├── MASTER-PROMPT-V2.md   # Stratejik karar + K1-K8
@@ -140,7 +140,7 @@ git clone https://github.com/UlasKasikci/repo.git && cd repo
 composer global require phpstan/phpstan phpunit/phpunit
 
 # fabrika kendini sınamalı
-bash scripts/web/self-test.sh          # hedef: 51/51 PASS
+bash scripts/web/self-test.sh          # hedef: 63/63 PASS
 ```
 
 ### Yeni proje
@@ -167,7 +167,7 @@ bloat'ı kopyalanmaz).
 ```bash
 cd ../my-project
 
-bash scripts/web/state.sh start          # P1, retry=0
+bash scripts/web/state.sh start          # P1, retry=0 (mevcut state'te: --reset, yedek alır)
 bash scripts/web/orchestrate.sh . --auto # P1 → P2 → P3 sürüşü (artifact kapıları)
 bash scripts/web/qa-gate.sh .            # 0 Error, 0 Warning olmadan P5 yok
 bash scripts/web/package-yukleme.sh .    # Yukleme/ (yalnız QA PASS sonrası)
@@ -329,13 +329,13 @@ Yukleme/
 | v1.0-rc1 | Release Candidate (2026-10-09) | Starter Kit |
 | v1.0-rc2 | Release Candidate (2026-10-10) | /kur + tek-turn prompt + K1a-fix plugin + hybrid mod + CJK CI |
 | **v1.0-rc3** | **Release Candidate** (2026-10-11) | Hybrid iş akışı uçtan uca saha PASS (Tur 2-13) — F1-F11 fix + F3/F4/F10 doğrulandı |
-| **v1.0-rc4** | **Release Candidate** (2026-10-11) | Tur 2-14 son fix turu: B-1 kvkk regex `IF NOT EXISTS` + B-2 hybrid'de P2 LLM çağrısı 0 (self-test 49/49) |
+| **v1.0-rc4** | **Release Candidate** (2026-10-11) | Tur 2-14 son fix turu: B-1 kvkk regex `IF NOT EXISTS` + B-2 hybrid'de P2 LLM çağrısı 0 (o tarihte self-test 49/49) |
 | v1.0 | Planlı | P2 model çıkınca final |
 | v2 | Planlı | JEV routing + modül kütüphanesi |
 | v3 | Vizyon | Şablonlaşma, <1M token istikameti |
 
 rc2, Tur 2-9/2-10 P2 pilotundan **bağımsız**dır: kod tabanı CI yeşil + self-test
-43/43 ile donduruldu; P2 model sorunu hybrid mod ile workaround edildi.
+43/43 (o tarihte) ile donduruldu; P2 model sorunu hybrid mod ile workaround edildi.
 rc3, **hybrid akışın** (P1 → `P2_HUMAN_ASSIST` → manel iskelet → P3 → P5 → DONE)
 Tur 2-13 e-ticaret projesinde 27 dk'da uçtan uca PASS'ı ile etiketlendi.
 
@@ -388,7 +388,7 @@ Tam metin: [`docs/MASTER-PROMPT-V2.md`](docs/MASTER-PROMPT-V2.md)
 
 ## Katkı
 
-1. Issue aç veya PR gönder — PR'da `bash scripts/web/self-test.sh` **51/51 PASS**
+1. Issue aç veya PR gönder — PR'da `bash scripts/web/self-test.sh` **63/63 PASS**
    ve CI yeşil olmalı.
 2. Yeni QA kontrolü yalnız somut bir bug raporuyla eklenir (K6).
 3. Doküman güncellemeleri kanıttan türetilir (K5).

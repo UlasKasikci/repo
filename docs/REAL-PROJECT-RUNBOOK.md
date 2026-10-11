@@ -38,7 +38,8 @@ bash scripts/web/bootstrap-project.sh <proje> --yes      # kopyala + git init + 
 
 ```bash
 bash scripts/web/state.sh start <proje>                  # P1, retry=0 (opsiyonel —
-                                                         # orchestrate state yoksa otomatik start)
+                                                         # orchestrate state yoksa otomatik start;
+                                                         # mevcut/bozuk state: --reset yedekler + sıfırlar)
 bash scripts/web/orchestrate.sh <proje> --auto           # P1 → P2 sürüşü
 ```
 
@@ -92,7 +93,7 @@ cat <proje>/debug_report.json                            # yalnız HALT'ta
 |------|-------|-------|
 | 3 | bekleme (LLM/manuel adım) | adımı yap, aynı komutu tekrar çalıştır |
 | 1 | artefakt/şema/bütçe hatası | mesajı düzelt, yeniden çalıştır |
-| 2 | HALT (retry > 3) | `debug_report.json` → kök neden → `state.sh start` |
+| 2 | HALT (retry > 3) | `debug_report.json` → kök neden → `state.sh start <proje> --reset` (mevcut state yedeklenir) |
 | 0 | DONE | §6 doğrulama |
 
 `--strict`: bütçe 1× aşımlarını uyarır; 2× → SERT AŞIM (exit 1, aynı yerden devam).

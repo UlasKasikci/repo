@@ -83,7 +83,7 @@ Varsayılan 1× eşikler n=2 emprik zeminden (E2E-1/2): toplam **8M** / P2-P4 te
 
 ```bash
 bash scripts/web/state.sh status     # okuma
-bash scripts/web/state.sh start      # P1, retry=0
+bash scripts/web/state.sh start      # P1, retry=0 (mevcut state'te --reset: yedek + sıfırla)
 bash scripts/web/state.sh advance    # P1→P2→P3; P5→DONE (yukleme-verified)
 bash scripts/web/state.sh qa-pass    # P3/P4 → P5
 bash scripts/web/state.sh qa-fail    # retry++ / HALT (retry alias)

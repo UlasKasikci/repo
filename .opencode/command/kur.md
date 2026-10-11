@@ -17,6 +17,8 @@ Tek komutta ilk kurulum — sırayı DEĞİŞTİRME:
    + ilk commit (`bootstrap from app-fabrika@<12-hex>`). exFAT uyarısı: `._*` ikizleri
    betikçe temizlenir.
 4. **State başlat:** `bash scripts/web/state.sh start $ARGUMENTS` (P1, retry=0).
+   State zaten varsa (HALT/önceki tur) `--reset` gerekir — önceki durum
+   `.factory/web-state.backup-<ts>.json`a yedeklenir (veri kaybı yok).
 5. **QA doğrula:** `bash scripts/web/qa-gate.sh $ARGUMENTS` — bootstrapped boş projede
    ilk çalıştırma P2 öncesi kasıtlı FAIL verir (iskelet + phpstan/phpunit zorunlu);
    mevcut projede 0 Error / 0 Warning hedeflenir. `qa-report.json`'ı özetle.
