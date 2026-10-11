@@ -62,6 +62,16 @@ check_end() {
 
 rel() { printf '%s' "${1#"$PROJECT"/}"; }
 
+# A (Tur 2-15): CREATE TABLE kalıbı TEK KAYNAK (DRY) — B-1 kardeş fix.
+# `IF NOT EXISTS` dahil tüm biçimler yakalanır; kalıp tekrarı yasak
+# (USERS/CATALOG/CART + kvkk tabloları bu fonksiyondan türetilir).
+re_table() { # $1 = tablo adı deseni (alternatif grubu)
+  printf 'CREATE TABLE([[:space:]]+IF NOT EXISTS)?[[:space:]]+`?(%s)' "$1"
+}
+USERS_RE="$(re_table 'users|kullanicilar|kullanıcılar|members|uyeler')"
+CATALOG_RE="$(re_table 'products|urunler|urun|catalog|katalog')"
+CART_RE="$(re_table 'orders|siparisler|siparis|sepet|cart|teklifler|quotes')"
+
 echo "==> QA Gate: $PROJECT"
 
 # --- PHP dosya envanteri (node_modules/vendor/Yukleme/.factory/.git hariç) ---
@@ -123,10 +133,6 @@ else
   grep -Eiq 'CREATE TABLE' "$SQL_FILE" || err "sql: CREATE TABLE yok"
   grep -Eiq 'FOREIGN KEY' "$SQL_FILE" || err "sql: FOREIGN KEY yok (ilişkisel şema + cascade zorunlu)"
   grep -Eiq 'INSERT INTO' "$SQL_FILE" || err "sql: seed verisi (INSERT INTO) yok"
-
-  USERS_RE='CREATE TABLE[[:space:]]+`?(users|kullanicilar|kullanıcılar|members|uyeler)'
-  CATALOG_RE='CREATE TABLE[[:space:]]+`?(products|urunler|urun|catalog|katalog)'
-  CART_RE='CREATE TABLE[[:space:]]+`?(orders|siparisler|siparis|sepet|cart|teklifler|quotes)'
 
   if grep -Eiq "$USERS_RE" "$SQL_FILE"; then
     grep -Eiq '(role_id|permissions)' "$SQL_FILE" \
@@ -209,8 +215,8 @@ if [[ "$PHP_COUNT" -gt 0 ]]; then
 fi
 check_end security_policy
 
-# users tablosu varsa kod parola hash'lemeli
-if [[ -n "$SQL_FILE" && "$PHP_COUNT" -gt 0 ]] && grep -Eiq 'CREATE TABLE[[:space:]]+`?(users|kullanicilar|kullanıcılar|members|uyeler)' "$SQL_FILE"; then
+# users tablosu varsa kod parola hash'lemeli (USERS_RE tek kaynak — A/DRY)
+if [[ -n "$SQL_FILE" && "$PHP_COUNT" -gt 0 ]] && grep -Eiq "$USERS_RE" "$SQL_FILE"; then
   check_begin
   grep -Eiq 'password_hash|password_verify' "${PHP_FILES[@]}" \
     || err "güvenlik: users tablosu var ama kodda password_hash/password_verify yok (ARGON2ID/BCRYPT)"
@@ -267,11 +273,10 @@ if [[ "$COMPLIANCE" != "none" ]]; then
     [[ -f "$PROJECT/$f" ]] || err "kvkk: $f eksik (compliance=$COMPLIANCE — P2 KVKK bloğu zorunlu)"
   done
   if [[ -f "$PROJECT/SQL/veritabani.sql" ]]; then
-    # B-1 (Tur 2-14): `CREATE TABLE IF NOT EXISTS ...` false negative — opsiyonel
-    # grup her iki biçimi de yakalar (manuel yazılan dump'lar sql-dump.sh üretmez).
-    grep -Eiq 'CREATE TABLE([[:space:]]+IF NOT EXISTS)?[[:space:]]+`?user_consents' "$PROJECT/SQL/veritabani.sql" \
+    # B-1 (Tur 2-14) + A (Tur 2-15): kalıp re_table'dan — tek kaynak, DRY.
+    grep -Eiq "$(re_table user_consents)" "$PROJECT/SQL/veritabani.sql" \
       || err "kvkk: user_consents tablosu yok (açık rıza kaydı — SQL/veritabani.sql)"
-    grep -Eiq 'CREATE TABLE([[:space:]]+IF NOT EXISTS)?[[:space:]]+`?anonymization_log' "$PROJECT/SQL/veritabani.sql" \
+    grep -Eiq "$(re_table anonymization_log)" "$PROJECT/SQL/veritabani.sql" \
       || err "kvkk: anonymization_log tablosu yok (anonimleştirme izi — SQL/veritabani.sql)"
   fi
   check_end kvkk
