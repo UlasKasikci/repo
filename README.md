@@ -10,7 +10,7 @@ her proje aynı kapılardan geçer — domain analizi → kod → QA → paketle
 
 [![CI](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml/badge.svg)](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![self-test](https://img.shields.io/badge/self--test-48%2F48%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
+[![self-test](https://img.shields.io/badge/self--test-49%2F49%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
 
 ---
 
@@ -140,7 +140,7 @@ git clone https://github.com/UlasKasikci/repo.git && cd repo
 composer global require phpstan/phpstan phpunit/phpunit
 
 # fabrika kendini sınamalı
-bash scripts/web/self-test.sh          # hedef: 48/48 PASS
+bash scripts/web/self-test.sh          # hedef: 49/49 PASS
 ```
 
 ### Yeni proje
@@ -329,6 +329,7 @@ Yukleme/
 | v1.0-rc1 | Release Candidate (2026-10-09) | Starter Kit |
 | v1.0-rc2 | Release Candidate (2026-10-10) | /kur + tek-turn prompt + K1a-fix plugin + hybrid mod + CJK CI |
 | **v1.0-rc3** | **Release Candidate** (2026-10-11) | Hybrid iş akışı uçtan uca saha PASS (Tur 2-13) — F1-F11 fix + F3/F4/F10 doğrulandı |
+| **v1.0-rc4** | **Release Candidate** (2026-10-11) | Tur 2-14 son fix turu: B-1 kvkk regex `IF NOT EXISTS` + B-2 hybrid'de P2 LLM çağrısı 0 (self-test 49/49) |
 | v1.0 | Planlı | P2 model çıkınca final |
 | v2 | Planlı | JEV routing + modül kütüphanesi |
 | v3 | Vizyon | Şablonlaşma, <1M token istikameti |
@@ -350,8 +351,9 @@ Tur 2-13 e-ticaret projesinde 27 dk'da uçtan uca PASS'ı ile etiketlendi.
 **v1.0 final, P2'yi yazabilen model/sağlayıcı çıkınca.** Hybrid mod uzun vadede
 **uçtan uca doğrulandı** (Tur 2-13: P1 PASS → hybrid exit 3 → manel iskelet →
 P3 14/14 PASS → P5 `Yukleme/` → DONE, 27 dk, 2 LLM denemesi; Tur 2-10'dan
-−%37 token / −%66 süre). Kalan: P2 *auto* write hâlâ 0 (B-1 kvkk-regex,
-B-2 driver-P2-tetikleme bulguları için RUN-REPORT-2 §6).
+−%37 token / −%66 süre). Tur 2-14'te RUN-REPORT-2 §6 bulguları kapatıldı
+(B-1 kvkk `IF NOT EXISTS` regex, B-2 hybrid'de P2 LLM çağrısı 0 → v1.0-rc4);
+kalan: P2 *auto* write hâlâ 0 (model/sağlayıcı duvarı — K7 korunuyor).
 
 ---
 
@@ -386,7 +388,7 @@ Tam metin: [`docs/MASTER-PROMPT-V2.md`](docs/MASTER-PROMPT-V2.md)
 
 ## Katkı
 
-1. Issue aç veya PR gönder — PR'da `bash scripts/web/self-test.sh` **48/48 PASS**
+1. Issue aç veya PR gönder — PR'da `bash scripts/web/self-test.sh` **49/49 PASS**
    ve CI yeşil olmalı.
 2. Yeni QA kontrolü yalnız somut bir bug raporuyla eklenir (K6).
 3. Doküman güncellemeleri kanıttan türetilir (K5).

@@ -505,6 +505,14 @@ resolve_model() { # $1=phase(P1|P2|P4) → "provider/model"; boş = opencode var
 
 run_agent() { # $1=agent $2=prompt $3=phase(P1|P2|P4)
   local agent="$1" prompt="$2" phase="${3:-unknown}"
+  # B-2 (Tur 2-14): hybrid modda P2 kod ajanı LLM'e HİÇ gitmez. P2 bloğu zaten
+  # template kopyasıyla exit 3 yapar; bu guard invariant'ı çağrı yolundan
+  # bağımsız kilitler (refactor'de çağrı noktası kaysa bile --auto P2 asla
+  # LLM'e çıkmaz; Tur 2-13 saha: istemsiz P2 auto 275s/0 write israfı).
+  if [[ "$phase" == "P2" && "${P2_HUMAN_ASSIST:-false}" == "true" ]]; then
+    echo "==> P2 HYBRID (P2_HUMAN_ASSIST=true): $agent çağrılmadı — LLM'e gidilmedi." >&2
+    exit 3
+  fi
   if ! command -v opencode >/dev/null 2>&1; then
     echo "orkestratör: opencode CLI yok — --auto kullanılamaz" >&2
     return 1

@@ -2138,6 +2138,48 @@ b1_build "$TMP/b1-miss" missing
 rm -rf "$TMP/b1-plain" "$TMP/b1-ifne" "$TMP/b1-miss"
 echo "    düz=PASS (regresyon) · IF NOT EXISTS=PASS (fix) · tablo yok=FAIL (duyarlılık)"
 
+step "48) B-2 hybrid modda P2 ajanı hiç çağrılmaz (Tur 2-14)"
+# RUN-REPORT-2 §6 B-2: --auto P2, hybrid açıken LLM'e gitmemeli (Tur 2-13 saha:
+# istemsiz P2 auto 275s/0 write). Duyarlılık kontrolü + hybrid kanıtı birlikte.
+mkdir -p "$TMP/b2/proj/.factory" "$TMP/b2/stub"
+B2_LOG="$TMP/b2/calls.log"
+printf '{"current_phase":"P2","retry_count":0,"max_retries":3,"history":[]}\n' \
+  > "$TMP/b2/proj/.factory/web-state.json"
+cat > "$TMP/b2/stub/opencode" <<STUB
+#!/usr/bin/env bash
+printf 'CALL %s\n' "\$*" >> "$B2_LOG"
+exit 1
+STUB
+chmod +x "$TMP/b2/stub/opencode"
+# (a) duyarlılık: hybrid YOK → P2 ajanı 1× çağrılır + metrics P2 satırı
+: > "$B2_LOG"
+rc=0
+env PATH="$TMP/b2/stub:$PATH" bash "$ORCH" "$TMP/b2/proj" --auto >"$TMP/b2/auto.out" 2>&1 || rc=$?
+[[ "$rc" == "3" ]] || die "B-2 kontrol: hybrid yok --auto → exit 3 (wait_for) beklenir, gelen $rc"
+grep -q -- '--agent web-core-engineer' "$B2_LOG" || die "B-2 kontrol: P2 ajanı çağrılmadı — test duyarlı değil"
+python3 - "$TMP/b2/proj/.factory/metrics.jsonl" <<'PY' || die "B-2 kontrol: metrics P2 satırı yok"
+import json, sys
+rows = [json.loads(l) for l in open(sys.argv[1], encoding="utf-8") if l.strip()]
+assert any(r.get("phase") == "P2" for r in rows), rows
+PY
+# (b) hybrid → P2 ajanı HİÇ çağrılmaz (LLM'e gitmeden exit 3)
+: > "$B2_LOG"
+rm -f "$TMP/b2/proj/.factory/metrics.jsonl"
+printf '{"current_phase":"P2","retry_count":0,"max_retries":3,"history":[]}\n' \
+  > "$TMP/b2/proj/.factory/web-state.json"
+rc=0
+env PATH="$TMP/b2/stub:$PATH" P2_HUMAN_ASSIST=true \
+  bash "$ORCH" "$TMP/b2/proj" --auto >"$TMP/b2/hyb.out" 2>&1 || rc=$?
+[[ "$rc" == "3" ]] || die "B-2 hybrid: exit 3 beklenir, gelen $rc"
+grep -q "HYBRID" "$TMP/b2/hyb.out" || die "B-2 hybrid: HYBRID mesajı yok"
+[[ ! -s "$B2_LOG" ]] || die "B-2: hybrid modda P2 ajanı çağrıldı — $(wc -l < "$B2_LOG") satır"
+[[ ! -f "$TMP/b2/proj/.factory/metrics.jsonl" ]] || die "B-2: hybrid modda metrics satırı yazıldı (P2 LLM çağrısı)"
+if grep -q "opencode agent" "$TMP/b2/hyb.out"; then
+  die "B-2: hybrid çıktıda LLM çağrı satırı var"
+fi
+rm -rf "$TMP/b2"
+echo "    duyarlılık: hybrid yok → P2 1× + metrics P2 satırı · hybrid → 0 çağrı + exit 3"
+
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"
 exit 0
