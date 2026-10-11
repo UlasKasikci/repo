@@ -86,7 +86,8 @@ PY
 
 echo "==> QA ön kontrolü (paketleme kapısı): $PROJECT"
 rc=0
-bash "$QA_GATE" "$PROJECT" || rc=$?
+# QA_GATE_EXTRA: koşuya özel ek bayraklar (ör. --allow-no-cart); boşsa davranış değişmez.
+bash "$QA_GATE" "$PROJECT" ${QA_GATE_EXTRA:-} || rc=$?
 if [[ "$rc" -ne 0 ]]; then
   echo "packager: QA gate PASS değil — Yukleme/ oluşturulamaz (State Graph kuralı 3)" >&2
   exit "$rc"

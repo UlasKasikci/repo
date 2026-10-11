@@ -983,7 +983,8 @@ while true; do
         fi
       fi
       rc=0
-      bash "$QA_GATE" "$PROJECT" --record || rc=$?
+      # QA_GATE_EXTRA: koşuya özel ek bayraklar (ör. --allow-no-cart); boşsa davranış değişmez.
+      bash "$QA_GATE" "$PROJECT" --record ${QA_GATE_EXTRA:-} || rc=$?
       case "$rc" in
         0) echo "==> QA PASS $PHASE → P5" ;;
         2) echo "orkestratör: HALT — 4. QA başarısızlığı, debug_report.json" >&2; exit 2 ;;
