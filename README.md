@@ -293,15 +293,18 @@ Yukleme/
 
 ### v1 — Starter Kit (Şimdi)
 
-- Bootstrap + üç IDE config + QA gate (14) + paketleme + self-test (41)
+- Bootstrap + üç IDE config + QA gate (14) + paketleme + self-test (47)
 - **Tamamlandı:** A1 okuma yasağı + QUESTIONS kapısı + A2 spike→write + A2' duvar-saati
   + L3 watchdog (idle+stream+CPU+no-write-cap+cpu_time_pid) + frontmatter kontratı
   + manifest-onaylı whitelist + K1a-fix plugin (`nim-stall-retry`, bun:sqlite DB polling)
   + tek-turn iskelet promptu (A.2) + `/kur` komutu (iki IDE) + CJK-check CI
-- **Bilinen kısıt (Tur 2-9):** P2 kod üretimi glm-5.3'te **0/7** (7/7 run rc=1,
-  write=0). Prompt katmanı (tek-turn + context disiplini) sonucu değiştirmedi —
-  duvar model/sağlayıcı tarafında (F5 stall). v1.0 final = P2'yi yazabilen bir
-  model/sağlayıcı bulunana kadar ertelendi (JEV v2 MCP de erteli).
+  + F1-F11 (bootstrap denylist / manifest-safe add / scaffold_ok / template kopya /
+  docs / traceability / kvkk-regex / P3-P5 / F9 kill_tree / F10 kapsam / F11 kur ipucu)
+- **Bilinen kısıt (Tur 2-9/2-10/2-13):** P2 kod üretimi **0/10 write** (glm-5.3 0/7,
+  kimi-k3 halüsinasyon). Prompt katmanı sonucu değiştirmedi — duvar model/sağlayıcı
+  tarafında. **Hybrid mod** (`P2_HUMAN_ASSIST=true`) Tur 2-13'te uçtan uca
+  doğrulandı (exit 3 + template → manel iskelet → P3/P5 → DONE). v1.0 final =
+  P2'yi yazabilen model/sağlayıcı çıkana kadar ertelendi (JEV v2 MCP de erteli).
 
 ### v2 — Optimize (2-3 ay)
 
@@ -324,26 +327,31 @@ Yukleme/
 | Sürüm | Durum | Not |
 |-------|-------|-----|
 | v1.0-rc1 | Release Candidate (2026-10-09) | Starter Kit |
-| **v1.0-rc2** | **Release Candidate** (2026-10-10) | /kur + tek-turn prompt + K1a-fix plugin + hybrid mod + CJK CI |
-| v1.0 | Planlı | P2 model çıkınca final; hybrid PASS ile v1.0-rc3 |
+| v1.0-rc2 | Release Candidate (2026-10-10) | /kur + tek-turn prompt + K1a-fix plugin + hybrid mod + CJK CI |
+| **v1.0-rc3** | **Release Candidate** (2026-10-11) | Hybrid iş akışı uçtan uca saha PASS (Tur 2-13) — F1-F11 fix + F3/F4/F10 doğrulandı |
+| v1.0 | Planlı | P2 model çıkınca final |
 | v2 | Planlı | JEV routing + modül kütüphanesi |
 | v3 | Vizyon | Şablonlaşma, <1M token istikameti |
 
 rc2, Tur 2-9/2-10 P2 pilotundan **bağımsız**dır: kod tabanı CI yeşil + self-test
 43/43 ile donduruldu; P2 model sorunu hybrid mod ile workaround edildi.
+rc3, **hybrid akışın** (P1 → `P2_HUMAN_ASSIST` → manel iskelet → P3 → P5 → DONE)
+Tur 2-13 e-ticaret projesinde 27 dk'da uçtan uca PASS'ı ile etiketlendi.
 
 ## Production Readiness
 
 | Faz | Durum | Kanıt |
 |-----|-------|-------|
-| P1 (Domain) | ✓ Çalışıyor | 17-22 dk, 7-10 modül (Tur 2-9/2-10 saha) |
-| P2 (Kod) | ✗ Model sınırı | 0/10 write (glm-5.3 0/7, kimi-k3 halüsinasyon); hybrid workaround |
-| P3 (QA) | ✓ Çalışıyor | 14 kontrol + statik/test çekirdeği (kod varsa) |
-| P5 (Paketleme) | ✓ Çalışıyor | staging + smoke + MANIFEST (kod varsa) |
+| P1 (Domain) | ✓ Çalışıyor | 14-22 dk, 7-10 modül; Tur 2-13'te **ilk deneme PASS** (8 modül, kvkk compliance) |
+| P2 (Kod) | ⚠ Model sınırı + ✓ hybrid | auto write **0/10** (glm-5.3 0/7, kimi-k3 halüsinasyon); hybrid mod (exit 3 + 3/3 config template) **uygulanıp P3-P5'e geçildi** |
+| P3 (QA) | ✓ Çalışıyor | 14/14 kanal PASS (Tur 2-13: 9→6→3→0 hata düzeltme turu) |
+| P5 (Paketleme) | ✓ Çalışıyor | staging + smoke + MANIFEST; Tur 2-13'te `Yukleme/` üretilip DONE (`yukleme-verified`) |
 
-**v1.0 final, P2'yi yazabilen model/sağlayıcı çıkınca** (veya hybrid mod
-uzun vadede doğrulanırsa). Hybrid modda P3/P5, insan iskeletiyle uçtan uca
-çalışır (Tur 2-10: P1 PASS + P2 manuel + P3/P5 kapalı).
+**v1.0 final, P2'yi yazabilen model/sağlayıcı çıkınca.** Hybrid mod uzun vadede
+**uçtan uca doğrulandı** (Tur 2-13: P1 PASS → hybrid exit 3 → manel iskelet →
+P3 14/14 PASS → P5 `Yukleme/` → DONE, 27 dk, 2 LLM denemesi; Tur 2-10'dan
+−%37 token / −%66 süre). Kalan: P2 *auto* write hâlâ 0 (B-1 kvkk-regex,
+B-2 driver-P2-tetikleme bulguları için RUN-REPORT-2 §6).
 
 ---
 
