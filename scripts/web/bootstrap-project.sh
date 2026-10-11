@@ -82,6 +82,7 @@ COPY_ROOTS = [
     ".cursor",
     ".opencode",
     "docs",
+    "templates",
 ]
 COPY_FILES = [
     "CLAUDE.md",
@@ -130,6 +131,10 @@ PRUNE_FILES = {
     "qa-report.json",
     "debug_report.json",
     "packaging-report.json",
+    "project.json",
+    "bootstrap_manifest.json",
+    "sync.json",
+    ".bootstrap-manifest",
 }
 
 
@@ -195,6 +200,13 @@ for rel in files:
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     shutil.copy2(src, dst)
 
+# F2: bootstrap'ın kopyaladığı dosya listesini manifest'e yaz (git add için).
+# --force'ta mevcut (bootstrap dışı) dosyalar commit'e GİRMEZ.
+manifest = os.path.join(target, ".factory", ".bootstrap-manifest")
+os.makedirs(os.path.dirname(manifest), exist_ok=True)
+with open(manifest, "w", encoding="utf-8") as fh:
+    fh.write("\n".join(files) + "\n")
+
 print(f"BOOTSTRAP @ {git_hash}: {len(files)} dosya ({total} bayt) → {target}")
 print(f"  {EXCLUDED_NOTE}")
 PY
@@ -208,7 +220,34 @@ if command -v git >/dev/null 2>&1; then
     || git -C "$PROJECT" config user.name "App-Fabrika Bootstrap"
   git -C "$PROJECT" config user.email >/dev/null 2>&1 \
     || git -C "$PROJECT" config user.email "bootstrap@app-fabrika.local"
-  git -C "$PROJECT" add -A
+  # F2: yalnız bootstrap'ın yönettiği dosyaları add et (add -A DEĞİL).
+  # --force'ta hedefte bootstrap dışı dosya varsa UYAR + atla (commit'e girmez).
+  BOOT_MANIFEST="$PROJECT/.factory/.bootstrap-manifest"
+  if [[ -f "$BOOT_MANIFEST" ]]; then
+    # bootstrap dışı dosyaları tespit et (uyarı)
+    EXTRAS=0
+    while IFS= read -r f; do
+      [[ -z "$f" ]] && continue
+      [[ -f "$PROJECT/$f" ]] || continue
+    done < <(git -C "$PROJECT" ls-files 2>/dev/null)
+    # mevcut tracked olmayan ama disk'te olan .factory dışı dosyaları say
+    EXTRA_COUNT="$(cd "$PROJECT" && find . -type f \
+      -not -path "./.git/*" -not -path "./.factory/.bootstrap-manifest" \
+      -not -name "._*" -not -name ".DS_Store" 2>/dev/null | wc -l | tr -d ' ')"
+    TRACKED_BY_BOOT="$(grep -c . "$BOOT_MANIFEST" 2>/dev/null || echo 0)"
+    if [[ "$FORCE" -eq 1 ]] && [[ "$EXTRA_COUNT" -gt "$TRACKED_BY_BOOT" ]]; then
+      echo "  git: dikkat — hedefte bootstrap dışı dosyalar var; --force'ta yalnız bootstrap dosyaları commit edilir" >&2
+    fi
+    # her bootstrap dosyasını tek tek add et
+    while IFS= read -r f; do
+      [[ -z "$f" ]] && continue
+      [[ -f "$PROJECT/$f" ]] && git -C "$PROJECT" add -- "$f" 2>/dev/null || true
+    done < "$BOOT_MANIFEST"
+    # manifest'in kendisi de eklensin (izlenebilirlik)
+    git -C "$PROJECT" add -- .factory/.bootstrap-manifest 2>/dev/null || true
+  else
+    git -C "$PROJECT" add -A
+  fi
   if git -C "$PROJECT" diff --cached --quiet 2>/dev/null; then
     echo "  git: içerik aynı — commit atlanmadı (mevcut iz korundu)"
   else
