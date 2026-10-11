@@ -357,12 +357,22 @@ if [[ -f "$PROJECT/phpunit.xml" || -f "$PROJECT/phpunit.xml.dist" ]]; then
     PU_CFG="phpunit.xml"
     [[ -f "$PROJECT/phpunit.xml" ]] || PU_CFG="phpunit.xml.dist"
     check_begin
-    if ! (cd "$PROJECT" && "$PU" --configuration "$PU_CFG" >/dev/null 2>&1); then
+    PU_OUT=""
+    PU_RC=0
+    PU_OUT="$(cd "$PROJECT" && "$PU" --configuration "$PU_CFG" 2>&1)" || PU_RC=$?
+    # F10 (Tur 2-12): test sayısını parse et — 0 ise WARN (FAIL değil), kapsam raporu bas.
+    PU_TESTS="$(printf '%s\n' "$PU_OUT" | sed -nE 's/.*OK \(([0-9]+) tests?.*/\1/p; s/.*Tests: ([0-9]+).*/\1/p' | head -1)"
+    [[ -n "$PU_TESTS" ]] || PU_TESTS=0
+    if [[ "$PU_RC" -ne 0 ]]; then
       _hint=""
       if find "$PROJECT" -type f -name '._*Test.php' -not -path '*/node_modules/*' 2>/dev/null | grep -q .; then
         _hint=" — AppleDouble ikizi (._*Test.php) PHPUnit tarayıcısını bozar; find . -name '._*' -delete (exFAT)"
       fi
       err "test: phpunit birim testleri başarısız${_hint}"
+    elif [[ "$PU_TESTS" -eq 0 ]]; then
+      warn "test: phpunit çalıştı ama 0 test bulundu — kapsam güvencesi yok (test dosyalarını tests/ altına ekleyin)"
+    else
+      echo "    Kapsam güvencesi: $PU_TESTS test" >&2
     fi
     check_end phpunit
   else

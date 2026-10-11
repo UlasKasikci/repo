@@ -37,11 +37,12 @@
 set -u
 
 kill_tree() { # watchdog kill sırası: önce çocuklar (agent/opencode), sonra hedef
-  local pid="$1" c g
-  for c in $(pgrep -P "$pid" 2>/dev/null); do
-    for g in $(pgrep -P "$c" 2>/dev/null); do kill -TERM "$g" 2>/dev/null || true; done
-    kill -TERM "$c" 2>/dev/null || true
-  done
+  # F9 (Tur 2-12): tree_pids kadar özyinelemeli — 3+ seviye süreç ağacı da kapsanır.
+  local pid="$1" p
+  while read -r p; do
+    [[ "$p" == "$pid" ]] && continue
+    kill -TERM "$p" 2>/dev/null || true
+  done < <(tree_pids "$pid" 2>/dev/null)
   kill -TERM "$pid" 2>/dev/null || true
 }
 

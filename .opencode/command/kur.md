@@ -26,3 +26,5 @@ Tek komutta ilk kurulum — sırayı DEĞİŞTİRME:
 
 Kısıtlar: model DEĞİŞTİRME (K7) · `Yukleme/` paketleme öncesi oluşturma (K6) ·
 TAG yok (denetim öncesi).
+
+Not: P2'de model FAIL olursa `P2_HUMAN_ASSIST=true bash orchestrate.sh --auto` kullanın (hybrid mod — iskeleti siz yazarsınız, P3-P5 otomatik devam eder).
