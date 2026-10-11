@@ -10,7 +10,7 @@ her proje aynı kapılardan geçer — domain analizi → kod → QA → paketle
 
 [![CI](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml/badge.svg)](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![self-test](https://img.shields.io/badge/self--test-43%2F43%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
+[![self-test](https://img.shields.io/badge/self--test-47%2F47%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
 
 ---
 
@@ -106,7 +106,7 @@ app-fabrika/
 │   ├── bootstrap-project.sh  # Yeni proje başlatma
 │   ├── e2e-driver.sh         # E2E driver + idle watchdog (L3)
 │   ├── lighthouse-verify.sh  # Lighthouse (raporlayıcı, opsiyonel)
-│   └── self-test.sh          # 34 senaryo
+│   └── self-test.sh          # 47 senaryo
 ├── docs/                     # Kanonik dokümanlar
 │   ├── WEB-EDITION.md        # Teknik spesifikasyon
 │   ├── MASTER-PROMPT-V2.md   # Stratejik karar + K1-K8
@@ -140,7 +140,7 @@ git clone https://github.com/UlasKasikci/repo.git && cd repo
 composer global require phpstan/phpstan phpunit/phpunit
 
 # fabrika kendini sınamalı
-bash scripts/web/self-test.sh          # hedef: 43/43 PASS
+bash scripts/web/self-test.sh          # hedef: 47/47 PASS
 ```
 
 ### Yeni proje
@@ -323,13 +323,27 @@ Yukleme/
 
 | Sürüm | Durum | Not |
 |-------|-------|-----|
-| **v1.0-rc1** | **Release Candidate** (2026-10-09) | Starter Kit — Tur 2-3 E2E onayı bekliyor |
-| v1.0 | Planlı | Tur 2-3 PASS → final; Kısmi → v1.1 (model hızı); FAIL → A2'' iterasyon |
+| v1.0-rc1 | Release Candidate (2026-10-09) | Starter Kit |
+| **v1.0-rc2** | **Release Candidate** (2026-10-10) | /kur + tek-turn prompt + K1a-fix plugin + hybrid mod + CJK CI |
+| v1.0 | Planlı | P2 model çıkınca final; hybrid PASS ile v1.0-rc3 |
 | v2 | Planlı | JEV routing + modül kütüphanesi |
 | v3 | Vizyon | Şablonlaşma, <1M token istikameti |
 
-rc1, Tur 2-3 sonucundan **bağımsız**dır: kod tabanı CI yeşil + self-test 30/30 ile
-donmuştur; E2E sonucu yalnız v1.0 final onayını etkiler (K7: tek kol tek tur).
+rc2, Tur 2-9/2-10 P2 pilotundan **bağımsız**dır: kod tabanı CI yeşil + self-test
+43/43 ile donduruldu; P2 model sorunu hybrid mod ile workaround edildi.
+
+## Production Readiness
+
+| Faz | Durum | Kanıt |
+|-----|-------|-------|
+| P1 (Domain) | ✓ Çalışıyor | 17-22 dk, 7-10 modül (Tur 2-9/2-10 saha) |
+| P2 (Kod) | ✗ Model sınırı | 0/10 write (glm-5.3 0/7, kimi-k3 halüsinasyon); hybrid workaround |
+| P3 (QA) | ✓ Çalışıyor | 14 kontrol + statik/test çekirdeği (kod varsa) |
+| P5 (Paketleme) | ✓ Çalışıyor | staging + smoke + MANIFEST (kod varsa) |
+
+**v1.0 final, P2'yi yazabilen model/sağlayıcı çıkınca** (veya hybrid mod
+uzun vadede doğrulanırsa). Hybrid modda P3/P5, insan iskeletiyle uçtan uca
+çalışır (Tur 2-10: P1 PASS + P2 manuel + P3/P5 kapalı).
 
 ---
 
@@ -339,6 +353,9 @@ donmuştur; E2E sonucu yalnız v1.0 final onayını etkiler (K7: tek kol tek tur
   yavaş ama üretken). Tur 2-3 tam bütçeyle ölçüyor; eşik: P2 < 8 saat.
 - **B2 write SchemaError ~%6.8:** harness-side NDJSON şema kayması (prompt ile
   çözülemez; schema-recovery devrede — P1'de 3× tetiklendi, kurtarıldı).
+- **acceptance_criteria → test eşlemesi henüz enforce edilmiyor (v1.x):**
+  `p1-domain-report.schema.json` alanın "traceability" vaadini şimdilik
+  "future work" olarak işaretler; qa-gate bu eşlemeyi henüz işletmiyor.
 
 ---
 
@@ -361,7 +378,7 @@ Tam metin: [`docs/MASTER-PROMPT-V2.md`](docs/MASTER-PROMPT-V2.md)
 
 ## Katkı
 
-1. Issue aç veya PR gönder — PR'da `bash scripts/web/self-test.sh` **43/43 PASS**
+1. Issue aç veya PR gönder — PR'da `bash scripts/web/self-test.sh` **47/47 PASS**
    ve CI yeşil olmalı.
 2. Yeni QA kontrolü yalnız somut bir bug raporuyla eklenir (K6).
 3. Doküman güncellemeleri kanıttan türetilir (K5).

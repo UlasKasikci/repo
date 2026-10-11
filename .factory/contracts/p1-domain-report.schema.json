@@ -22,38 +22,78 @@
   ],
   "additionalProperties": true,
   "properties": {
-    "schema_version": { "const": 1 },
-    "project": { "type": "string", "minLength": 1 },
-    "compliance": { "type": "string", "enum": ["kvkk", "gdpr", "none"] },
+    "schema_version": {
+      "const": 1
+    },
+    "project": {
+      "type": "string",
+      "minLength": 1
+    },
+    "compliance": {
+      "type": "string",
+      "enum": [
+        "kvkk",
+        "gdpr",
+        "none"
+      ]
+    },
     "entities": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["name", "fields"],
+        "required": [
+          "name",
+          "fields"
+        ],
         "additionalProperties": true,
         "properties": {
-          "name": { "type": "string", "minLength": 1 },
-          "fields": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "fields": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          }
         }
       }
     },
     "roles": {
       "type": "array",
       "minItems": 1,
-      "items": { "type": "string", "minLength": 1 }
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
     },
     "module_matrix": {
       "type": "array",
       "minItems": 4,
       "items": {
         "type": "object",
-        "required": ["module", "status", "evidence", "justification"],
+        "required": [
+          "module",
+          "status",
+          "evidence",
+          "justification"
+        ],
         "additionalProperties": false,
         "properties": {
-          "module": { "type": "string", "minLength": 3 },
+          "module": {
+            "type": "string",
+            "minLength": 3
+          },
           "status": {
-            "enum": ["present", "missing", "injected", "proposed"]
+            "enum": [
+              "present",
+              "missing",
+              "injected",
+              "proposed"
+            ]
           },
           "evidence": {
             "type": "string",
@@ -70,33 +110,51 @@
     },
     "injected_modules": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
     },
     "approvals": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
     },
     "edge_cases": {
       "type": "array",
       "minItems": 1,
-      "items": { "type": "string", "minLength": 1 }
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
     },
     "security_context": {
       "type": "array",
       "minItems": 1,
-      "items": { "type": "string", "minLength": 1 }
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
     },
     "sql_draft": {
       "type": "object",
-      "required": ["tables"],
+      "required": [
+        "tables"
+      ],
       "additionalProperties": true,
       "properties": {
         "tables": {
           "type": "array",
           "minItems": 1,
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         },
-        "seed_rows": { "type": "integer", "minimum": 0 }
+        "seed_rows": {
+          "type": "integer",
+          "minimum": 0
+        }
       }
     },
     "file_manifest": {
@@ -105,34 +163,65 @@
       "description": "P2'nin üreteceği hedef dosyalar (A1 whitelist gerekçesi: P2 dosya listesini tahmin etmez, kontrattan okur)",
       "items": {
         "type": "object",
-        "required": ["path", "purpose"],
+        "required": [
+          "path",
+          "purpose"
+        ],
         "additionalProperties": true,
         "properties": {
-          "path": { "type": "string", "minLength": 1 },
-          "purpose": { "type": "string", "minLength": 3 }
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 3
+          }
         }
       }
     },
     "acceptance_criteria": {
       "type": "array",
       "minItems": 1,
-      "items": { "type": "string", "minLength": 10 },
-      "description": "P2'nin neyi başaracağı (qa-gate.sh okumak yasak → tek kaynak bu alan). İzlenebilirlik (K5/Tur 2-7 notu): her kriter tekil ve test edilebilir yazılmalı; md5/UUID gibi izole token veya tekrar eden kopya metin kabul edilmez (traceability: gereksinim → kabul kriteri → test senaryosu)."
+      "items": {
+        "type": "string",
+        "minLength": 10
+      },
+      "description": "P2'nin neyi başaracağı (qa-gate.sh okumak yasak → tek kaynak bu alan). Her kriter tekil ve test edilebilir yazılmalı; md5/UUID gibi izole token veya tekrar eden kopya metin kabul edilmez. NOT (Tur 2-12 F7): gereksinim → kabul kriteri → test senaryosu eşlemesi (traceability) henüz enforce edilmiyor — future work (v1.x)."
     },
     "api_endpoints": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["path", "method"],
+        "required": [
+          "path",
+          "method"
+        ],
         "additionalProperties": true,
         "properties": {
-          "path": { "type": "string", "minLength": 1 },
-          "method": { "type": "string", "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"] },
-          "auth": { "type": "string" }
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "GET",
+              "POST",
+              "PUT",
+              "PATCH",
+              "DELETE"
+            ]
+          },
+          "auth": {
+            "type": "string"
+          }
         }
       },
       "description": "REST uçları; API yoksa boş dizi (yokluğu değil, kararı belirtir)"
     },
-    "result": { "const": "requirements-frozen" }
+    "result": {
+      "const": "requirements-frozen"
+    }
   }
 }
