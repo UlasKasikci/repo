@@ -30,6 +30,17 @@ command -v python3 >/dev/null 2>&1 || { echo "state: python3 gerekli" >&2; exit 
 PROJECT="$(cd "$PROJECT" && pwd)"
 export _ST_OP="$OP" _ST_PROJECT="$PROJECT" _ST_GRAPH="$GRAPH"
 
+# C.2 (Tur 2-15): advance öncesi fazı yakala — hybrid marker'ından manel P2
+# süresi python geçişten sonra (başarılı ise) hesaplanacak.
+PRE_PHASE=""
+if [[ "$OP" == "advance" ]]; then
+  PRE_PHASE="$(python3 -c "import json,sys
+try:
+    print(json.load(open('$PROJECT/.factory/web-state.json'))['current_phase'])
+except Exception:
+    print('')" 2>/dev/null || true)"
+fi
+
 python3 - <<'PY'
 import datetime, json, os, sys
 
@@ -236,3 +247,19 @@ if op == "halt":
 
 die(f"işlenemedi: {op}")
 PY
+
+# C.2 (Tur 2-15): başarılı P2 → P3 geçişinde hybrid marker'ından manel P2 süresi
+# (dakika) metrics.jsonl'e yazılır ve marker temizlenir. Agent satırlarından
+# ayrık `kind: measure` satırı — asla geçişin kendisini etkilemez (|| true).
+if [[ "$OP" == "advance" && "$PRE_PHASE" == "P2" ]]; then
+  _MARKER="$PROJECT/.factory/hybrid-p2-start"
+  if [[ -f "$_MARKER" ]]; then
+    _START="$(tr -cd '0-9' < "$_MARKER" 2>/dev/null || true)"
+    [[ -n "$_START" ]] || _START=0
+    _NOW="$(date +%s)"
+    _MIN=$(( (_NOW - _START) / 60 ))
+    [[ "$_MIN" -ge 0 ]] || _MIN=0
+    bash "$ROOT/scripts/web/measure.sh" "$PROJECT" manual_p2_min "$_MIN" P2 || true
+    rm -f "$_MARKER"
+  fi
+fi

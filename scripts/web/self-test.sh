@@ -2173,12 +2173,60 @@ env PATH="$TMP/b2/stub:$PATH" P2_HUMAN_ASSIST=true \
 [[ "$rc" == "3" ]] || die "B-2 hybrid: exit 3 beklenir, gelen $rc"
 grep -q "HYBRID" "$TMP/b2/hyb.out" || die "B-2 hybrid: HYBRID mesajı yok"
 [[ ! -s "$B2_LOG" ]] || die "B-2: hybrid modda P2 ajanı çağrıldı — $(wc -l < "$B2_LOG") satır"
-[[ ! -f "$TMP/b2/proj/.factory/metrics.jsonl" ]] || die "B-2: hybrid modda metrics satırı yazıldı (P2 LLM çağrısı)"
 if grep -q "opencode agent" "$TMP/b2/hyb.out"; then
   die "B-2: hybrid çıktıda LLM çağrı satırı var"
 fi
+# C.2 (Tur 2-15): hybrid artık metrics.jsonl'e `kind: measure` satırı yazar —
+# önemli olan LLM/agent satırının OLMAMASI + phase_human_assist ölçümünün olması.
+python3 - "$TMP/b2/proj/.factory/metrics.jsonl" <<'PY' || die "B-2: hybrid metrics ölçüm satırı yok/bozuk"
+import json, sys
+rows = [json.loads(l) for l in open(sys.argv[1], encoding="utf-8") if l.strip()]
+agent_rows = [r for r in rows if r.get("agent")]
+assert not agent_rows, f"hybrid modda LLM/agent satırı yazıldı: {agent_rows}"
+meas = [r for r in rows if r.get("kind") == "measure"
+        and r.get("field") == "phase_human_assist"]
+assert meas and meas[0].get("value") is True, rows
+PY
 rm -rf "$TMP/b2"
-echo "    duyarlılık: hybrid yok → P2 1× + metrics P2 satırı · hybrid → 0 çağrı + exit 3"
+echo "    duyarlılık: hybrid yok → P2 1× + metrics P2 satırı · hybrid → 0 çağrı + exit 3 + C.2 ölçüm satırı"
+
+step "49) A kardeş regex: IF NOT EXISTS → rbac/cart/password kapıları (Tur 2-15)"
+# B-1 kardeş fix (A.2): re_table() tek kaynak — IF NOT EXISTS biçimindeki
+# users/products kapıları eski düz kalıpla KAÇIRILIYORDU (rbac, cart, password).
+A49="$TMP/a49-sib"
+mkdir -p "$A49/SQL"
+printf '<?php\n$x = $_POST["a"] ?? null;\n' > "$A49/index.php"
+printf 'CREATE TABLE IF NOT EXISTS users (id INT);\nCREATE TABLE IF NOT EXISTS products (id INT);\n' \
+  > "$A49/SQL/veritabani.sql"
+a49_out="$(bash "$QA" "$A49" 2>&1)" || true
+grep -q "rbac:" <<<"$a49_out" || die "A.2: IF NOT EXISTS users → rbac kapısı tetiklenmedi"
+grep -q "eksik modül:" <<<"$a49_out" || die "A.2: IF NOT EXISTS products → cart kapısı tetiklenmedi"
+grep -q "password_hash" <<<"$a49_out" || die "A.2: IF NOT EXISTS users → password_policy kapısı tetiklenmedi"
+# DRY (A.2): kalıp TEK kaynak — re_table gövdesi dışında CREATE TABLE kalıbı yok
+A49_GATE="$ROOT/scripts/web/qa-gate.sh"
+A49_N="$(grep -cF 'CREATE TABLE([[:space:]]+IF NOT EXISTS)?[[:space:]]+`?(' "$A49_GATE")"
+[[ "$A49_N" == "1" ]] || die "A.2 DRY: re_table kalıbı tek kaynak olmalı (bulunan: $A49_N)"
+if grep -qE 'CREATE TABLE\[\[:space:\]\]' "$A49_GATE"; then
+  die "A.2 DRY: eski düz kalıp literal'i qa-gate'te kalmış"
+fi
+rm -rf "$A49"
+echo "    rbac+cart+password 3/3 kapı IF NOT EXISTS ile tetiklendi · DRY tek kaynak ✓"
+
+step "50) A regresyon: düz kalıplar + mevcut fixture PASS (Tur 2-15)"
+A50="$TMP/a50-plain"
+mkdir -p "$A50/SQL"
+printf '<?php\n$x = $_POST["a"] ?? null;\n' > "$A50/index.php"
+printf 'CREATE TABLE users (id INT);\nCREATE TABLE products (id INT);\n' > "$A50/SQL/veritabani.sql"
+a50_out="$(bash "$QA" "$A50" 2>&1)" || true
+grep -q "rbac:" <<<"$a50_out" || die "A.3 regresyon: düz CREATE TABLE users → rbac kapısı kayboldu"
+grep -q "eksik modül:" <<<"$a50_out" || die "A.3 regresyon: düz CREATE TABLE products → cart kapısı kayboldu"
+rm -rf "$A50"
+A50_FX="$TMP/a50-fix"
+cp -R "$FIX" "$A50_FX"
+a50_rc="$(run_rc bash "$QA" "$A50_FX")"
+[[ "$a50_rc" == "0" ]] || die "A.3 regresyon: mevcut fixture qa-gate PASS beklenir, gelen $a50_rc"
+rm -rf "$A50_FX"
+echo "    düz kalıplar rbac+cart ✓ · mevcut fixture PASS (rc=0) ✓"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

@@ -429,6 +429,7 @@ def _cost_usd():
 
 
 retry_count = 0  # aynı phase'den bu satırdan ÖNCE yazılmış satır sayısı (per-phase)
+# C.2 (Tur 2-15): `kind: measure` satırları ajan denemesi SAYILMAZ (ölçüm verisi).
 try:
     with open(out_path, encoding="utf-8", errors="replace") as fh:
         for ln in fh:
@@ -436,7 +437,10 @@ try:
             if not ln:
                 continue
             try:
-                if json.loads(ln).get("phase") == phase:
+                _prev = json.loads(ln)
+                if _prev.get("kind") == "measure":
+                    continue
+                if _prev.get("phase") == phase:
                     retry_count += 1
             except Exception:
                 continue
@@ -938,6 +942,12 @@ while true; do
         echo "    Sonra:"
         echo "      bash scripts/web/state.sh advance $PROJECT   # P2 → P3"
         echo "      bash scripts/web/orchestrate.sh $PROJECT --auto   # P3-P5 otomatik devam"
+        # C.2 (Tur 2-15): hybrid ölçüm — ilk girişte bir kez marker + ölçüm satırı.
+        # marker: state.sh advance P2→P3'te manual_p2_min hesabına kaynak olur.
+        if [[ ! -f "$PROJECT/.factory/hybrid-p2-start" ]]; then
+          date +%s > "$PROJECT/.factory/hybrid-p2-start"
+          bash "$ROOT/scripts/web/measure.sh" "$PROJECT" phase_human_assist true P2 || true
+        fi
         exit 3
       fi
       # A1 kapı 1: döngüye soruyla girildiyse ajan çağırmadan P1'e dön.
