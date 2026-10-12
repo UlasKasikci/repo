@@ -3,34 +3,59 @@ name: kvkk-compliance
 description: KVKK/GDPR uyumluluk modülü — aydınlatma metinleri, çerez rıza banner'ı, user_consents/anonymization_log şeması; intent.compliance=kvkk|gdpr olan projelerde P2 öncesi kullan.
 ---
 
-# KVKK/GDPR Compliance (iskelet — v2'de doldurulur)
+# KVKK/GDPR Compliance
 
-**Durum:** iskelet · **Bağlantı:** `docs/WEB-EDITION.md` §3 (compliance koşullu modül #9) ·
-`qa-gate.sh` → `kvkk` kanalı.
+**Durum:** READY · **Kapı:** `qa-gate.sh` → `kvkk` · **Karar:** `decision.json` modules `kvkk|gdpr`
 
-## Ne zaman çağrılır
+## Ne zaman
 
-`project-intent.json` → `compliance ∈ {kvkk, gdpr}` ise P2 (kod üretimi) öncesi —
-domain-report yazılırken bileşen listesi dondurulur.
+`project-intent.json` veya `domain-report.compliance` ∈ `{kvkk, gdpr}` ise P2’de **zorunlu**.
 
-## Modül adımları (v2 planı — içerik doldurulacak)
+## Dosya sözleşmesi (hepsi zorunlu)
 
-1. **Görünüm/FAQ metinleri:** `views/legal/aydinlatma.php`, `views/legal/gizlilik.php`,
-   `views/legal/cerez.php` — gerçek yasal metin (şablon değil).
-2. **Çerez rızası:** `views/partials/cookie-consent.php` (açık rıza banner'ı) +
-   `assets/js/cookie-consent.js` (kaydetme/red, `HttpOnly` olmayan tercih çerezi).
-3. **DB:** `SQL/migrations/schema/*_kvkk.sql` → `user_consents` + `anonymization_log`
-   (boş şema, seed değil) → `bash scripts/web/sql-dump.sh` ile dump yeniden üret.
-4. **domain-report:** `file_manifest` içine legal view'lar + partial + JS eklenir
-   (manifest-onaylı içerik okuma — Q1 tamamlama modeli).
+| Dosya | İçerik |
+|-------|--------|
+| `views/legal/aydinlatma.php` | Veri sorumlusu, amaçlar, haklar (KVKK md. 10/11) — placeholder yasak |
+| `views/legal/gizlilik.php` | İşleme, saklama, üçüncü taraflar |
+| `views/legal/cerez.php` | Çerez türleri, süre, ret/onay |
+| `views/partials/cookie-consent.php` | Banner: kabul / red / tercihler; CSRF’li form veya JS API |
+| `assets/js/cookie-consent.js` | Tercihi `localStorage` veya non-HttpOnly çerezde sakla; tekrar aç |
+| `SQL/migrations/schema/002_kvkk.sql` | Aşağıdaki tablolar |
+| `SQL/veritabani.sql` | `sql-dump.sh` ile yeniden üretilmiş dump |
 
-## qa-gate beklentileri (`kvkk` kanalı)
+## SQL (002_kvkk.sql)
 
-- 3 legal view + cookie-consent partial + cookie-consent.js → dosya varlığı zorunlu.
-- `SQL/veritabani.sql` → `CREATE TABLE user_consents` + `CREATE TABLE anonymization_log`.
-- Eksik → FAIL; `compliance=none`/alan yok → kanal SKIPPED (PASS'i etkilemez).
+```sql
+CREATE TABLE IF NOT EXISTS user_consents (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT UNSIGNED NULL,
+  purpose VARCHAR(64) NOT NULL,
+  granted TINYINT(1) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_uc_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS anonymization_log (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT UNSIGNED NULL,
+  action VARCHAR(64) NOT NULL,
+  basis VARCHAR(128) NOT NULL,
+  performed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+Dump: `bash scripts/web/sql-dump.sh .`
+
+## Uygulama sırası
+
+1. SQL migration yaz → dump üret.
+2. Üç legal view + cookie partial + JS yaz (gerçek metin; lorem FAIL).
+3. `file_manifest`’e bu yolları ekle (P1’de yoksa P2’de domain-report’u güncelleme — yeni dosyaları üret).
+4. Ana layout’ta consent partial’ı include et.
+5. `bash scripts/web/qa-gate.sh .` — `kvkk` kanalı PASS.
 
 ## Yasak
 
-- `compliance=kvkk|gdpr` iken tek bir bileşenin "yeterli" sayılması (kanal bütünseldir).
-- Yasal metni placeholder/lorem ile doldurmak (K5: belge kanıttan türesin).
+- Tek bileşenle “yeter” demek.
+- Placeholder / lorem yasal metin.
+- Dump’ı elle düzenlemek (sql_dump drift FAIL).

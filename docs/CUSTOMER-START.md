@@ -8,12 +8,21 @@ olursa olsun aynı standartlarla, halüsinasyonsuz, kaldığı yerden devam.
 
 ---
 
+## 0) Fabrika hazır mı? (zorunlu)
+
+```bash
+cd ~/webrail   # veya bu repo kökü
+bash scripts/web/preflight.sh
+# PREFLIGHT: READY görmeden müşteriye geçme
+```
+
 ## 1) Fabrikayı kaynak tut, müşteri klasörüne bootstrap et
 
 ```bash
 # Webrail kaynağı (bir kez / güncel tut)
 git clone https://github.com/UlasKasikci/repo.git ~/webrail
 cd ~/webrail
+bash scripts/web/preflight.sh
 
 # Müşteri projesi — ASLA fabrika köküne yazma
 bash scripts/web/bootstrap-project.sh ../musteri-adi --yes

@@ -2623,6 +2623,18 @@ grep -q 'ücretli JEV yok\|ücretli JEV yok\|Ücretli JEV yok' "$ROOT/docs/CUSTO
 rm -rf "$D68"
 echo "    P1→P2 advance → decision.json · CUSTOMER-START protokolü ✓"
 
+step "69) Preflight READY + skills açık uç yok (müşteri öncesi kapı)"
+rc="$(run_rc bash "$ROOT/scripts/web/preflight.sh")"
+[[ "$rc" == "0" ]] || die "preflight.sh READY (0) beklenir, gelen $rc"
+for s in kvkk-compliance auth-rbac admin-crud seo-basics; do
+  f="$ROOT/.opencode/skills/$s/SKILL.md"
+  [[ -f "$f" ]] || die "skill yok: $s"
+  grep -q '\*\*Durum:\*\* READY' "$f" || die "skill READY değil: $s"
+  grep -Eq 'v2.de doldurul|içerik doldurulacak' "$f" && die "skill açık uç: $s"
+done
+grep -q 'preflight.sh' "$ROOT/docs/CUSTOMER-START.md" || die "CUSTOMER-START preflight anmaz"
+echo "    preflight READY · 4 skill READY · protokol bağlı ✓"
+
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"
 exit 0

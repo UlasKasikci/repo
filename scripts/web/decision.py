@@ -104,8 +104,8 @@ def build_decision(project: Path, factory_root: Path) -> dict[str, Any]:
             continue
         # Skill uygula: injected/missing/proposed veya compliance kaynaklı
         apply = status in ("injected", "missing", "proposed")
-        if mod in ("rbac", "auth") and status == "present":
-            apply = True  # skill yine referans — yeniden yazma yasağı için
+        if mod in ("rbac", "auth", "seo") and status == "present":
+            apply = True  # skill referans — yeniden icat yasağı
         if mod in ("kvkk", "gdpr") or (
             compliance in ("kvkk", "gdpr") and mod in ("legal", "consent")
         ):

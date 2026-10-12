@@ -3,33 +3,58 @@ name: admin-crud
 description: Admin panel CRUD modülü — kullanıcı/rol yönetimi listeleme form sayfalama ve yetki matrisi; yönetim arayüzü olan projelerde P2 öncesi kullan.
 ---
 
-# Admin CRUD (iskelet — v2'de doldurulur)
+# Admin CRUD
 
-**Durum:** iskelet · **Bağlantı:** `docs/WEB-EDITION.md` §3 (RBAC denetimi) ·
-`qa-gate.sh` → `structure`, `sql_schema` (RBAC), `security_grep` kanalları.
+**Durum:** READY · **Kapı:** `structure` + RBAC + CSRF · **Karar:** modül `admin|admin-crud`
 
-## Ne zaman çağrılır
+## Ne zaman
 
-`domain-report.json` → `module_matrix` içinde admin/panel/management modülü varken;
-`users`/`kullanicilar` tablosu tanımına giriyorsa RBAC ile birlikte.
+`module_matrix` içinde admin/panel/management **veya** yönetim ekranı isteniyorsa.
+Her zaman `auth-rbac` ile birlikte uygulanır.
 
-## Modül adımları (v2 planı — içerik doldurulacak)
+## Dosya sözleşmesi
 
-1. **Listeleme:** `views/admin/<entity>/index.php` — tablo, filtre, sayfalama
-   (PDO `LIMIT/OFFSET` prepared), toplu işlem formu (CSRF token).
-2. **Form:** `create.php` / `edit.php` — sunucu doğrulama (422 mantığı), hata mesajı
-   `htmlspecialchars` ile basılır (XSS).
-3. **Yetki:** her aksiyon `role_id` kontrolünden geçer; yetkisiz → 403 (interceptor
-   `core/` içinde, tek noktadan). Admin paneli genel `views/` altında; rota `.htaccess`.
-4. **domain-report:** `file_manifest` → tüm admin view'lar + controller + SQL migrasyon.
+| Dosya | Rol |
+|-------|-----|
+| `core/AdminController.php` | liste/oluştur/güncelle/sil — her aksiyonda `Auth::requireRole('admin')` |
+| `views/admin/users.php` (veya `views/admin/users/index.php`) | liste + CSRF’li formlar |
+| `views/admin/messages.php` (iletişim varsa) | aynı kalıp |
+| Rotalar | `index.php` / App router — `/admin/*` |
 
-## qa-gate beklentileri
+## Uygulama kalıbı
 
-- RBAC: `users` varsa `role_id`/`permissions` kolonu + kodda parola hash'i (`password_policy`).
-- `security_grep`: ham çıktı/superglobal yok; CSRF'siz POST yok.
-- N+1 yasağı: liste sorgusu JOIN ile tek seferde.
+1. **Guard:** controller metodunun ilk satırları: `requireLogin` + `requireRole('admin')` + POST’ta `guardPost()`.
+2. **Liste:** PDO prepared `SELECT ... LIMIT :lim OFFSET :off` — string birleştirme yok.
+3. **Yazma:** validate → prepared INSERT/UPDATE → flash → redirect.
+4. **Çıktı:** tüm alanlar `htmlspecialchars($v, ENT_QUOTES, 'UTF-8')`.
+5. **N+1 yok:** liste JOIN ile tek sorgu.
+
+## Minimal controller iskeleti
+
+```php
+public function users(): void
+{
+    Auth::requireRole('admin');
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        guardPost();
+        // ... prepared write ...
+    }
+    $rows = Database::pdo()->query(
+        'SELECT u.id, u.email, r.name AS role_name FROM users u JOIN roles r ON r.id = u.role_id ORDER BY u.id'
+    )->fetchAll(PDO::FETCH_ASSOC);
+    View::render('admin/users', ['users' => $rows]);
+}
+```
+
+## Uygulama sırası
+
+1. Auth/RBAC hazır değilse önce `auth-rbac` skill.
+2. AdminController + views/admin/*.
+3. Router’a `/admin` bağla.
+4. `qa-gate.sh` PASS.
 
 ## Yasak
 
-- Yetki kontrolünü view içinde tek başına yapmak (mantık `core/` + view'da olmalı).
-- Admin CRUD'i "iskelet var" diye planlamadan üretmek (P1 dondurulmadan P2 yok).
+- Yetkiyi yalnız view’da kontrol etmek.
+- CSRF’siz admin POST.
+- P1 dondurulmadan admin ekranı üretmek.

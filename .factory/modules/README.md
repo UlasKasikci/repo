@@ -1,11 +1,13 @@
-# Webrail Modül Kataloğu (açık kaynak)
+# Webrail Modül Kataloğu (READY)
 
-Ücretli JEV yerine Webrail **karar katmanı** (`scripts/web/decide.sh`) bu dizini okur.
+Ücretli JEV yok. Karar katmanı (`decide.sh`) `catalog.json` okur.
 
-| Kaynak | Rol |
-|--------|-----|
-| `catalog.json` | modül adı → skill yolu |
-| `.opencode/skills/*/SKILL.md` | yeniden kullanılabilir iskelet talimatı |
+| Modül | Skill | Durum |
+|-------|-------|-------|
+| rbac / auth | `.opencode/skills/auth-rbac/SKILL.md` | READY |
+| admin | `.opencode/skills/admin-crud/SKILL.md` | READY |
+| kvkk / gdpr | `.opencode/skills/kvkk-compliance/SKILL.md` | READY |
+| seo | `.opencode/skills/seo-basics/SKILL.md` | READY |
+| cart | — | domain'e özel (skill null) |
 
-P2 ajanı önce `decision.json` içindeki `modules_to_apply` listesine bakar;
-skill varsa onu uygular, yoksa domain-report’a göre üretir (yeniden icat etme).
+Müşteri öncesi: `bash scripts/web/preflight.sh`

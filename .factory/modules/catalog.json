@@ -8,15 +8,15 @@
     },
     "auth": {
       "skill": ".opencode/skills/auth-rbac/SKILL.md",
-      "summary": "kimlik doğrulama (rbac ile aynı iskelet)"
+      "summary": "kimlik doğrulama (rbac ile aynı skill)"
     },
     "admin": {
       "skill": ".opencode/skills/admin-crud/SKILL.md",
-      "summary": "yönetim paneli CRUD iskeleti"
+      "summary": "yönetim paneli CRUD"
     },
     "admin-crud": {
       "skill": ".opencode/skills/admin-crud/SKILL.md",
-      "summary": "yönetim paneli CRUD iskeleti"
+      "summary": "yönetim paneli CRUD"
     },
     "kvkk": {
       "skill": ".opencode/skills/kvkk-compliance/SKILL.md",
@@ -24,15 +24,15 @@
     },
     "gdpr": {
       "skill": ".opencode/skills/kvkk-compliance/SKILL.md",
-      "summary": "KVKK/GDPR uyumluluk iskeleti"
+      "summary": "KVKK/GDPR uyumluluk"
+    },
+    "seo": {
+      "skill": ".opencode/skills/seo-basics/SKILL.md",
+      "summary": "robots.txt + sitemap.xml + meta"
     },
     "cart": {
       "skill": null,
-      "summary": "sepet/sipariş — domain-report module_matrix zorunlu; henüz şablon yok"
-    },
-    "seo": {
-      "skill": null,
-      "summary": "robots.txt + sitemap.xml + meta (iskelette zorunlu)"
+      "summary": "sepet/sipariş — domain-report module_matrix zorunlu; skill yoksa domain'e özel üret"
     }
   }
 }
