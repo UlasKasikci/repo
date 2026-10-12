@@ -123,7 +123,7 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 step "0) bash -n söz dizimi + python söz dizimi"
-for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh bootstrap-project.sh smoke-test.sh frontmatter-check.sh; do
+for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh bootstrap-project.sh smoke-test.sh frontmatter-check.sh mode.sh decide.sh measure.sh preflight.sh run-status.sh; do
   bash -n "$ROOT/scripts/web/$s" || die "bash -n: $s"
   echo "    OK: $s"
 done
@@ -683,7 +683,12 @@ MSG="$(git -C "$BOOT" log -1 --format=%s)"
 grep -Eq '^bootstrap from webrail@[0-9a-f]{12}$' <<<"$MSG" || die "git izi beklenen biçimde değil: $MSG"
 BR="$(git -C "$BOOT" rev-parse --abbrev-ref HEAD)"
 [[ "$BR" == "main" ]] || die "branch main değil: $BR"
-echo "    --yes: kritik dosyalar kopyalandı, hariçler temiz, iz: $MSG"
+[[ -f "$BOOT/.factory/mode.json" ]] || die "bootstrap mode.json yazmadı"
+[[ -f "$BOOT/DISCOVERY.md" ]] || die "bootstrap DISCOVERY.md yazmadı"
+MODE15="$(python3 -c "import json;print(json.load(open('$BOOT/.factory/mode.json'))['mode'])")"
+[[ "$MODE15" == "discovery" ]] || die "bootstrap mode=discovery beklenir, olan $MODE15"
+[[ -f "$BOOT/scripts/web/mode.sh" ]] || die "mode.sh bootstrap'a kopyalanmadı"
+echo "    --yes: kritik dosyalar kopyalandı, hariçler temiz, iz: $MSG · mode=discovery"
 
 rc="$(run_rc bash "$BOOTER" "$BOOT" --yes)"
 [[ "$rc" == "1" ]] || die "dolu/bootstrapped hedef --force'suz red (1) beklenir, gelen $rc"
@@ -2029,19 +2034,23 @@ rc_ok="$(run_rc bash "$CJK" "$CJKD")"
 [[ "$rc_ok" == "0" ]] || die "CJK temiz repo rc=0 beklenir, gelen $rc_ok"
 echo "    isabet→1, Türkçe-muş temiz→0"
 
-step "40) /kur komutu (Tur 2-9 B): iki IDE'de mevcut + bootstrap ile kopyalanır"
-for f in .opencode/command/kur.md .cursor/commands/kur.md; do
-  [[ -f "$ROOT/$f" ]] || die "/kur eksik: $f"
-  grep -q "MASTER-PROMPT-V2" "$ROOT/$f" || die "/kur kontrat referansı yok: $f"
-  grep -q "qa-gate" "$ROOT/$f" || die "/kur QA adımı yok: $f"
+step "40) /kur + /kesfet komutları: iki IDE'de mevcut + bootstrap ile kopyalanır"
+for f in .opencode/command/kur.md .cursor/commands/kur.md \
+         .opencode/command/kesfet.md .cursor/commands/kesfet.md; do
+  [[ -f "$ROOT/$f" ]] || die "komut eksik: $f"
 done
+grep -q "MASTER-PROMPT-V2" "$ROOT/.cursor/commands/kur.md" || die "/kur kontrat referansı yok"
+grep -q "qa-gate" "$ROOT/.cursor/commands/kur.md" || die "/kur QA adımı yok"
+grep -q "mode.sh promote" "$ROOT/.cursor/commands/kur.md" || die "/kur promote adımı yok"
+grep -q "DISCOVERY.md" "$ROOT/.cursor/commands/kesfet.md" || die "/kesfet DISCOVERY anmaz"
 BOOT41="$TMP/boot41"
 bash "$BOOTER" "$BOOT41" --yes >/dev/null 2>&1 || die "/kur bootstrap kopyası başarısız"
-for f in .opencode/command/kur.md .cursor/commands/kur.md; do
-  [[ -f "$BOOT41/$f" ]] || die "/kur bootstrap'a kopyalanmadı: $f"
+for f in .opencode/command/kur.md .cursor/commands/kur.md \
+         .opencode/command/kesfet.md .cursor/commands/kesfet.md; do
+  [[ -f "$BOOT41/$f" ]] || die "komut bootstrap'a kopyalanmadı: $f"
 done
 rm -rf "$BOOT41"
-echo "    iki IDE'de mevcut; bootstrap kopyalıyor ✓"
+echo "    /kur+/kesfet iki IDE'de mevcut; bootstrap kopyalıyor ✓"
 
 step "41) test-project-clean.sh (Tur 2-10): onay/RED mantığı"
 CLEAN="$TMP/clean-test"
@@ -2634,6 +2643,42 @@ for s in kvkk-compliance auth-rbac admin-crud seo-basics; do
 done
 grep -q 'preflight.sh' "$ROOT/docs/CUSTOMER-START.md" || die "CUSTOMER-START preflight anmaz"
 echo "    preflight READY · 4 skill READY · protokol bağlı ✓"
+
+step "70) mode kilidi: bootstrap discovery → start RED → promote → start OK"
+M70="$TMP/mode70"
+bash "$BOOTER" "$M70" --yes >/dev/null 2>&1 || die "mode70 bootstrap FAIL"
+rc="$(run_rc bash "$STATE" start "$M70")"
+[[ "$rc" == "1" ]] || die "discovery state start RED=1 beklenir, gelen $rc"
+rc="$(run_rc bash "$ROOT/scripts/web/mode.sh" promote "$M70")"
+[[ "$rc" == "1" ]] || die "şablon DISCOVERY promote RED=1 beklenir, gelen $rc"
+python3 - <<PY
+from pathlib import Path
+p = Path("$M70/DISCOVERY.md")
+t = p.read_text(encoding="utf-8")
+t = t.replace("_(buraya yaz — promote için zorunlu)_", "Mode70 Test Projesi")
+p.write_text(t, encoding="utf-8")
+PY
+rc="$(run_rc bash "$ROOT/scripts/web/mode.sh" promote "$M70")"
+[[ "$rc" == "0" ]] || die "dolu DISCOVERY promote rc=0 beklenir, gelen $rc"
+MODE70="$(python3 -c "import json;print(json.load(open('$M70/.factory/mode.json'))['mode'])")"
+[[ "$MODE70" == "factory" ]] || die "promote sonrası factory beklenir, olan $MODE70"
+grep -q 'mode_promoted' "$M70/.factory/metrics.jsonl" || die "mode_promoted measure yok"
+rc="$(run_rc bash "$STATE" start "$M70")"
+[[ "$rc" == "0" ]] || die "factory state start rc=0 beklenir, gelen $rc"
+rm -rf "$M70"
+echo "    discovery RED · şablon promote RED · dolu promote → factory start ✓"
+
+step "71) CUSTOMER-START Şerit A + ajan mode kilidi + DISCOVERY şablon"
+grep -q 'Şerit A' "$ROOT/docs/CUSTOMER-START.md" || die "CUSTOMER-START Şerit A yok"
+grep -q 'mode.sh promote' "$ROOT/docs/CUSTOMER-START.md" || die "CUSTOMER-START promote yok"
+[[ -f "$ROOT/docs/templates/DISCOVERY.md" ]] || die "DISCOVERY şablon yok"
+grep -q 'buraya yaz' "$ROOT/docs/templates/DISCOVERY.md" || die "DISCOVERY yer tutucusu yok"
+for f in .cursor/agents/web-core-engineer.md .opencode/agent/web-core-engineer.md \
+         .cursor/agents/web-domain-architect.md .opencode/agent/web-domain-architect.md; do
+  grep -Eqi 'mode.?lock|Mod kilidi|mode=discovery' "$ROOT/$f" \
+    || die "ajan mode kilidi yok: $f"
+done
+echo "    protokol · şablon · 4 ajan mode kilidi ✓"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

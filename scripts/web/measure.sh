@@ -13,6 +13,9 @@ set -euo pipefail
 #   manual_p2_min       — manel P2 iskelet süresi (dakika; hybrid marker'dan
 #                         otomatik de yazılır — state.sh advance P2→P3)
 #   phase_human_assist  — true/false (hybrid girişinde otomatik yazılır)
+#   discovery_minutes   — Şerit A keşif süresi (dk)
+#   discovery_tokens    — keşif oturumu tahmini/ölçülen token (opsiyonel)
+#   mode_promoted       — discovery→factory geçişi (mode.sh promote)
 #   (serbest alan adları da kabul edilir)
 #
 # Satır şeması (append-only, agent satırıyla çakışmaz):

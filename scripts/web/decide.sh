@@ -10,6 +10,7 @@ PROJECT="${1:-.}"
 [[ -d "$PROJECT" ]] || { echo "decide: dizin yok: $PROJECT" >&2; exit 1; }
 PROJECT="$(cd "$PROJECT" && pwd)"
 command -v python3 >/dev/null 2>&1 || { echo "decide: python3 gerekli" >&2; exit 1; }
+bash "$ROOT/scripts/web/mode.sh" require-factory "$PROJECT" || exit 1
 
 python3 "$ROOT/scripts/web/decision.py" "$PROJECT" --factory-root "$ROOT"
 

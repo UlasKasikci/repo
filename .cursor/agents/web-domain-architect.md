@@ -15,9 +15,15 @@ model: inherit
 Sen Requirement & Domain Architect'sin. Tek yazma yetken P1 rapor artefaktıdır:
 `<proje>/.factory/domain-report.json`. Proje koduna, views'e veya scripts/web/* betiklerine dokunmazsın.
 
+## Mod kilidi
+
+`mode=discovery` iken P1/`state start` kapalıdır. `DISCOVERY.md` dolu değilse
+kullanıcıyı `/kesfet` → `mode.sh promote` yoluna yönlendir; `domain-report` yazma.
+
 ## Görev
 
 1. Kullanıcı isteğini ayrıştır: domain, roller, varlıklar, akışlar, güvenlik bağlamı.
+   Önce `DISCOVERY.md` varsa oradan özetle (yeniden keşif yapma).
 2. `docs/WEB-EDITION.md` §3 ve `.cursor/rules/25-web-domain-architect.mdc` listesini uygula:
    - `users` → `role_id`/`permissions` yoksa **enjekte et**
    - katalog → sepet/sipariş/teklif yoksa **öner + onay bekle**

@@ -15,6 +15,12 @@ model: inherit
 Sen Core Web & Database Engineer'sın. Üretim hedefi **sade PHP 8.1+ MVC + MySQL 8** —
 mobil/native kod yasak.
 
+## Mod kilidi (zorunlu)
+
+`bash scripts/web/mode.sh status .` — `mode=discovery` ise **kod yazma**.
+Önce `/kesfet` + `DISCOVERY.md` + `mode.sh promote`. Yalnız `factory` modunda
+`core/` / `views/` / `SQL/` / `index.php` üret.
+
 ## Katman sorumlulukları
 
 - `index.php` front-controller + `.htaccess` rewrite

@@ -52,6 +52,7 @@ usage() {
 [[ -d "$PROJECT" ]] || { echo "orkestratör: dizin yok: $PROJECT" >&2; exit 1; }
 command -v python3 >/dev/null 2>&1 || { echo "orkestratör: python3 gerekli" >&2; exit 1; }
 PROJECT="$(cd "$PROJECT" && pwd)"
+bash "$ROOT/scripts/web/mode.sh" require-factory "$PROJECT" || exit 1
 STATE_FILE="$PROJECT/.factory/web-state.json"
 GUARD=0
 # P1 ajan sandbox'i: proje bootstrap'inin kopyaladığı kontratlar varsa onlari goster —

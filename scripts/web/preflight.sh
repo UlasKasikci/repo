@@ -40,13 +40,16 @@ ok "e2e-runs tracked=0"
 # 4) Decision Layer + handoff araçları
 for f in scripts/web/decide.sh scripts/web/decision.py scripts/web/run-status.sh \
          scripts/web/bootstrap-project.sh scripts/web/orchestrate.sh \
-         scripts/web/qa-gate.sh scripts/web/state.sh \
+         scripts/web/qa-gate.sh scripts/web/state.sh scripts/web/mode.sh \
+         scripts/web/measure.sh \
          .factory/contracts/decision.schema.json \
          .factory/modules/catalog.json \
-         docs/CUSTOMER-START.md docs/WEB-EDITION.md; do
+         docs/CUSTOMER-START.md docs/WEB-EDITION.md \
+         docs/templates/DISCOVERY.md \
+         .cursor/commands/kesfet.md .opencode/command/kesfet.md; do
   [[ -f "$f" ]] || bad "eksik: $f"
 done
-ok "karar/handoff/müşteri dosyaları mevcut"
+ok "karar/handoff/müşteri/mode dosyaları mevcut"
 
 # 5) skills READY (açık uç yok)
 SKILL_OPEN=0
@@ -78,13 +81,39 @@ ok "catalog skill yolları"
 
 # 7) sözdizimi
 for s in scripts/web/decide.sh scripts/web/run-status.sh scripts/web/preflight.sh \
-         scripts/web/state.sh scripts/web/orchestrate.sh scripts/web/bootstrap-project.sh; do
+         scripts/web/state.sh scripts/web/orchestrate.sh scripts/web/bootstrap-project.sh \
+         scripts/web/mode.sh scripts/web/measure.sh; do
   bash -n "$s" || bad "bash -n FAIL: $s"
 done
 python3 -m py_compile scripts/web/decision.py || bad "decision.py compile FAIL"
 ok "bash -n + decision.py"
 
-# 8) decide duman testi
+# 8) mode kilidi duman: discovery → start RED → promote → start OK
+TMPM="$(mktemp -d)"
+mkdir -p "$TMPM/.factory"
+bash scripts/web/mode.sh init "$TMPM" >/dev/null
+if bash scripts/web/state.sh start "$TMPM" >/dev/null 2>&1; then
+  bad "discovery iken state start açılmamalı"
+fi
+# şablon yer tutucusu ile promote RED
+if bash scripts/web/mode.sh promote "$TMPM" >/dev/null 2>&1; then
+  bad "boş DISCOVERY ile promote açılmamalı"
+fi
+# proje adı doldur → promote → start
+python3 - <<PY
+from pathlib import Path
+p = Path("$TMPM/DISCOVERY.md")
+t = p.read_text(encoding="utf-8")
+t = t.replace("_(buraya yaz — promote için zorunlu)_", "Preflight Smoke")
+p.write_text(t, encoding="utf-8")
+PY
+bash scripts/web/mode.sh promote "$TMPM" >/dev/null \
+  || bad "dolu DISCOVERY promote FAIL"
+bash scripts/web/state.sh start "$TMPM" >/dev/null || bad "factory state start FAIL"
+rm -rf "$TMPM"
+ok "mode discovery→promote→start"
+
+# 9) decide duman testi (mode yok = factory geriye uyum)
 TMP="$(mktemp -d)"
 mkdir -p "$TMP/.factory"
 bash scripts/web/state.sh start "$TMP" >/dev/null

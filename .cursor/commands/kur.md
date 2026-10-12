@@ -14,14 +14,16 @@ Tek komutta ilk kurulum — sırayı DEĞİŞTİRME:
    çıktısını göster (kopya/hariç listesi), onaylanınca `--yes` ile kopyala + git init
    + ilk commit (`bootstrap from webrail@<12-hex>`). exFAT uyarısı: `._*` ikizleri
    betikçe temizlenir.
-4. **State başlat:** `bash scripts/web/state.sh start $ARGUMENTS` (P1, retry=0).
+4. **Keşif (Şerit A):** Bootstrap `mode=discovery` bırakır. `DISCOVERY.md` doldur
+   (`/kesfet`) — kod yazma. Sonra `bash scripts/web/mode.sh promote $ARGUMENTS`.
+5. **State başlat:** `bash scripts/web/state.sh start $ARGUMENTS` (P1; **factory** kilidi).
    State zaten varsa (HALT/önceki tur) `--reset` gerekir — önceki durum
    `.factory/web-state.backup-<ts>.json`a yedeklenir (veri kaybı yok).
-5. **QA doğrula:** `bash scripts/web/qa-gate.sh $ARGUMENTS` — bootstrapped boş projede
+6. **QA doğrula:** `bash scripts/web/qa-gate.sh $ARGUMENTS` — bootstrapped boş projede
    ilk çalıştırma P2 öncesi kasıtlı FAIL verir (iskelet + phpstan/phpunit zorunlu);
    mevcut projede 0 Error / 0 Warning hedeflenir. `qa-report.json`'ı özetle.
-6. **Özet sun:** phase, retry, QA hata/uyarı sayısı, sonraki adım
-   (`/web-baslat` → P1 domain analizi · `/web-denetle` → QA · `/web-yukle` → paketle).
+7. **Özet sun:** mode, phase, retry, QA, sonraki adım
+   (`/kesfet` → promote · `/web-baslat` → P1 · P2 hybrid `P2_HUMAN_ASSIST=true`).
    Asla "hazır" deme — qa-gate PASS olmadıysa beklemede olduğunu söyle.
 
 Kısıtlar: model DEĞİŞTİRME (K7) · `Yukleme/` paketleme öncesi oluşturma (K6) ·

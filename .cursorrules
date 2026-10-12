@@ -99,14 +99,16 @@ Agent tanımları: `.cursor/agents/web-*.md` (qa-gatekeeper `readonly`).
 ## Zorunlu iş akışı
 
 ```
-Talep → /web-baslat (P1 proaktif analiz) → mimari dondur → /web-faz (P2 kod)
-→ /web-denetle (P3 qa-gate) → PASS? → /web-yukle (P5 Yukleme/) → teslim raporu
-                        └ FAIL → P4 düzelt → tekrar (4. fail'te HALT)
+Talep → /kesfet (Şerit A, mode=discovery, kod YOK) → mode.sh promote
+→ /web-baslat (P1) → /web-faz (P2; tercihen P2_HUMAN_ASSIST) → /web-denetle (P3)
+→ PASS? → /web-yukle (P5) → teslim
+                        └ FAIL → P4 → tekrar (4. fail'te HALT)
 ```
 
-1. Her işlem öncesi `bash scripts/web/state.sh status` — aktif faz bu.
-2. QA PASS olmadan "bitti" deme, paketleme çağırma.
-3. Kayıt: `qa-report.json`, `debug_report.json`, `packaging-report.json` kanıttır;
+1. `mode=discovery` iken `state start` / `orchestrate` / `decide` **RED**.
+2. Her işlem öncesi `bash scripts/web/state.sh status` — aktif faz bu.
+3. QA PASS olmadan "bitti" deme, paketleme çağırma.
+4. Kayıt: `qa-report.json`, `debug_report.json`, `packaging-report.json` kanıttır;
    okumadan PASS verme, dosyayı okumadan "hazır" yazma.
 
 ## IDE/CLI matrisi

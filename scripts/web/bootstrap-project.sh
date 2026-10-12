@@ -251,6 +251,13 @@ PY
 
 [[ "$MODE" == "write" ]] || exit 0
 
+# Keşif modu (Şerit A): commit öncesi — DISCOVERY.md + mode.json ilk izde olsun
+ROOT_BOOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+bash "$ROOT_BOOT/scripts/web/mode.sh" init "$PROJECT" || {
+  echo "bootstrap: mode.sh init başarısız — duruldu" >&2
+  exit 1
+}
+
 # --- git izi: taze depo + sürüm bağlayıcı ilk commit ---
 if command -v git >/dev/null 2>&1; then
   # Tur 2-16 B.2: init hatası YUTULMAZ — durulur (sessiz devam = bozuk iz).
@@ -287,6 +294,9 @@ if command -v git >/dev/null 2>&1; then
     done < "$BOOT_MANIFEST"
     # manifest'in kendisi de eklensin (izlenebilirlik)
     git -C "$PROJECT" add -- .factory/.bootstrap-manifest 2>/dev/null || true
+    # mode kilidi artefaktları (manifest'te olmayabilir — init sonrası üretilir)
+    [[ -f "$PROJECT/.factory/mode.json" ]] && git -C "$PROJECT" add -- .factory/mode.json 2>/dev/null || true
+    [[ -f "$PROJECT/DISCOVERY.md" ]] && git -C "$PROJECT" add -- DISCOVERY.md 2>/dev/null || true
   else
     # Tur 2-16 B.2: manifest yoksa add -A YASAK — hedefteki her şey commit'e
     # karışırdı (D7.1 veri bütünlüğü ihlali). Bozuk bootstrap: dur.
@@ -306,13 +316,13 @@ fi
 
 cat <<EOF
 
-Sonraki adımlar (iskelet henüz boş — bu normal):
+Sonraki adımlar (Şerit A → B — kod henüz YOK):
   1) cd $PROJECT
-  2) bash scripts/web/state.sh start .   # P1
-  3) domain raporunu yaz (docs/WEB-EDITION.md §3) → bash scripts/web/orchestrate.sh .
-     P2'de web-core-engineer index.php, core/, views/ VE phpstan.neon.dist,
-     .eslintrc.json, phpunit.xml + tests/ iskeletini üretir.
+  2) DISCOVERY.md doldur (saf IDE / /kesfet) — core/views/SQL yazma
+  3) bash scripts/web/mode.sh promote .     # discovery → factory
+  4) bash scripts/web/state.sh start .      # P1 (factory kilidi gerekir)
+  5) bash scripts/web/orchestrate.sh . --auto
+     P2 tercihen hybrid: P2_HUMAN_ASSIST=true (saf IDE gücü + Webrail kapısı)
 NOT: P2 öncesi ilk \`qa-gate.sh\` koşusu KASITLI FAIL verir — yapısal dosyalar
-(index.php, .htaccess, ...) + asimetrik çekirdek (phpstan/phpunit yapılandırması)
-zorunludur; config'leri elle kurmak yerine P2 iskeletini bekleyin.
++ phpstan/phpunit P2 iskeletinden gelir.
 EOF

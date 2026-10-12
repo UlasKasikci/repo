@@ -45,6 +45,12 @@ command -v python3 >/dev/null 2>&1 || { echo "state: python3 gerekli" >&2; exit 
 PROJECT="$(cd "$PROJECT" && pwd)"
 export _ST_OP="$OP" _ST_PROJECT="$PROJECT" _ST_GRAPH="$GRAPH" _ST_RESET="$RESET"
 
+# Şerit kilidi: discovery iken state geçişleri (start/advance/qa-*) kapalı
+# status her zaman serbest; mode.json yoksa factory (eski projeler).
+if [[ "$OP" != "status" ]]; then
+  bash "$ROOT/scripts/web/mode.sh" require-factory "$PROJECT" || exit 1
+fi
+
 # C.2 (Tur 2-15): advance öncesi fazı yakala — hybrid marker'ından manel P2
 # süresi python geçişten sonra (başarılı ise) hesaplanacak.
 PRE_PHASE=""

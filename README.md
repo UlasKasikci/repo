@@ -11,12 +11,12 @@ projesinin aynı denetim kapılarından geçmesi, eksik modül/güvenlik boşluk
 |---|---|
 | Kanonik depo | [`github.com/UlasKasikci/repo`](https://github.com/UlasKasikci/repo) |
 | Stack | PHP 8.1+ (framework’süz MVC) · MySQL 8 / MariaDB · HTML/CSS/JS · FTP/`Yukleme/` |
-| Doğrulama | self-test **70/70** · `preflight.sh` · CI · 14 kanallı QA gate |
-| Sürüm | **v1.3** (Decision Layer + READY skills + müşteri öncesi preflight) |
+| Doğrulama | self-test **72/72** · `preflight.sh` · CI · 14 kanallı QA gate |
+| Sürüm | **v1.3** (+ Şerit A keşif kilidi: `/kesfet` → promote → fabrika) |
 
 [![CI](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml/badge.svg)](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![self-test](https://img.shields.io/badge/self--test-70%2F70%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
+[![self-test](https://img.shields.io/badge/self--test-72%2F72%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
 
 > Bu depo kendi kendine yeterlidir. Tek remote: `origin` → `UlasKasikci/repo`.
 > Başka bir GitHub org/repo’ya bağımlılık veya push yolu yoktur.
@@ -42,10 +42,10 @@ projesinin aynı denetim kapılarından geçmesi, eksik modül/güvenlik boşluk
 ## Nasıl çalışır?
 
 ```text
-START → P1 Domain → P2 Code → P3 QA ──PASS──→ P5 Package → DONE
-                          │
-                          ├─ FAIL (retry 1–3) → P4 Revision → P3
-                          └─ 4. FAIL → HALT + debug_report.json
+/kesfet (discovery) → mode.sh promote → P1 Domain → P2 Code → P3 QA ──PASS──→ P5 → DONE
+                                              │
+                                              ├─ FAIL (retry 1–3) → P4 → P3
+                                              └─ 4. FAIL → HALT + debug_report.json
 ```
 
 | Faz | Ajan | Kapı |
@@ -69,21 +69,22 @@ git clone https://github.com/UlasKasikci/repo.git
 cd repo
 
 composer global require phpstan/phpstan phpunit/phpunit
-bash scripts/web/self-test.sh          # 70/70 PASS beklenir
+bash scripts/web/self-test.sh          # 72/72 PASS beklenir
 bash scripts/web/preflight.sh          # müşteri öncesi READY kapısı
 
 # Yeni müşteri/proje iskeleti (fabrika köküne YAZMA)
 bash scripts/web/bootstrap-project.sh ../musteri-projesi --yes
 cd ../musteri-projesi
+# Şerit A: DISCOVERY.md doldur (/kesfet) — kod yok
+bash scripts/web/mode.sh promote .     # discovery → factory
 bash scripts/web/state.sh start .
-# P1 sonrası otomatik: decision.json + RUN-STATUS.md
-bash scripts/web/orchestrate.sh . --auto
-# veya elle: bash scripts/web/decide.sh .
+bash scripts/web/orchestrate.sh . --auto   # P2 için: P2_HUMAN_ASSIST=true
 bash scripts/web/qa-gate.sh .
 bash scripts/web/package-yukleme.sh .  # yalnız QA PASS sonrası
 ```
 
-Her oturum: önce `RUN-STATUS.md` oku. Çıkış: `0` OK · `1` FAIL · `2` HALT · `3` bekleme.
+Her oturum: önce `DISCOVERY.md` / `mode.json`, sonra `RUN-STATUS.md`.  
+Çıkış: `0` OK · `1` FAIL · `2` HALT · `3` bekleme.
 
 ---
 
@@ -114,7 +115,7 @@ webrail/   (= bu repo: UlasKasikci/repo)
 | **v1.0** | envanter-app | Kalite: 4s 48dk, QA PASS, DONE |
 | **v1.1** | randevu-app | Hız (benzer domain): **27 dk**, pattern reuse |
 | **v1.2** | helpdesk-app + çift AI denetimi | CSRF OOP + `/register` + CONTRACTS sandbox |
-| **v1.3** | Decision Layer + skills READY | JEV-mantık (ücretsiz) + RUN-STATUS + preflight + 4 skill; self-test 70/70 |
+| **v1.3** | Decision Layer + skills READY | JEV-mantık (ücretsiz) + RUN-STATUS + preflight + 4 skill; Şerit A mode kilidi; self-test 72/72 |
 
 Release: [v1.2](https://github.com/UlasKasikci/repo/releases/tag/v1.2) · [v1.3](https://github.com/UlasKasikci/repo/releases/tag/v1.3) (bu tur)
 
@@ -148,7 +149,7 @@ Fabrika tarafı hazır kabul edilir:
 
 - `bash scripts/web/preflight.sh` → **READY**
 - Skills: auth-rbac · admin-crud · kvkk-compliance · seo-basics (**READY**)
-- Decision Layer + RUN-STATUS + CUSTOMER-START dokümanı
+- Decision Layer + RUN-STATUS + CUSTOMER-START + `/kesfet` (discovery→factory)
 
 Saha ölçümü (P1 fail oranı, P4 yazma) **ilk müşteri koşusunda** toplanır — fabrika açık uç değil.
 
@@ -159,7 +160,7 @@ Yeni QA kontrolü yalnız somut bug ile eklenir (K6).
 ## Katkı
 
 1. Yalnız bu depoda çalışın: `https://github.com/UlasKasikci/repo`
-2. PR öncesi: `preflight.sh` READY + `self-test.sh` → **70/70 PASS** + CI yeşil
+2. PR öncesi: `preflight.sh` READY + `self-test.sh` → **72/72 PASS** + CI yeşil
 3. Doküman güncellemesi kanıttan türer (K5)
 
 ## Lisans

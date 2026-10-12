@@ -10,9 +10,17 @@ State Graph'in başlangıç kapısı (Agent 1 · `25-web-domain-architect`).
 bash scripts/web/bootstrap-project.sh <hedef>   # dry-run (plan) → onayla --yes
 ```
 
-   Dolu hedefe `--force`. İlk commit `bootstrap from webrail@<hash>` fabrika izini
-   taşır. Bootstrapped boş projede ilk qa-gate P2 öncesi **kasıtlı FAIL** verir
+   Dolu hedefe `--force`. Bootstrap `mode=discovery` bırakır — önce `/kesfet`
+   (DISCOVERY.md), sonra `bash scripts/web/mode.sh promote <hedef>`.
+   Bootstrapped boş projede ilk qa-gate P2 öncesi **kasıtlı FAIL** verir
    (yapısal dosyalar + phpstan/phpunit yapılandırması zorunlu) — beklenen durumdur.
+
+0b. **mode=factory** olmadan `state start` RED. Kontrol:
+
+```bash
+bash scripts/web/mode.sh status .
+# discovery ise: DISCOVERY.md doldur → mode.sh promote .
+```
 
 1. State durumu:
 
@@ -20,7 +28,7 @@ bash scripts/web/bootstrap-project.sh <hedef>   # dry-run (plan) → onayla --ye
 bash scripts/web/state.sh status || bash scripts/web/state.sh start .
 ```
 
-   - State yoksa `start` (P1, retry=0); varsa fazı oku — P1 değilse `/web-faz` kullan.
+   - State yoksa `start` (P1, retry=0; factory kilidi); varsa fazı oku — P1 değilse `/web-faz`.
 
 2. **Proaktif domain denetimi** (`25-web-domain-architect.mdc` listesi):
    - `users` → `role_id`/`permissions` + rol seed'i (yoksa enjekte et)
