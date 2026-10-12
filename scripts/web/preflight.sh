@@ -13,20 +13,20 @@ bad() { echo "  FAIL $*" >&2; ERR=1; }
 
 echo "==> Webrail preflight @ $(git rev-parse --short HEAD 2>/dev/null || echo '?')"
 
-# 1) tek remote
-if git remote -v 2>/dev/null | grep -viE '^(origin\t|$)' | grep -q .; then
-  bad "yalnız origin olmalı — ekstra remote var: $(git remote | tr '\n' ' ')"
-else
-  ok "remote: yalnız origin"
-fi
+# 1) tek remote (yalnız ad listesi — URL biçimi CI/local'de tab/space fark eder)
+REMOTE_LIST="$(git remote 2>/dev/null | sort | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+[[ "$REMOTE_LIST" == "origin" ]] || bad "yalnız origin olmalı — mevcut: [${REMOTE_LIST}]"
+ok "remote: yalnız origin"
 ORIGIN="$(git remote get-url origin 2>/dev/null || true)"
 [[ "$ORIGIN" == *UlasKasikci/repo* ]] || bad "origin UlasKasikci/repo değil: $ORIGIN"
 ok "origin=$ORIGIN"
 
-# 2) yasaklı marka / org
-if git grep -n -i 'clariongemini\|App-Fabrika\|APP-FABRIKA\|app-fabrika' -- \
-  ':!.factory/e2e-runs' ':!**/node_modules/**' >/tmp/preflight-brand.txt 2>/dev/null; then
-  bad "yasaklı marka/org izi bulundu ($(wc -l </tmp/preflight-brand.txt) satır)"
+# 2) yasaklı marka / org (bu betiği hariç tut — pattern string'i self-hit yapmasın)
+git grep -n -i -e 'clariongemini' -e 'App-Fabrika' -e 'APP-FABRIKA' -e 'app-fabrika' -- \
+  ':!.factory/e2e-runs' ':!**/node_modules/**' ':!scripts/web/preflight.sh' \
+  > /tmp/preflight-brand.txt 2>/dev/null || true
+if [[ -s /tmp/preflight-brand.txt ]]; then
+  bad "yasaklı marka/org izi bulundu ($(wc -l </tmp/preflight-brand.txt | tr -d ' ') satır)"
   head -5 /tmp/preflight-brand.txt >&2 || true
 else
   ok "marka/org temiz"
