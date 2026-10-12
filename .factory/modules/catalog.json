@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "description": "Webrail açık kaynak modül kataloğu — ücretli JEV yerine karar katmanı bu haritayı kullanır.",
+  "modules": {
+    "rbac": {
+      "skill": ".opencode/skills/auth-rbac/SKILL.md",
+      "summary": "roles/users + login + yetki middleware"
+    },
+    "auth": {
+      "skill": ".opencode/skills/auth-rbac/SKILL.md",
+      "summary": "kimlik doğrulama (rbac ile aynı iskelet)"
+    },
+    "admin": {
+      "skill": ".opencode/skills/admin-crud/SKILL.md",
+      "summary": "yönetim paneli CRUD iskeleti"
+    },
+    "admin-crud": {
+      "skill": ".opencode/skills/admin-crud/SKILL.md",
+      "summary": "yönetim paneli CRUD iskeleti"
+    },
+    "kvkk": {
+      "skill": ".opencode/skills/kvkk-compliance/SKILL.md",
+      "summary": "aydınlatma + çerez rızası + user_consents"
+    },
+    "gdpr": {
+      "skill": ".opencode/skills/kvkk-compliance/SKILL.md",
+      "summary": "KVKK/GDPR uyumluluk iskeleti"
+    },
+    "cart": {
+      "skill": null,
+      "summary": "sepet/sipariş — domain-report module_matrix zorunlu; henüz şablon yok"
+    },
+    "seo": {
+      "skill": null,
+      "summary": "robots.txt + sitemap.xml + meta (iskelette zorunlu)"
+    }
+  }
+}

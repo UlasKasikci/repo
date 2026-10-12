@@ -1,8 +1,12 @@
 engine: "Multi-Agent-State-Graph"
 context: "Web-Only-Production"
-version: "1.0.0"
+version: "1.3.0"
 canonical_spec: "docs/WEB-EDITION.md"
+canonical_repository: "https://github.com/UlasKasikci/repo"
+customer_start: "docs/CUSTOMER-START.md"
 directives:
+  - "Read RUN-STATUS.md and .factory/web-state.json before any generation."
+  - "Run bash scripts/web/decide.sh after P1 (open-source decision layer; no paid JEV)."
   - "Scan missing dependencies and missing business features automatically."
   - "Run local linter and PHP syntax checks before build step."
   - "Execute packaging pipeline: Output folder -> ./Yukleme/ with subfolder ./Yukleme/SQL/veritabani.sql"
@@ -10,6 +14,7 @@ directives:
   - "Never emit mobile code (Flutter/Compose/React Native/Gradle); PHP 8.1+ MVC + MySQL only."
   - "QA gate must return 0 Error, 0 Warning before packaging is allowed."
   - "Halt after max_retries: 3 QA failures (4th failure) and emit debug_report.json."
+  - "Prefer .factory/modules catalog skills before free-form LLM generation."
 pipeline:
   phases:
     - id: P1

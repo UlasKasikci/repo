@@ -2559,6 +2559,70 @@ for agent_md in "$ROOT/.cursor/agents/web-core-engineer.md" "$ROOT/.opencode/age
 done
 echo "    web-core-engineer.md ×2: guardPost/requireValid zorunluluğu mevcut ✓"
 
+step "66) Decision Layer: decide.sh → decision.json (açık kaynak JEV-mantık)"
+D66="$TMP/decision66"
+mkdir -p "$D66"
+cp -a "$FIX/." "$D66/"
+seed_domain_report "$D66"
+# katalogsuz / sepetsiz matris → --allow-no-cart önerisi için seed'i değiştir
+python3 - <<PY
+import json
+from pathlib import Path
+p=Path("$D66/.factory/domain-report.json")
+r=json.loads(p.read_text(encoding="utf-8"))
+r["entities"]=[e for e in r["entities"] if e["name"] not in ("products","orders")]
+r["module_matrix"]=[m for m in r["module_matrix"] if m["module"] not in ("cart",)]
+r["module_matrix"].append({
+  "module":"rbac","status":"injected",
+  "evidence":"roles planlandı","justification":"decision layer test"
+})
+r["compliance"]="kvkk"
+p.write_text(json.dumps(r,ensure_ascii=False,indent=2),encoding="utf-8")
+PY
+rc="$(run_rc bash "$ROOT/scripts/web/decide.sh" "$D66")"
+[[ "$rc" == "0" ]] || die "decide.sh rc=0 beklenir, gelen $rc"
+[[ -f "$D66/.factory/decision.json" ]] || die "decision.json yok"
+python3 - <<PY
+import json
+d=json.load(open("$D66/.factory/decision.json",encoding="utf-8"))
+assert d["result"]=="READY", d
+assert d.get("engine")=="webrail-decision-layer", d
+assert any(m.get("module") in ("kvkk","gdpr","rbac") for m in d["modules_to_apply"]), d["modules_to_apply"]
+assert d.get("qa_gate_extra")=="--allow-no-cart", d.get("qa_gate_extra")
+assert d.get("context_allowlist"), "allowlist boş"
+PY
+[[ -f "$D66/RUN-STATUS.md" ]] || die "decide sonrası RUN-STATUS.md yok"
+rm -rf "$D66"
+echo "    decide.sh READY · kvkk/rbac modül · allow-no-cart · RUN-STATUS ✓"
+
+step "67) Handoff: state start → RUN-STATUS.md faz=P1"
+D67="$TMP/runstatus67"
+mkdir -p "$D67"
+rc="$(run_rc bash "$STATE" start "$D67")"
+[[ "$rc" == "0" ]] || die "state start rc=0 beklenir, gelen $rc"
+[[ -f "$D67/RUN-STATUS.md" ]] || die "RUN-STATUS.md yazılmadı"
+grep -q '\*\*P1\*\*' "$D67/RUN-STATUS.md" || die "RUN-STATUS faz P1 değil"
+rm -rf "$D67"
+echo "    state start → RUN-STATUS P1 ✓"
+
+step "68) P1→P2 advance Decision Layer zorunlu + CUSTOMER-START protokolü"
+D68="$TMP/advdecide68"
+mkdir -p "$D68"
+cp -a "$FIX/." "$D68/"
+seed_domain_report "$D68"
+bash "$STATE" start "$D68" >/dev/null
+rc="$(run_rc bash "$STATE" advance "$D68")"
+[[ "$rc" == "0" ]] || die "P1→P2 advance+decide rc=0 beklenir, gelen $rc"
+[[ -f "$D68/.factory/decision.json" ]] || die "advance sonrası decision.json yok"
+phase="$(python3 -c "import json;print(json.load(open('$D68/.factory/web-state.json'))['current_phase'])")"
+[[ "$phase" == "P2" ]] || die "faz P2 olmalı, olan $phase"
+[[ -f "$ROOT/docs/CUSTOMER-START.md" ]] || die "docs/CUSTOMER-START.md yok"
+grep -q 'decide.sh' "$ROOT/docs/CUSTOMER-START.md" || die "CUSTOMER-START decide.sh anmaz"
+grep -q 'ücretli JEV yok\|ücretli JEV yok\|Ücretli JEV yok' "$ROOT/docs/CUSTOMER-START.md" \
+  || die "CUSTOMER-START ücretli JEV reddini anmaz"
+rm -rf "$D68"
+echo "    P1→P2 advance → decision.json · CUSTOMER-START protokolü ✓"
+
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"
 exit 0

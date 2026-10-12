@@ -11,12 +11,12 @@ projesinin aynı denetim kapılarından geçmesi, eksik modül/güvenlik boşluk
 |---|---|
 | Kanonik depo | [`github.com/UlasKasikci/repo`](https://github.com/UlasKasikci/repo) |
 | Stack | PHP 8.1+ (framework’süz MVC) · MySQL 8 / MariaDB · HTML/CSS/JS · FTP/`Yukleme/` |
-| Doğrulama | self-test **66/66** · CI · 14 kanallı QA gate |
-| Sürüm | **v1.2** (CSRF OOP + sandbox + P2 guard) |
+| Doğrulama | self-test **69/69** · CI · 14 kanallı QA gate |
+| Sürüm | **v1.3** (Decision Layer — açık kaynak JEV-mantık, ücretli JEV yok) |
 
 [![CI](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml/badge.svg)](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![self-test](https://img.shields.io/badge/self--test-66%2F66%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
+[![self-test](https://img.shields.io/badge/self--test-69%2F69%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
 
 > Bu depo kendi kendine yeterlidir. Tek remote: `origin` → `UlasKasikci/repo`.
 > Başka bir GitHub org/repo’ya bağımlılık veya push yolu yoktur.
@@ -30,8 +30,12 @@ projesinin aynı denetim kapılarından geçmesi, eksik modül/güvenlik boşluk
 | Farklı AI araçlarında dağınık süreç | Ortak `.factory/` state + IDE-agnostik kontratlar |
 | Eksik RBAC / KVKK / sepet / SEO | P1 proaktif domain denetimi (`module_matrix`) |
 | “Yeşil görünen” güvensiz kod | P3: 14 kontrol, **0 Error / 0 Warning** olmadan paket yok |
-| Token israfı (aynı blokları yeniden üretmek) | Model routing, bağlam budama, pattern reuse, metrik (`metrics.jsonl`) |
+| Token israfı (aynı blokları yeniden üretmek) | **Decision Layer** (`decide.sh`): modül önce, bağlam allowlist, ucuz/pahalı model ayrımı |
+| IDE / personel değişimi | `RUN-STATUS.md` + `.factory/*` — sohbet hafızasına güvenilmez |
 | Dağıtıma hazır olmayan çıktı | P5: staging → smoke → `Yukleme/` + sha256 manifest |
+
+**Ücretli JEV yok.** JEV’in “karar ucuz / üretim pahalı” mantığı açık kaynak
+`scripts/web/decide.sh` ile uygulanır. Müşteri açılışı: [`docs/CUSTOMER-START.md`](docs/CUSTOMER-START.md).
 
 ---
 
@@ -65,19 +69,20 @@ git clone https://github.com/UlasKasikci/repo.git
 cd repo
 
 composer global require phpstan/phpstan phpunit/phpunit
-bash scripts/web/self-test.sh          # 66/66 PASS beklenir
+bash scripts/web/self-test.sh          # 69/69 PASS beklenir
 
-# Yeni müşteri/proje iskeleti
+# Yeni müşteri/proje iskeleti (fabrika köküne YAZMA)
 bash scripts/web/bootstrap-project.sh ../musteri-projesi --yes
 cd ../musteri-projesi
 bash scripts/web/state.sh start .
-# ardından IDE'de /kur + /web-baslat veya:
+# P1 sonrası otomatik: decision.json + RUN-STATUS.md
 bash scripts/web/orchestrate.sh . --auto
+# veya elle: bash scripts/web/decide.sh .
 bash scripts/web/qa-gate.sh .
 bash scripts/web/package-yukleme.sh .  # yalnız QA PASS sonrası
 ```
 
-Çıkış kodları: `0` OK · `1` FAIL · `2` HALT · `3` orkestratör beklemede (LLM adımı).
+Her oturum: önce `RUN-STATUS.md` oku. Çıkış: `0` OK · `1` FAIL · `2` HALT · `3` bekleme.
 
 ---
 
@@ -88,14 +93,15 @@ webrail/   (= bu repo: UlasKasikci/repo)
 ├── .cursor/                 # Cursor kuralları, ajanlar, komutlar
 ├── .opencode/               # OpenCode ajan/komut/skill
 ├── .factory/
-│   ├── contracts/           # P1 / P3 / P5 JSON şemaları
+│   ├── contracts/           # P1 / P3 / P5 / decision şemaları
+│   ├── modules/             # katalog → skill (Decision Layer)
 │   ├── web-state-graph.json # Faz makinesi
 │   └── meta.json            # Ürün kimliği
-├── scripts/web/             # state, orchestrate, qa-gate, package, self-test…
-├── docs/                    # WEB-EDITION, MASTER-PROMPT, findings
+├── scripts/web/             # state, decide, run-status, orchestrate, qa-gate…
+├── docs/                    # WEB-EDITION, CUSTOMER-START, MASTER-PROMPT
 ├── tests/fixtures/          # Pozitif/negatif QA fixture’ları
-├── CLAUDE.md                # Claude Code direktifleri
-└── .cursorrules             # Cursor anayasası
+├── CLAUDE.md · antigravity.yaml · .cursorrules
+└── RUN-STATUS.md            # (müşteri projesinde üretilir — handoff)
 ```
 
 ---
@@ -106,7 +112,8 @@ webrail/   (= bu repo: UlasKasikci/repo)
 |-------|-------|------|
 | **v1.0** | envanter-app | Kalite: 4s 48dk, QA PASS, DONE |
 | **v1.1** | randevu-app | Hız (benzer domain): **27 dk**, pattern reuse |
-| **v1.2** | helpdesk-app + çift AI denetimi | CSRF OOP + `/register` kapısı + CONTRACTS sandbox + P2 guard; self-test 66/66 |
+| **v1.2** | helpdesk-app + çift AI denetimi | CSRF OOP + `/register` + CONTRACTS sandbox |
+| **v1.3** | Decision Layer | Açık kaynak JEV-mantık + RUN-STATUS + müşteri protokolü; self-test 69/69 |
 
 v1.2 release: [github.com/UlasKasikci/repo/releases/tag/v1.2](https://github.com/UlasKasikci/repo/releases/tag/v1.2)
 
@@ -134,14 +141,13 @@ v1.2 release: [github.com/UlasKasikci/repo/releases/tag/v1.2](https://github.com
 
 ---
 
-## İzlenen adaylar (v1.x / v1.3)
+## İzlenen adaylar (sonraki müşteri koşusu)
 
-Bunlar spekülatif değil; saha notlarından gelen adaylar:
-
-- `--allow-no-cart` semantiğinin domain-aware netleştirilmesi
+- Skill içeriklerinin doldurulması (J2 modül gövdeleri)
 - P4 ajan yazma yeteneğinin ek kanıtı
 - P1 attempt-1 fail oranının müşteri koşusunda izlenmesi
 
+`--allow-no-cart` artık Decision Layer tarafından katalogsuz domain’de önerilir.
 Yeni QA kontrolü yalnız somut bug ile eklenir (K6).
 
 ---
@@ -149,7 +155,7 @@ Yeni QA kontrolü yalnız somut bug ile eklenir (K6).
 ## Katkı
 
 1. Yalnız bu depoda çalışın: `https://github.com/UlasKasikci/repo`
-2. PR öncesi: `bash scripts/web/self-test.sh` → **66/66 PASS** ve CI yeşil
+2. PR öncesi: `bash scripts/web/self-test.sh` → **69/69 PASS** ve CI yeşil
 3. Doküman güncellemesi kanıttan türer (K5)
 
 ## Lisans

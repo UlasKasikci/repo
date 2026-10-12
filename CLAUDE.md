@@ -6,6 +6,9 @@
 **Canonical repository:** `https://github.com/UlasKasikci/repo` (sole remote: `origin`).
 **Mode:** deterministic — canonical spec: `docs/WEB-EDITION.md` · state contract:
 `.factory/web-state-graph.json` · never invent paths or features that are not in the spec.
+**Session start:** read `RUN-STATUS.md` → `.factory/web-state.json` → `domain-report` →
+`decision.json`. Customer protocol: `docs/CUSTOMER-START.md`.
+**Decision layer:** `bash scripts/web/decide.sh` (open-source JEV-logic; no paid JEV).
 
 ## Workflow (State Graph — 5 phases)
 

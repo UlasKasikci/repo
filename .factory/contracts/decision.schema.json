@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://webrail.local/contracts/decision.schema.json",
+  "title": "Webrail Decision Layer Output",
+  "description": "Açık kaynak JEV-mantığı: ucuz karar, pahalı üretimi kısıtlar. Ücretli JEV MCP yok.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "project",
+    "phase_hint",
+    "model_routing",
+    "modules_to_apply",
+    "context_allowlist",
+    "qa_gate_extra",
+    "next_actions",
+    "result"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": { "const": 1 },
+    "generated_at": { "type": "string", "minLength": 8 },
+    "project": { "type": "string", "minLength": 1 },
+    "phase_hint": { "type": "string" },
+    "model_routing": {
+      "type": "object",
+      "required": ["P1", "P2", "P4", "rationale"],
+      "properties": {
+        "P1": { "type": "string" },
+        "P2": { "type": "string" },
+        "P4": { "type": "string" },
+        "rationale": { "type": "string" }
+      }
+    },
+    "modules_to_apply": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["module", "skill", "reason"],
+        "properties": {
+          "module": { "type": "string" },
+          "skill": { "type": ["string", "null"] },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "context_allowlist": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "qa_gate_extra": {
+      "type": "string",
+      "description": "Boş veya örn. --allow-no-cart (katalog yoksa önerilir)"
+    },
+    "next_actions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+    "result": {
+      "type": "string",
+      "enum": ["READY", "BLOCKED"]
+    }
+  }
+}

@@ -492,7 +492,8 @@ for t in texts:
 PY
 }
 
-# JEV Faz 1.1 — model routing (MANUEL katmanlama; JEV MCP entegrasyonu Faz 2).
+# Decision Layer — model routing (açık kaynak JEV-mantık; ücretli JEV MCP YOK).
+# decide.sh → decision.json (modül/bağlam); MODEL_* env ile override.
 # P1 küçük model / P2-P4 güçlü model; env varsa hardcoded default yerine env kullanılır
 # (MODEL_P1, MODEL_P2, MODEL_P4). claude-* bu ortamda yok (0 credential, anthropic
 # provider'sız) → brief'teki "veya mevcut en ucuz yetenekli/en güçlü" yetkisiyle envanterden
@@ -806,16 +807,38 @@ EOF
 }
 
 p2_prompt() {
-  local c
+  local c decision_block=""
   c="$(compliance_mode)"
+  if [[ -f "$PROJECT/.factory/decision.json" ]]; then
+    decision_block="$(python3 - <<PY
+import json
+from pathlib import Path
+d=json.loads(Path("$PROJECT/.factory/decision.json").read_text(encoding="utf-8"))
+mods=d.get("modules_to_apply") or []
+allow=d.get("context_allowlist") or []
+lines=["KARAR KATMANI (açık kaynak JEV-mantık — ücretli JEV YOK):",
+       f"Dosya: $PROJECT/.factory/decision.json",
+       "ÖNCE modules_to_apply skill dosyalarını oku/uygula; skill yoksa domain-report'a göre üret.",
+       "Geniş repo taraması YASAK — yalnız context_allowlist + bu prompt."]
+for m in mods:
+    lines.append(f"- modül={m.get('module')} skill={m.get('skill') or 'YOK'} ({m.get('reason','')})")
+if allow:
+    lines.append("context_allowlist (özet): " + ", ".join(allow[:24]))
+print("\\n".join(lines))
+PY
+)"
+  else
+    decision_block="KARAR KATMANI: decision.json yok — önce \`bash scripts/web/decide.sh $PROJECT\` çalıştır."
+  fi
   cat <<EOF
 P2 (Code Generation) — Webrail MVC iskeletini tamamla.
 Proje dizini: $PROJECT
 $WRITE_RULE
 $BATCH_RULE
+$decision_block
 TEK-TURN İSKELET (Tur 2-9): dosyaları sırayla değil PARALEL write ile tek dalgada bas
 (todowrite'a dosya listesini önce bas, 1 satır/dosya); scaffold'ta tekrar okuma YASAK
-(domain-report + file_manifest yeterli); reasoning'de uzun plan kurma — plan todowrite'ta.
+(domain-report + file_manifest + decision.json yeterli); reasoning'de uzun plan kurma — plan todowrite'ta.
 Girdi kontratı: $PROJECT/.factory/domain-report.json (P1 çıktısı) — entities[] tablo
 adları ve module_matrix kararları (present|injected|missing|proposed) P2 şemasına,
 SQL migrations/ ve views/ akışına bağlayıcıdır; görmezden gelme.
@@ -923,7 +946,17 @@ while true; do
       if [[ "$(state_phase)" == "P1" ]]; then
         bash "$STATE_SH" advance "$PROJECT" >/dev/null
       fi
-      echo "==> P1 → P2 (requirements-frozen)"
+      # Açık kaynak Decision Layer (JEV-mantık): P2 öncesi ucuz karar artefaktı
+      bash "$ROOT/scripts/web/decide.sh" "$PROJECT" || {
+        echo "orkestratör: decide.sh başarısız — P2'ye karar olmadan geçilmez" >&2
+        exit 1
+      }
+      # Kararın önerdiği QA bayrağını env boşsa uygula (ör. --allow-no-cart)
+      if [[ -z "${QA_GATE_EXTRA:-}" && -f "$PROJECT/.factory/decision.json" ]]; then
+        _QE="$(python3 -c "import json;print(json.load(open('$PROJECT/.factory/decision.json',encoding='utf-8')).get('qa_gate_extra') or '')")"
+        [[ -n "$_QE" ]] && export QA_GATE_EXTRA="$_QE" && echo "==> Decision: QA_GATE_EXTRA=$_QE"
+      fi
+      echo "==> P1 → P2 (requirements-frozen + decision.json)"
       ;;
 
     P2)

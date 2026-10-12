@@ -275,37 +275,35 @@ npm install -g eslint
 `qa-gate.sh`/`self-test.sh` composer global bin dizinlerini (`~/.composer/vendor/bin`,
 `~/.config/composer/vendor/bin`) PATH'e otomatik ekler.
 
-## 9. Model Katmanlama (Routing — JEV Faz 1.1)
+## 9. Decision Layer — açık kaynak JEV-mantığı (ücretli JEV yok)
 
-**Neden:** token tüketimi E2E-3'te **14.68M** (E2E-1 ~3.5M) — tüm ajanlar aynı modelle
-çalışıyor, faz başına katman yok. Routing zorunlu: P1 küçük, P2/P4 güçlü model.
+**İlke:** JEV’in değeri “karar ucuz, üretim pahalı” ayrımıdır. Webrail bunu **ücretsiz
+ve açık kaynak** uygular; ücretli JEV MCP / API **entegrasyon hedefi değildir**.
 
-**Nasıl:** `scripts/web/orchestrate.sh` → `MODEL_MAP` + `resolve_model()`; `run_agent`
-`opencode run ... --model "$MODEL"` çağrısına enjekte eder (`--model` biçim:
-`provider/model`, prompt'tan önce — self-test stub son argümanı prompt sayar).
+| Katman | Araç | Çıktı |
+|--------|------|-------|
+| Karar (ucuz, deterministik) | `bash scripts/web/decide.sh` → `decision.py` | `.factory/decision.json` |
+| Handoff | `bash scripts/web/run-status.sh` | `RUN-STATUS.md` |
+| Modül haritası | `.factory/modules/catalog.json` | skill yolları |
+| Model routing | `MODEL_MAP_*` + env | P1 ucuz / P2–P4 güçlü |
 
-| faz | hardcoded default | env override |
-|-----|-------------------|--------------|
-| P1 | `nvidia/z-ai/glm-5.3-flash` (en ucuz yetenekli, 3 E2E kanıtlı) | `MODEL_P1` |
-| P2 | `nvidia/z-ai/glm-5.3` (mevcut envanterin güçlü ailenin flagship'i) | `MODEL_P2` |
-| P4 | `nvidia/z-ai/glm-5.3` (P2 ile aynı — revizyon da kod seviyesinde) | `MODEL_P4` |
-| diğer | mevcut opencode varsayılanı — **dokunma** (boş döner, `--model` verilmez) | — |
+`decision.json` alanları: `modules_to_apply`, `context_allowlist` (bağlam budama),
+`model_routing`, `qa_gate_extra` (örn. katalog yoksa `--allow-no-cart`), `next_actions`.
+Şema: `.factory/contracts/decision.schema.json`.
 
-- **Env önce:** `MODEL_P2=nvidia/moonshotai/kimi-k3 bash scripts/web/orchestrate.sh . --auto`
-  gibi; env varsa hardcoded default kullanılmaz.
-- **claude substitüte edildi:** brief `claude-haiku-4-5`/`claude-sonnet-4-6` istiyordu; bu
-  ortamda anthropic provider **yok** (`opencode auth list` → 0 credential, 68 model envanter
-  `opencode/*-free` + `nvidia/*`). "Veya mevcut en ucuz yetenekli/en güçlü" yetkisiyle
-  envanterden seçildi; claude eklenince `MODEL_*` env override yeterli.
-- **Metrik:** `metrics.jsonl` satırına `model_used` alanı (append-only: mevcut alanlar
-  korunur, alan eklenir); `parse_error` fallback satırında da yazılır; kill-safe
-  rc=143 satırı `CURRENT_MODEL` taşır. `run_agent` log satırı `[model=…]` basar.
-- **Sınır — henüz JEV değil, manuel routing:** hardcoded map + env. JEV MCP entegrasyonu
-  (dynamic ensemble/tool seçimi) **Faz 2**'dir; bu faz yalnız `--model` katmanıdır.
-- **Metrik planı:** aynı E2E senaryosu önce/sonra karşılaştırması **ayrı turda**
-  (Faz 1.2). Baz: E2E-3 = 14.68M. Beklenti: P1 belirgin düşer, P2 sabit/hafif düşer
-  (güçlü modelde step sayısının düşmesi beklenir — token/step de izlenecek).
-  Sonuç ne olursa olsun Faz 2.1 (JEV MCP) için zemin hazır.
+P1→P2 geçişinde (`state.sh advance` veya `orchestrate.sh`) `decide.sh` zorunlu çalışır;
+P2 prompt’u skill listesini ve allowlist’i gömer. Müşteri açılışı:
+`docs/CUSTOMER-START.md`.
+
+**Model map (env override):**
+
+| faz | default | env |
+|-----|---------|-----|
+| P1 | `nvidia/z-ai/glm-5.3-flash` | `MODEL_P1` |
+| P2 | `nvidia/z-ai/glm-5.3` | `MODEL_P2` |
+| P4 | `nvidia/z-ai/glm-5.3` | `MODEL_P4` |
+
+Metrik: `metrics.jsonl` → `model_used` (reporter-only).
 
 ## 10. Route / Komut Eşlemesi
 

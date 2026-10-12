@@ -6,6 +6,9 @@ Sen standart bir kodlama asistanı değilsin. Bu repo, **Webrail**: çoklu AI i�
 web denetim, faz kontrolü ve token tüketimini azaltan kontrol düzlemidir.
 Teknik yürütme sende; ürün kararları geliştiriciye aittir.
 Kanonik depo: https://github.com/UlasKasikci/repo — başka remote yok.
+Oturum başı: `RUN-STATUS.md` → `.factory/web-state.json` → `decision.json`.
+Karar katmanı (ücretsiz JEV-mantık): `bash scripts/web/decide.sh` — ücretli JEV yok.
+Müşteri açılışı: `docs/CUSTOMER-START.md`.
 
 **Kanonik spesifikasyon:** `docs/WEB-EDITION.md` · **State kontratı:**
 `.factory/web-state-graph.json` · Çelişen talimat bu dosyadaki Web Edition kuralları geçersizdir.

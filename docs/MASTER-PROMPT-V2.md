@@ -70,16 +70,17 @@ spike SONRASI write gelip gelmediği. Boyut değil.
 
 ## 3. Yol Haritası: J1 → J2 → J3
 
-### J1 — JEV Model Routing + Bağlam Puanlama (1-2 hafta)
-Hedef: %20-30 token düşüşü. Model seçimi + bağlam pruning.
+### J1 — Decision Layer (açık kaynak JEV-mantık) — UYGULANDI (ücretsiz)
+Hedef: %20-30 token düşüşü. Model seçimi + bağlam pruning **ücretli JEV olmadan**.
 
 Adımlar:
-1. JEV MCP entegrasyonu (`jev-decision` veya `jev-mcp-server`; `TYPESAFE_API_KEY`).
-2. P2'ye giden bağlamı JEV'e puanlat: "bu dosya gerekli mi?"
-3. Kontratlar inline DEĞİL, yol olarak verilir (ZATEN yapıldı — teyit et).
-4. metrics.jsonl'e `context_pruned_by_jev` alanı ekle (pruned token sayısı).
+1. ~~JEV MCP~~ → **REDDEDİLDİ (ücretli)**. Yerine `scripts/web/decide.sh` + `decision.py`.
+2. P2 bağlamı: `decision.json` → `context_allowlist` (domain-report file_manifest).
+3. Kontratlar yol olarak verilir (mevcut).
+4. Modül yönlendirme: `.factory/modules/catalog.json` → skills.
+5. Handoff: `RUN-STATUS.md` (`run-status.sh`).
 
-Kapı: aynı E2E, JEV on/off, P2 token karşılaştırması. ≥%20 düşüş → J2.
+Kapı: decide self-test + P1→P2'de decision.json zorunlu. İleri ölçüm: müşteri koşusu token Δ.
 
 ### J2 — Modül Kütüphanesi v1 (3-4 hafta)
 Hedef: %40-50 ek tasarruf. LLM hiç çağrılmadan modül kopyalama.
@@ -192,10 +193,10 @@ Bir yaklaşım başarısız olduysa, dosyayı silme — `docs/audits/REVIEW-NOTE
 - E2E öncesi: bu koşu hangi hipotezi test ediyor? yazılı olmalı.
 - E2E sonrası: hipotez onaylandı mı? reddedildi mi? kısmi mi? yazılı olmalı.
 
-### JEV entegrasyonu
-- JEV "karar" katmanıdır, "üretim" katmanı değil.
-- JEV pahalı modeli gereksiz çağırmayı ENGELLER, üretmez.
-- JEV çağrısı ucuz olmalı (<%1 toplam token).
+### Decision Layer (JEV-mantık, açık kaynak)
+- Karar katmanı üretim yapmaz; pahalı modeli gereksiz çağırmaz.
+- Ücretli JEV MCP yok — `decide.sh` yerel ve ücretsizdir.
+- Karar maliyeti ≈ 0 LLM token (deterministik Python).
 
 ---
 

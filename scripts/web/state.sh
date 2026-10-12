@@ -316,3 +316,16 @@ if [[ "$OP" == "advance" && "$PRE_PHASE" == "P2" ]]; then
     rm -f "$_MARKER"
   fi
 fi
+
+# P1 → P2: Decision Layer (orchestrate dışı advance'te de karar üret)
+if [[ "$OP" == "advance" && "$PRE_PHASE" == "P1" ]]; then
+  bash "$ROOT/scripts/web/decide.sh" "$PROJECT" || {
+    echo "state: decide.sh başarısız — decision.json olmadan P2 riskli" >&2
+    exit 1
+  }
+fi
+
+# Handoff: başarılı state yazımlarından sonra RUN-STATUS.md (IDE/personel devamı)
+if [[ "$OP" != "status" ]]; then
+  bash "$ROOT/scripts/web/run-status.sh" "$PROJECT" || true
+fi
