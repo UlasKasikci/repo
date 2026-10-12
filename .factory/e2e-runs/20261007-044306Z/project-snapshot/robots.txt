@@ -1,7 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /admin/
-Disallow: /giris
-Disallow: /cikis
-
-Sitemap: https://www.example.com/sitemap.xml

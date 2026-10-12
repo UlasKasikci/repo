@@ -344,7 +344,8 @@ ve `debug config` öncesi `find . -name '._*' -delete` ile temizle.
   edilemezse `parse_error: true` — gate/exit kodu değişmez; satırda `model_used` alanı — §9)
 - Model routing (manuel, §9): `MODEL_P1`/`MODEL_P2`/`MODEL_P4` env override; hardcoded
   map `scripts/web/orchestrate.sh` içinde (`MODEL_MAP_*` + `resolve_model`)
-- E2E bulguları: `.factory/e2e-runs/<TS>/FINDINGS.md` (ör. `20261007-120921Z` — B2/handoff/strict verisi)
+- E2E bulguları: `docs/findings/` (kalıcı). Ham koşu çıktıları `.factory/e2e-runs/`
+  altında yalnız yerelde tutulur; commit ve bootstrap kopyasına girmez.
 - SQL dump üretici: `bash scripts/web/sql-dump.sh <proje> [--output <path>]`
 - Lighthouse (raporlayıcı): `bash scripts/web/lighthouse-verify.sh <proje> [--serve] [--strict]`
 - Temiz bootstrap: `bash scripts/web/bootstrap-project.sh <hedef> [--yes] [--force]`

@@ -118,8 +118,8 @@ metrics.jsonl
 .factory/lighthouse-report.json
 .factory/hybrid-p2-start
 
-# Web Edition — E2E run artefaktları (kalıcı bulgular docs/findings/ altına taşınır;
-# run dir'leri commit edilmez — takip edilen dosyalar tarihsel kayıt olarak yerinde kalır)
+# Webrail — yerel koşu artefaktları (asla commit edilmez).
+# Kalıcı bulgular: docs/findings/. Bootstrap bu dizinleri kopyalamaz.
 .factory/e2e-runs/
 .factory/test-runs/
 .opencode/node_modules/
