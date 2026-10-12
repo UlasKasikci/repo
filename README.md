@@ -11,7 +11,7 @@ Claude Code) aynı `.factory/` state'ini okur/yazar.
 
 [![CI](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml/badge.svg)](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![self-test](https://img.shields.io/badge/self--test-63%2F63%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
+[![self-test](https://img.shields.io/badge/self--test-66%2F66%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
 
 ---
 
@@ -107,7 +107,7 @@ app-fabrika/
 │   ├── bootstrap-project.sh  # Yeni proje başlatma
 │   ├── e2e-driver.sh         # E2E driver + idle watchdog (L3)
 │   ├── lighthouse-verify.sh  # Lighthouse (raporlayıcı, opsiyonel)
-│   └── self-test.sh          # 63 senaryo
+│   └── self-test.sh          # 66 senaryo
 ├── docs/                     # Kanonik dokümanlar
 │   ├── WEB-EDITION.md        # Teknik spesifikasyon
 │   ├── MASTER-PROMPT-V2.md   # Stratejik karar + K1-K8
@@ -141,7 +141,7 @@ git clone https://github.com/UlasKasikci/repo.git && cd repo
 composer global require phpstan/phpstan phpunit/phpunit
 
 # fabrika kendini sınamalı
-bash scripts/web/self-test.sh          # hedef: 63/63 PASS
+bash scripts/web/self-test.sh          # hedef: 66/66 PASS
 ```
 
 ### Yeni proje
@@ -295,7 +295,7 @@ Yukleme/
 
 ### v1 — Starter Kit + İlk Saha (Şimdi — **v1.0 FINAL**)
 
-- Bootstrap + üç IDE config + QA gate (14) + paketleme + self-test (63)
+- Bootstrap + üç IDE config + QA gate (14) + paketleme + self-test (66)
 - **Tamamlandı:** A1 okuma yasağı + QUESTIONS kapısı + A2 spike→write + A2' duvar-saati
   + L3 watchdog (idle+stream+CPU+no-write-cap+cpu_time_pid) + frontmatter kontratı
   + manifest-onaylı whitelist + K1a-fix plugin (`nim-stall-retry`, bun:sqlite DB polling)

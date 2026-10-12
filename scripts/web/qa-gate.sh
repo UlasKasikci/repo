@@ -205,16 +205,24 @@ check_end security_grep
 # Tur 2-16 (ChatGPT 2.1/2.3): kelime araması YETMEZ (yorum satırındaki "csrf"
 # false-positive). Yeni kurallar (aynı set_check: security_policy, K6 7→7):
 #   (a) $_POST/$_REQUEST KULLANAN her dosyada token doğrulama ÇAĞRISI olmalı
+#       v1.2 (F2, helpdesk-app kanıtı): OOP desenler de geçerli — Csrf::verify(
+#       / Csrf::requireValid( / Csrf::check( / $this->csrf->verify(. helpdesk-app
+#       run'ında /register POST'ta CSRF YOKTU ama OOP-blind regex yüzünden gate
+#       geçti (gerçek açık, routing'e elle eklendi). n=3/3 run'da kanıtlanan boşluk.
 #   (b) session_set_cookie_params: HttpOnly + Secure + SameSite üçü de parametrede
 #   (c) parametre çağrısı session_start()'den ÖNCE olmalı
 #   (d) ini_set('session.cookie_httponly') tek başına yetersiz
 check_begin
 if [[ "$PHP_COUNT" -gt 0 ]]; then
-  CSRF_CALL_RE='(csrf[_-]?verify|verify[_-]?csrf|check[_-]?csrf)[[:space:]]*\('
+  # v1.2 F2: global + OOP desenleri tek regex; her dosya için ilk eşleşen
+  # doğrulama satırı raporlanır (debug: hangi satır sayıldı).
+  CSRF_CALL_RE='(csrf[_-]?verify|verify[_-]?csrf|check[_-]?csrf|Csrf::verify|Csrf::requireValid|Csrf::check|csrf->verify)[[:space:]]*\('
   for f in "${PHP_FILES[@]}"; do
     grep -qE '\$_(POST|REQUEST)' "$f" || continue
-    grep -qiE "$CSRF_CALL_RE" "$f" \
-      || err "güvenlik: \$_POST/\$_REQUEST kullanımı var ama dosyada CSRF token doğrulama çağrısı yok: $(rel "$f")"
+    if ! grep -qiE "$CSRF_CALL_RE" "$f"; then
+      hit_ln="$(grep -n -m1 -E '\$_(POST|REQUEST)' "$f" | cut -d: -f1)"
+      err "güvenlik: POST endpoint'te CSRF çağrısı yok: $(rel "$f"):${hit_ln:-?} (\$_POST/\$_REQUEST var ama doğrulama yok)"
+    fi
   done
   for f in "${PHP_FILES[@]}"; do
     if grep -q 'session_set_cookie_params' "$f"; then

@@ -29,6 +29,11 @@ mobil/native kod yasak.
 PDO Prepared Statement; superglobal asla sorguya ham girmez; CSRF token her POST'ta;
 `PASSWORD_ARGON2ID`/`PASSWORD_BCRYPT` + `password_verify`; HttpOnly/Secure/SameSite çerez.
 
+**POST CSRF guard (v1.2, helpdesk-app /register açığı):** her POST controller'ında ilk
+satırda `guardPost()` veya `Csrf::requireValid()` çağrısı ZORUNLU. CSRF'siz POST kabul
+edilmez. Gate bunu `Csrf::verify`/`csrf_verify`/`Csrf::requireValid` desenleriyle deşifr eder
+— yine de çağrıyı yazmak senin sorumluluğunda.
+
 ## Üretim verimliliği (Faz 1.4 — L1/L4)
 
 - **Batch-yaz (L1):** hedef dosyaları mümkünse **tek write dalgasında** (aynı adımda

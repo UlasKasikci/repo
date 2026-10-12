@@ -23,6 +23,11 @@ Target stack: **plain PHP 8.1+ MVC + MySQL 8** — mobile/native code is forbidd
 PDO prepared statements; superglobals never enter a query raw; CSRF token on every POST;
 `PASSWORD_ARGON2ID`/`PASSWORD_BCRYPT` + `password_verify`; HttpOnly/Secure/SameSite cookies.
 
+**POST CSRF guard (v1.2, helpdesk-app /register hole):** every POST controller MUST call
+`guardPost()` or `Csrf::requireValid()` as its first line. CSRF-less POST is rejected.
+The gate also detects `Csrf::verify`/`csrf_verify`/`Csrf::requireValid` patterns — but
+writing the call is your responsibility.
+
 ## Okuma Whitelist (A1 — ZORUNLU)
 
 Sadece şu kaynakları okuyabilirsin (read/grep/glob):

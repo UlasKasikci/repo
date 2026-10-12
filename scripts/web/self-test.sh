@@ -2321,7 +2321,7 @@ r = json.load(open(sys.argv[1], encoding="utf-8"))
 assert r["result"] == "FAIL", r["result"]
 assert r["checks"]["security_policy"] == "FAIL", r["checks"]
 PY
-grep -q "CSRF token doğrulama çağrısı yok" "$A51/debug_report.json" \
+grep -q "POST endpoint'te CSRF çağrısı yok" "$A51/debug_report.json" \
   || die "A.4: CSRF hata mesajı debug_report'ta yok"
 A51G="$TMP/a51-good"
 cp -R "$FIX" "$A51G"
@@ -2510,6 +2510,54 @@ d62_out2="$(bash "$STATE" advance "$C57" 2>&1)" || d62_adv2=$?
 grep -q "P1 → P2" <<<"$d62_out2" || die "D: kurtarma P1 → P2 mesajı yok"
 rm -rf "$C57"
 echo "    --reset yalnız start'a özel · HALT → --reset → advance zinciri ✓"
+
+step "63) F2 CSRF OOP deseni: Csrf::verify() dosyası → security_policy PASS (v1.2)"
+# helpdesk-app run'ında gate OOP-blind'dı (CSRF_CALL_RE yalnız global fonksiyon
+# desenlerini tarıyordu). v1.2: Csrf::verify/Csrf::requireValid/Csrf::check/
+# csrf->verify( desenleri de geçerli sayılır.
+A63="$TMP/a63-csrf-oop"
+cp -R "$FIX" "$A63"
+cp "$ROOT/tests/fixtures/good_csrf_oop.php" "$A63/good_csrf_oop.php"
+a63_rc="$(run_rc bash "$QA" "$A63")"
+[[ "$a63_rc" == "0" ]] || die "F2: OOP CSRF dosyası ile PASS (0) beklenir, gelen $a63_rc"
+python3 - "$A63/qa-report.json" <<'PY' || die "F2: OOP CSRF dosyası security_policy PASS değil"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["checks"]["security_policy"] == "PASS", r["checks"]
+PY
+rm -rf "$A63"
+echo "    Csrf::verify() deseni PASS (OOP-blind boşluk kapandı) ✓"
+
+step "64) F2 register negatif: CSRF'siz POST handler → FAIL + satır numarası (v1.2)"
+# helpdesk-app /register açığının fixture karşılığı: $_POST okuyan handler'da
+# doğrulama yok → gate REDDETMELİ (v1.1'de kaçmıştı). Hata mesajında dosya:satır.
+A64="$TMP/a64-csrf-register"
+cp -R "$FIX" "$A64"
+cp "$ROOT/tests/fixtures/bad_csrf_register.php" "$A64/register_controller.php"
+a64_rc="$(run_rc bash "$QA" "$A64")"
+[[ "$a64_rc" == "1" ]] || die "F2: CSRF'siz register handler ile FAIL (1) beklenir, gelen $a64_rc"
+python3 - "$A64/qa-report.json" <<'PY' || die "F2: security_policy FAIL kanıtı yok"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["result"] == "FAIL", r["result"]
+assert r["checks"]["security_policy"] == "FAIL", r["checks"]
+PY
+grep -q "POST endpoint'te CSRF çağrısı yok: register_controller.php:" "$A64/debug_report.json" \
+  || die "F2: satır numaralı CSRF hata mesajı debug_report'ta yok"
+rm -rf "$A64"
+echo "    CSRF'siz register handler → FAIL · dosya:satır mesajı ✓"
+
+step "65) F3 P2 prompt CSRF guard kuralı: web-core-engineer agent dosyalarında zorunlu ifade (v1.2)"
+# helpdesk-app run'ında /register POST'ta CSRF hiç yoktu; gate desen boşluğu
+# yüzünden de kaçtı. v1.2: P2 prompt'una guardPost()/Csrf::requireValid()
+# zorunluluğu eklendi (önleyici — prompt + gate çift katman).
+for agent_md in "$ROOT/.cursor/agents/web-core-engineer.md" "$ROOT/.opencode/agent/web-core-engineer.md"; do
+  grep -q "guardPost" "$agent_md" \
+    || die "F3: $agent_md içinde guardPost zorunluluğu yok"
+  grep -q "requireValid" "$agent_md" \
+    || die "F3: $agent_md içinde requireValid zorunluluğu yok"
+done
+echo "    web-core-engineer.md ×2: guardPost/requireValid zorunluluğu mevcut ✓"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"
