@@ -29,6 +29,8 @@ set -euo pipefail
 # K5 (Tur 2-7): senaryo sayısı otomatik (grep -c '^step "') + README badge tutarlılığı
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# Fabrika senaryoları dar-auto'yu kapatır (stub ajan yolu); üretimde varsayılan true.
+export P2_AUTO_NARROW=false
 FIX="$ROOT/tests/fixtures/web-sample"
 # exFAT/Finder anlık üretebilir: AppleDouble ikizleri phpunit'i bozar (APFS tmp'ye
 # kopyalasak da KAYNAK temiz olmalı) — okuma sınırında tek temizlik noktası.
@@ -123,7 +125,7 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 step "0) bash -n söz dizimi + python söz dizimi"
-for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh bootstrap-project.sh smoke-test.sh frontmatter-check.sh mode.sh decide.sh measure.sh preflight.sh run-status.sh; do
+for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh bootstrap-project.sh smoke-test.sh frontmatter-check.sh mode.sh decide.sh measure.sh preflight.sh run-status.sh webrail.sh status.sh module-apply.sh p2-checklist.sh; do
   bash -n "$ROOT/scripts/web/$s" || die "bash -n: $s"
   echo "    OK: $s"
 done
@@ -2669,8 +2671,10 @@ rm -rf "$M70"
 echo "    discovery RED · şablon promote RED · dolu promote → factory start ✓"
 
 step "71) CUSTOMER-START Şerit A + ajan mode kilidi + DISCOVERY şablon"
-grep -q 'Şerit A' "$ROOT/docs/CUSTOMER-START.md" || die "CUSTOMER-START Şerit A yok"
-grep -q 'mode.sh promote' "$ROOT/docs/CUSTOMER-START.md" || die "CUSTOMER-START promote yok"
+grep -q 'Şerit A\|Tek giriş\|webrail.sh' "$ROOT/docs/CUSTOMER-START.md" \
+  || die "CUSTOMER-START tek giriş/webrail yok"
+grep -q 'from-brief\|mode.sh promote' "$ROOT/docs/CUSTOMER-START.md" \
+  || die "CUSTOMER-START promote/from-brief yok"
 [[ -f "$ROOT/docs/templates/DISCOVERY.md" ]] || die "DISCOVERY şablon yok"
 grep -q 'buraya yaz' "$ROOT/docs/templates/DISCOVERY.md" || die "DISCOVERY yer tutucusu yok"
 for f in .cursor/agents/web-core-engineer.md .opencode/agent/web-core-engineer.md \
@@ -2679,6 +2683,68 @@ for f in .cursor/agents/web-core-engineer.md .opencode/agent/web-core-engineer.m
     || die "ajan mode kilidi yok: $f"
 done
 echo "    protokol · şablon · 4 ajan mode kilidi ✓"
+
+step "72) mode from-brief → factory + DISCOVERY proje adı"
+M72="$TMP/frombrief72"
+mkdir -p "$M72"
+bash "$ROOT/scripts/web/mode.sh" init "$M72" >/dev/null
+rc="$(run_rc bash "$ROOT/scripts/web/mode.sh" from-brief "$M72" "Demo Mağaza: kullanıcı login, admin panel, KVKK")"
+[[ "$rc" == "0" ]] || die "from-brief rc=0 beklenir, gelen $rc"
+grep -q 'Demo Mağaza' "$M72/DISCOVERY.md" || die "from-brief proje adı yazılmadı"
+MODE72="$(python3 -c "import json;print(json.load(open('$M72/.factory/mode.json'))['mode'])")"
+[[ "$MODE72" == "factory" ]] || die "from-brief sonrası factory beklenir, olan $MODE72"
+bash "$ROOT/scripts/web/status.sh" "$M72" | grep -q 'mode' || die "status.sh çıktı yok"
+rm -rf "$M72"
+echo "    from-brief → factory · status panosu ✓"
+
+step "73) webrail.sh --brief: bootstrap + promote + state P1"
+W73="$TMP/webrail73"
+rc="$(run_rc bash "$ROOT/scripts/web/webrail.sh" "$W73" --yes --skip-preflight \
+  --brief "Webrail73 test: auth ve SEO")"
+[[ "$rc" == "0" ]] || die "webrail.sh rc=0 beklenir, gelen $rc"
+[[ -f "$W73/.factory/web-state.json" ]] || die "webrail state yazmadı"
+PHASE73="$(python3 -c "import json;print(json.load(open('$W73/.factory/web-state.json'))['current_phase'])")"
+[[ "$PHASE73" == "P1" ]] || die "webrail faz P1 beklenir, olan $PHASE73"
+[[ -f "$ROOT/.cursor/commands/webrail.md" && -f "$ROOT/.opencode/command/webrail.md" ]] \
+  || die "/webrail komutları eksik"
+rm -rf "$W73"
+echo "    webrail.sh brief → P1 · komutlar mevcut ✓"
+
+step "74) module-apply: decision → auth-rbac/kvkk/seo paketleri kopyalanır"
+M74="$TMP/modapply74"
+mkdir -p "$M74"
+cp -a "$FIX/." "$M74/"
+# factory mode (mode.json yok = factory)
+seed_domain_report "$M74"
+bash "$STATE" start "$M74" >/dev/null
+bash "$ROOT/scripts/web/decide.sh" "$M74" >/dev/null
+rc="$(run_rc bash "$ROOT/scripts/web/module-apply.sh" "$M74")"
+[[ "$rc" == "0" ]] || die "module-apply rc=0 beklenir, gelen $rc"
+[[ -f "$M74/core/Auth.php" ]] || die "auth-rbac Auth.php kopyalanmadı"
+[[ -f "$M74/views/legal/aydinlatma.php" ]] || die "kvkk aydinlatma kopyalanmadı"
+[[ -f "$M74/.factory/module-apply-report.json" ]] || die "module-apply-report yok"
+COPIED74="$(python3 -c "import json;print(len(json.load(open('$M74/.factory/module-apply-report.json'))['copied']))")"
+[[ "$COPIED74" -ge 1 ]] || die "en az 1 paket kopyalanmalı"
+for f in .cursor/agents/web-core-engineer.md .opencode/agent/web-core-engineer.md; do
+  grep -q 'module-apply' "$ROOT/$f" || die "ajan module-apply anmaz: $f"
+done
+[[ -f "$ROOT/.cursor/commands/yama.md" ]] || die "/yama eksik"
+rm -rf "$M74"
+echo "    module-apply paketler · ajan sözleşmesi · /yama ✓"
+
+step "75) P2 dar-auto RED: modül yokken --auto → exit 3"
+D75="$TMP/narrow75"
+mkdir -p "$D75/.factory"
+printf '{"current_phase":"P2","retry_count":0,"max_retries":3,"history":[]}\n' \
+  > "$D75/.factory/web-state.json"
+# boş iskelet + dar-auto açık
+rc=0
+OUT75="$(P2_AUTO_NARROW=true bash "$ORCH" "$D75" --auto 2>&1)" || rc=$?
+[[ "$rc" == "3" ]] || die "dar-auto exit 3 beklenir, gelen $rc"
+grep -q 'dar-auto RED\|module-apply\|P2_HUMAN_ASSIST' <<<"$OUT75" \
+  || die "dar-auto yönlendirme mesajı yok"
+rm -rf "$D75"
+echo "    P2_AUTO_NARROW=true → exit 3 + hybrid/module-apply ipucu ✓"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

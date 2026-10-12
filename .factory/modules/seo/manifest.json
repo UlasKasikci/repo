@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "id": "seo",
+  "aliases": ["seo"],
+  "summary": "robots.txt + sitemap.xml stub",
+  "tokens_avoided_est": 4000
+}

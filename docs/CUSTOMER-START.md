@@ -6,6 +6,8 @@ olursa olsun aynı standartlarla, halüsinasyonsuz, kaldığı yerden devam.
 **Kanonik depo:** https://github.com/UlasKasikci/repo  
 **Ücretli JEV yok.** Karar mantığı açık kaynak: `scripts/web/decide.sh`.
 
+**Normal yol:** tek giriş `/webrail` veya `webrail.sh` — alt komutlar ileri seviye.
+
 ---
 
 ## 0) Fabrika hazır mı? (zorunlu)
@@ -16,54 +18,52 @@ bash scripts/web/preflight.sh
 # PREFLIGHT: READY görmeden müşteriye geçme
 ```
 
-## 1) Fabrikayı kaynak tut, müşteri klasörüne bootstrap et
+## 1) Tek giriş (önerilen)
 
 ```bash
-# Webrail kaynağı (bir kez / güncel tut)
 git clone https://github.com/UlasKasikci/repo.git ~/webrail
 cd ~/webrail
-bash scripts/web/preflight.sh
 
-# Müşteri projesi — ASLA fabrika köküne yazma
-bash scripts/web/bootstrap-project.sh ../musteri-adi --yes
+# Brief ile: DISCOVERY doldur + promote + state P1 (fabrika köküne YAZMA)
+bash scripts/web/webrail.sh ../musteri-adi --yes \
+  --brief "Stok takip paneli: kullanıcılar, ürünler, admin, KVKK"
+
 cd ../musteri-adi
+bash scripts/web/status.sh .
 ```
 
-Bootstrap: kontratlar, ajanlar, scriptler, skills + `DISCOVERY.md` + `mode=discovery`.  
-**Kopyalanmaz:** `tests/`, `.github/`, `e2e-runs/`, self-test (şişme yok).
-
----
-
-## 1b) Şerit A — saf IDE keşfi (kod YOK)
-
-Bootstrap sonrası fabrika kapıları kilitli (`mode=discovery`). Önce ucuz keşif:
+Brief yoksa `mode=discovery` kalır → IDE `/kesfet` veya elle `DISCOVERY.md`, sonra:
 
 ```bash
-# IDE: /kesfet   veya elle DISCOVERY.md doldur
-# **Proje adı:** satırı zorunlu (şablon yer tutucusu kabul değil)
-bash scripts/web/measure.sh . discovery_minutes 15 A0
-bash scripts/web/mode.sh promote .   # discovery → factory
+bash scripts/web/mode.sh promote .
+bash scripts/web/state.sh start .
 ```
 
-`state.sh start` / `orchestrate` / `decide` **promote olmadan RED**.
+Hız şeridi (aynı kapı, iz bırakır):
+
+```bash
+bash scripts/web/mode.sh from-brief . "Kısa iş özeti …"
+```
+
+`state.sh start` / `orchestrate` / `decide` **factory olmadan RED**. Expert bypass yok.
 
 ---
 
 ## 2) State + karar + handoff (factory)
 
 ```bash
-bash scripts/web/mode.sh status .    # mode=factory olmalı
-bash scripts/web/state.sh start .
-# P1 domain-report üret (IDE /web-baslat veya orchestrate)
-bash scripts/web/orchestrate.sh . --auto   # veya manuel P1
-bash scripts/web/decide.sh .               # Decision Layer → decision.json + RUN-STATUS.md
+bash scripts/web/status.sh .
+# P1 domain-report (/web-baslat veya orchestrate)
+bash scripts/web/decide.sh .
+# Modülleri kopyala (LLM’den önce)
+bash scripts/web/module-apply.sh .
+# P2 hybrid (önerilen)
+P2_HUMAN_ASSIST=true bash scripts/web/orchestrate.sh . --auto
 ```
 
-P2 önerisi: saf IDE taslak + Webrail QA — `P2_HUMAN_ASSIST=true` ile orkestrasyon.
+Her oturum başı:
 
-Her oturum başı (zorunlu okuma sırası):
-
-1. `DISCOVERY.md` + `.factory/mode.json` (mode?)
+1. `bash scripts/web/status.sh .` (veya `DISCOVERY.md` + `mode.json`)
 2. `RUN-STATUS.md`
 3. `.factory/web-state.json`
 4. `.factory/domain-report.json`
@@ -75,35 +75,32 @@ Her oturum başı (zorunlu okuma sırası):
 
 | İş | Cursor | OpenCode | Claude / Antigravity / terminal |
 |----|--------|----------|----------------------------------|
-| Başlat | `/kur` `/web-baslat` | `/kur` `/web-baslat` | `state.sh` + `orchestrate.sh` |
-| Karar | `decide.sh` | `decide.sh` | `decide.sh` |
+| Tek giriş | `/webrail` | `/webrail` | `webrail.sh` |
+| Keşif | `/kesfet` | `/kesfet` | `mode.sh from-brief` |
+| P1 | `/web-baslat` | `/web-baslat` | `orchestrate` + decide |
+| Yama | `/yama` | `/yama` | qa-gate + düzelt |
 | QA | `/web-denetle` | `/web-denetle` | `qa-gate.sh` |
 | Paket | `/web-yukle` | `/web-yukle` | `package-yukleme.sh` |
 
-Antigravity: `antigravity.yaml` → aynı `docs/WEB-EDITION.md` + state komutları.
-
 ---
 
-## 4) Token ekonomisi (JEV-mantık, ücretsiz)
+## 4) Token ekonomisi
 
 | Mekanizma | Dosya |
 |-----------|--------|
-| Ucuz karar / pahalı üretim ayrımı | `decide.sh` → `decision.json` |
-| Modül önce, LLM sonra | `.factory/modules/catalog.json` + skills |
+| Tek giriş / hızlı keşif | `webrail.sh` · `mode.sh from-brief` |
+| Karar ucuz / üretim pahalı | `decide.sh` → `decision.json` |
+| Modül önce, LLM sonra | `module-apply.sh` + `.factory/modules/*` |
 | Bağlam budama | `context_allowlist` |
-| Model katmanlama | `MODEL_P1` / `MODEL_P2` / `MODEL_P4` |
-| Sepetsiz domain | `qa_gate_extra: --allow-no-cart` (karar önerir) |
+| Hybrid P2 | `P2_HUMAN_ASSIST=true` |
 
 ---
 
 ## 5) Personel değişimi
 
-Yeni kişi/IDE:
-
 ```bash
+bash scripts/web/status.sh .
 cat RUN-STATUS.md
-bash scripts/web/state.sh status .
-# kaldığı fazdan:
 bash scripts/web/orchestrate.sh . --auto
 ```
 

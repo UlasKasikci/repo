@@ -21,6 +21,17 @@ mobil/native kod yasak.
 Önce `/kesfet` + `DISCOVERY.md` + `mode.sh promote`. Yalnız `factory` modunda
 `core/` / `views/` / `SQL/` / `index.php` üret.
 
+## Modül önce (zorunlu)
+
+P2’de LLM yazmadan önce:
+
+```bash
+bash scripts/web/module-apply.sh .
+```
+
+`decision.json` → paketler (auth-rbac, kvkk, admin-crud, seo). Uyan dosyayı
+yeniden yazma; yalnızca kalan `file_manifest` boşluklarını doldur.
+
 ## Katman sorumlulukları
 
 - `index.php` front-controller + `.htaccess` rewrite

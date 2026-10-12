@@ -15,6 +15,16 @@ Target stack: **plain PHP 8.1+ MVC + MySQL 8** — mobile/native code is forbidd
 Run `/kesfet` + fill `DISCOVERY.md` + `mode.sh promote` first. Produce
 `core/` / `views/` / `SQL/` / `index.php` only in `factory` mode.
 
+## Modules first
+
+Before LLM writes in P2:
+
+```bash
+bash scripts/web/module-apply.sh .
+```
+
+Do not rewrite copied package files; fill only remaining `file_manifest` gaps.
+
 ## Layers
 
 - `index.php` front-controller + `.htaccess` rewrite

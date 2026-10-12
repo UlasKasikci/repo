@@ -11,12 +11,12 @@ projesinin aynı denetim kapılarından geçmesi, eksik modül/güvenlik boşluk
 |---|---|
 | Kanonik depo | [`github.com/UlasKasikci/repo`](https://github.com/UlasKasikci/repo) |
 | Stack | PHP 8.1+ (framework’süz MVC) · MySQL 8 / MariaDB · HTML/CSS/JS · FTP/`Yukleme/` |
-| Doğrulama | self-test **72/72** · `preflight.sh` · CI · 14 kanallı QA gate |
+| Doğrulama | self-test **76/76** · `preflight.sh` · CI · 14 kanallı QA gate |
 | Sürüm | **v1.3** (+ Şerit A keşif kilidi: `/kesfet` → promote → fabrika) |
 
 [![CI](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml/badge.svg)](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![self-test](https://img.shields.io/badge/self--test-72%2F72%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
+[![self-test](https://img.shields.io/badge/self--test-76%2F76%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
 
 > Bu depo kendi kendine yeterlidir. Tek remote: `origin` → `UlasKasikci/repo`.
 > Başka bir GitHub org/repo’ya bağımlılık veya push yolu yoktur.
@@ -69,21 +69,21 @@ git clone https://github.com/UlasKasikci/repo.git
 cd repo
 
 composer global require phpstan/phpstan phpunit/phpunit
-bash scripts/web/self-test.sh          # 72/72 PASS beklenir
-bash scripts/web/preflight.sh          # müşteri öncesi READY kapısı
+bash scripts/web/self-test.sh
+bash scripts/web/preflight.sh
 
-# Yeni müşteri/proje iskeleti (fabrika köküne YAZMA)
-bash scripts/web/bootstrap-project.sh ../musteri-projesi --yes
+# Tek giriş (fabrika köküne YAZMA) — brief = hızlı keşif + promote + P1
+bash scripts/web/webrail.sh ../musteri-projesi --yes \
+  --brief "Demo: auth + admin + KVKK panel"
 cd ../musteri-projesi
-# Şerit A: DISCOVERY.md doldur (/kesfet) — kod yok
-bash scripts/web/mode.sh promote .     # discovery → factory
-bash scripts/web/state.sh start .
-bash scripts/web/orchestrate.sh . --auto   # P2 için: P2_HUMAN_ASSIST=true
-bash scripts/web/qa-gate.sh .
-bash scripts/web/package-yukleme.sh .  # yalnız QA PASS sonrası
+bash scripts/web/status.sh .
+
+# P1 → decide → modül kopya → hybrid P2 → QA → paket
+# /web-baslat · bash scripts/web/module-apply.sh . ·
+# P2_HUMAN_ASSIST=true bash scripts/web/orchestrate.sh . --auto
 ```
 
-Her oturum: önce `DISCOVERY.md` / `mode.json`, sonra `RUN-STATUS.md`.  
+İleri seviye: `/kesfet`, `mode.sh promote`, `/yama`. Demo/toy için saf IDE; teslim için Webrail.  
 Çıkış: `0` OK · `1` FAIL · `2` HALT · `3` bekleme.
 
 ---
@@ -96,10 +96,10 @@ webrail/   (= bu repo: UlasKasikci/repo)
 ├── .opencode/               # OpenCode ajan/komut/skill
 ├── .factory/
 │   ├── contracts/           # P1 / P3 / P5 / decision şemaları
-│   ├── modules/             # katalog → skill (Decision Layer)
+│   ├── modules/             # katalog + kopyalanabilir paketler (auth/kvkk/…)
 │   ├── web-state-graph.json # Faz makinesi
 │   └── meta.json            # Ürün kimliği
-├── scripts/web/             # state, decide, run-status, orchestrate, qa-gate…
+├── scripts/web/             # webrail, status, mode, module-apply, state, qa-gate…
 ├── docs/                    # WEB-EDITION, CUSTOMER-START, MASTER-PROMPT
 ├── tests/fixtures/          # Pozitif/negatif QA fixture’ları
 ├── CLAUDE.md · antigravity.yaml · .cursorrules
@@ -115,7 +115,7 @@ webrail/   (= bu repo: UlasKasikci/repo)
 | **v1.0** | envanter-app | Kalite: 4s 48dk, QA PASS, DONE |
 | **v1.1** | randevu-app | Hız (benzer domain): **27 dk**, pattern reuse |
 | **v1.2** | helpdesk-app + çift AI denetimi | CSRF OOP + `/register` + CONTRACTS sandbox |
-| **v1.3** | Decision Layer + skills READY | JEV-mantık (ücretsiz) + RUN-STATUS + preflight + 4 skill; Şerit A mode kilidi; self-test 72/72 |
+| **v1.3** | Decision Layer + skills READY | JEV-mantık + Şerit A + `/webrail` + modül paketleri; self-test 76/76 |
 
 Release: [v1.2](https://github.com/UlasKasikci/repo/releases/tag/v1.2) · [v1.3](https://github.com/UlasKasikci/repo/releases/tag/v1.3) (bu tur)
 
@@ -160,7 +160,7 @@ Yeni QA kontrolü yalnız somut bug ile eklenir (K6).
 ## Katkı
 
 1. Yalnız bu depoda çalışın: `https://github.com/UlasKasikci/repo`
-2. PR öncesi: `preflight.sh` READY + `self-test.sh` → **72/72 PASS** + CI yeşil
+2. PR öncesi: `preflight.sh` READY + `self-test.sh` → **76/76 PASS** + CI yeşil
 3. Doküman güncellemesi kanıttan türer (K5)
 
 ## Lisans

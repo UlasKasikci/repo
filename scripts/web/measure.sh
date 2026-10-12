@@ -16,6 +16,8 @@ set -euo pipefail
 #   discovery_minutes   — Şerit A keşif süresi (dk)
 #   discovery_tokens    — keşif oturumu tahmini/ölçülen token (opsiyonel)
 #   mode_promoted       — discovery→factory geçişi (mode.sh promote)
+#   modules_copied      — module-apply paket sayısı
+#   tokens_avoided_est  — kopyalanan paketlerin tahmini token tasarrufu
 #   (serbest alan adları da kabul edilir)
 #
 # Satır şeması (append-only, agent satırıyla çakışmaz):

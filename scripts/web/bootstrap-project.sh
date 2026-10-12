@@ -169,10 +169,12 @@ PRUNE_FILES = {
     "qa-report.json",
     "debug_report.json",
     "packaging-report.json",
+    "module-apply-report.json",
     "project.json",
     "bootstrap_manifest.json",
     "sync.json",
     ".bootstrap-manifest",
+    "mode.json",
 }
 
 

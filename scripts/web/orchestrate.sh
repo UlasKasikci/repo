@@ -974,13 +974,11 @@ while true; do
             fi
           done
         fi
-        echo "    Manuel P2 gerekli: iskeleti elle yaz (index.php, core/, views/, SQL/veritabani.sql,)"
-        echo "    tests/). Config template'leri (phpstan/phpunit/eslint) yukarıda kopyalandı."
-        echo "    Sonra:"
-        echo "      bash scripts/web/state.sh advance $PROJECT   # P2 → P3"
-        echo "      bash scripts/web/orchestrate.sh $PROJECT --auto   # P3-P5 otomatik devam"
-        # C.2 (Tur 2-15): hybrid ölçüm — ilk girişte bir kez marker + ölçüm satırı.
-        # marker: state.sh advance P2→P3'te manual_p2_min hesabına kaynak olur.
+        echo "    1) bash scripts/web/module-apply.sh $PROJECT   # karar modüllerini kopyala"
+        echo "    2) Kalan iskelet: index.php, core/, views/, SQL/veritabani.sql, tests/"
+        echo "    3) bash scripts/web/p2-checklist.sh $PROJECT"
+        echo "    4) bash scripts/web/state.sh advance $PROJECT   # P2 → P3"
+        echo "    5) bash scripts/web/orchestrate.sh $PROJECT --auto"
         if [[ ! -f "$PROJECT/.factory/hybrid-p2-start" ]]; then
           date +%s > "$PROJECT/.factory/hybrid-p2-start"
           bash "$ROOT/scripts/web/measure.sh" "$PROJECT" phase_human_assist true P2 || true
@@ -994,6 +992,41 @@ while true; do
       fi
       if ! scaffold_ok; then
         if [[ "$AUTO" -eq 1 ]]; then
+          # F3 dar auto (P2_AUTO_NARROW=true, varsayılan): modül kopya yoksa / manifest
+          # büyükse hybrid'e düş — 14M auto regressiyonunu kes. Self-test: P2_AUTO_NARROW=false.
+          if [[ "${P2_AUTO_NARROW:-true}" == "true" ]]; then
+            _P2_MAX="${P2_AUTO_MAX_FILES:-8}"
+            _MISS="$(python3 - "$PROJECT" <<'PY'
+import json, sys
+from pathlib import Path
+p = Path(sys.argv[1])
+rep = p / ".factory" / "domain-report.json"
+miss = 0
+if rep.is_file():
+    try:
+        man = json.loads(rep.read_text(encoding="utf-8")).get("file_manifest") or []
+    except Exception:
+        man = []
+    for it in man:
+        path = it if isinstance(it, str) else (it.get("path") if isinstance(it, dict) else None)
+        if path and not (p / path).exists():
+            miss += 1
+print(miss)
+PY
+)"
+            _APPLIED=0
+            [[ -f "$PROJECT/.factory/module-apply-report.json" ]] && _APPLIED="$(python3 -c "import json;print(len(json.load(open('$PROJECT/.factory/module-apply-report.json')).get('copied') or []))")"
+            if [[ "${_APPLIED:-0}" -lt 1 || "${_MISS:-99}" -gt "$_P2_MAX" ]]; then
+              echo "==> P2 dar-auto RED: modules_copied=${_APPLIED:-0} missing_manifest=${_MISS:-?} max=$_P2_MAX"
+              echo "    Önce: bash scripts/web/module-apply.sh $PROJECT"
+              echo "    veya: P2_HUMAN_ASSIST=true bash scripts/web/orchestrate.sh $PROJECT --auto"
+              if [[ ! -f "$PROJECT/.factory/hybrid-p2-start" ]]; then
+                date +%s > "$PROJECT/.factory/hybrid-p2-start"
+                bash "$ROOT/scripts/web/measure.sh" "$PROJECT" phase_human_assist true P2 || true
+              fi
+              exit 3
+            fi
+          fi
           run_agent web-core-engineer "$(p2_prompt)" P2 || wait_for "P2: web-core-engineer çalıştırılamadı"
           # A1 kapı 2: ajan QUESTIONS.json yazdıysa P1'e dön (yanıtsız kod yazma yasak).
           if questions_pending; then

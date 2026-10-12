@@ -82,20 +82,24 @@ Adımlar:
 
 Kapı: decide self-test + P1→P2'de decision.json zorunlu. İleri ölçüm: müşteri koşusu token Δ.
 
-### J2 — Modül Kütüphanesi v1 (3-4 hafta)
+### J1.5 — Tek giriş + hızlı keşif (F1) — UYGULANIR
+Hedef: saf IDE soğuk-başlangıç sürtünmesini kapat; kapıyı kaldırma.
+- `scripts/web/webrail.sh` + `/webrail` · `status.sh`
+- `mode.sh from-brief` → DISCOVERY doldur + promote (iz bırakır; expert bypass yok)
+
+### J2 — Modül Kütüphanesi v1
 Hedef: %40-50 ek tasarruf. LLM hiç çağrılmadan modül kopyalama.
 
 Kapsam (v1):
-- `.factory/modules/kvkk/` — views/legal/* + cookie-consent + 002_kvkk.sql
-- `.factory/modules/admin-crud/` — generic CRUD iskeleti (entity parametreli)
-- `.factory/modules/auth-rbac/` — login + rol tablosu + middleware
+- `.factory/modules/kvkk/` — views/legal/* + cookie-consent + SQL
+- `.factory/modules/admin-crud/` — generic CRUD iskeleti
+- `.factory/modules/auth-rbac/` — login + rol + middleware
+- `.factory/modules/seo/` — robots/sitemap/meta stub
+- `scripts/web/module-apply.sh` ← `decision.json` modules_to_apply
 
 Akış:
-- P2 prompt: "ÖNCE `.factory/modules/` kontrol et. Uyan modül varsa kopyala,
-  değişkenleri doldur. LLM ile yazma."
-- JEV: "bu görev hangi modülleri kapsıyor?" → modül listesi döner.
-
-Kapı: 3 farklı E2E, modül kullanılan kısımlarda ≥%80 token düşüşü.
+- P2: ÖNCE `module-apply.sh`; kalanı LLM / hybrid.
+- Kapı: modül hücrelerinde yazmama + self-test.
 
 ### J3 — Kalibrasyon (2-3 hafta)
 Hedef: kararlılık. `--strict` per-model eşikler, 5+ E2E dağılımı.

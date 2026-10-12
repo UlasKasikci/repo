@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "id": "auth-rbac",
+  "aliases": ["rbac", "auth"],
+  "summary": "roles/users SQL + Auth + login view + CSRF helper",
+  "tokens_avoided_est": 25000
+}

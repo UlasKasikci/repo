@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "id": "admin-crud",
+  "aliases": ["admin", "admin-crud"],
+  "summary": "generic admin list/create iskeleti",
+  "tokens_avoided_est": 15000
+}

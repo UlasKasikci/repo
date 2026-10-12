@@ -41,15 +41,22 @@ ok "e2e-runs tracked=0"
 for f in scripts/web/decide.sh scripts/web/decision.py scripts/web/run-status.sh \
          scripts/web/bootstrap-project.sh scripts/web/orchestrate.sh \
          scripts/web/qa-gate.sh scripts/web/state.sh scripts/web/mode.sh \
-         scripts/web/measure.sh \
+         scripts/web/measure.sh scripts/web/webrail.sh scripts/web/status.sh \
+         scripts/web/module-apply.sh scripts/web/p2-checklist.sh \
          .factory/contracts/decision.schema.json \
          .factory/modules/catalog.json \
+         .factory/modules/auth-rbac/manifest.json \
+         .factory/modules/kvkk/manifest.json \
+         .factory/modules/admin-crud/manifest.json \
+         .factory/modules/seo/manifest.json \
          docs/CUSTOMER-START.md docs/WEB-EDITION.md \
          docs/templates/DISCOVERY.md \
-         .cursor/commands/kesfet.md .opencode/command/kesfet.md; do
+         .cursor/commands/kesfet.md .opencode/command/kesfet.md \
+         .cursor/commands/webrail.md .opencode/command/webrail.md \
+         .cursor/commands/yama.md .opencode/command/yama.md; do
   [[ -f "$f" ]] || bad "eksik: $f"
 done
-ok "karar/handoff/müşteri/mode dosyaları mevcut"
+ok "karar/handoff/müşteri/mode/modül dosyaları mevcut"
 
 # 5) skills READY (açık uç yok)
 SKILL_OPEN=0
@@ -82,11 +89,18 @@ ok "catalog skill yolları"
 # 7) sözdizimi
 for s in scripts/web/decide.sh scripts/web/run-status.sh scripts/web/preflight.sh \
          scripts/web/state.sh scripts/web/orchestrate.sh scripts/web/bootstrap-project.sh \
-         scripts/web/mode.sh scripts/web/measure.sh; do
+         scripts/web/mode.sh scripts/web/measure.sh scripts/web/webrail.sh \
+         scripts/web/status.sh scripts/web/module-apply.sh scripts/web/p2-checklist.sh; do
   bash -n "$s" || bad "bash -n FAIL: $s"
 done
 python3 -m py_compile scripts/web/decision.py || bad "decision.py compile FAIL"
 ok "bash -n + decision.py"
+
+# paket files/ mevcut
+for pkg in auth-rbac kvkk admin-crud seo; do
+  [[ -d ".factory/modules/$pkg/files" ]] || bad "modül files yok: $pkg"
+done
+ok "modül paketleri (4)"
 
 # 8) mode kilidi duman: discovery → start RED → promote → start OK
 TMPM="$(mktemp -d)"

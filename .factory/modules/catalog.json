@@ -4,34 +4,42 @@
   "modules": {
     "rbac": {
       "skill": ".opencode/skills/auth-rbac/SKILL.md",
+      "package": ".factory/modules/auth-rbac",
       "summary": "roles/users + login + yetki middleware"
     },
     "auth": {
       "skill": ".opencode/skills/auth-rbac/SKILL.md",
-      "summary": "kimlik doğrulama (rbac ile aynı skill)"
+      "package": ".factory/modules/auth-rbac",
+      "summary": "kimlik doğrulama (rbac ile aynı paket)"
     },
     "admin": {
       "skill": ".opencode/skills/admin-crud/SKILL.md",
+      "package": ".factory/modules/admin-crud",
       "summary": "yönetim paneli CRUD"
     },
     "admin-crud": {
       "skill": ".opencode/skills/admin-crud/SKILL.md",
+      "package": ".factory/modules/admin-crud",
       "summary": "yönetim paneli CRUD"
     },
     "kvkk": {
       "skill": ".opencode/skills/kvkk-compliance/SKILL.md",
+      "package": ".factory/modules/kvkk",
       "summary": "aydınlatma + çerez rızası + user_consents"
     },
     "gdpr": {
       "skill": ".opencode/skills/kvkk-compliance/SKILL.md",
+      "package": ".factory/modules/kvkk",
       "summary": "KVKK/GDPR uyumluluk"
     },
     "seo": {
       "skill": ".opencode/skills/seo-basics/SKILL.md",
+      "package": ".factory/modules/seo",
       "summary": "robots.txt + sitemap.xml + meta"
     },
     "cart": {
       "skill": null,
+      "package": null,
       "summary": "sepet/sipariş — domain-report module_matrix zorunlu; skill yoksa domain'e özel üret"
     }
   }
