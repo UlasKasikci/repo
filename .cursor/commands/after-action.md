@@ -2,7 +2,7 @@
 
 English alias for `/cevap`.
 
-This command evaluates a Cursor execution summary using the APP-FABRIKA After Action Review contract.
+This command evaluates a Cursor execution summary using the Webrail After Action Review contract.
 
 ## Mode
 
@@ -28,4 +28,4 @@ Use:
 
 Produce the `/CEVAP REVIEW REPORT` format defined in `docs/CEVAP_REPORT_CONTRACT.md`.
 
-For Leo-specific multi-model/domain intelligence, use the Leo layer outside APP-FABRIKA core.
+For Leo-specific multi-model/domain intelligence, use the Leo layer outside Webrail core.

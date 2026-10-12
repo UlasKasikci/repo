@@ -1,4 +1,4 @@
--- App-Fabrika Web Edition — veritabani.sql (sql-dump.sh ile üretildi)
+-- Webrail — veritabani.sql (sql-dump.sh ile üretildi)
 -- Kaynak: SQL/migrations/schema (2 dosya) + SQL/migrations/seed (1 dosya)
 -- Sürüm Tarihi: yerel · Kaynak Hash: 82c1e54fe825
 -- Deterministik: saat damgası yok — aynı kaynak = byte-identical çıktı
@@ -8,7 +8,7 @@
 
 -- ============ SCHEMA ============
 -- source: SQL/migrations/schema/001_core.sql
--- App-Fabrika Web Edition — e2e-iletisim çekirdek şeması (Agent 2, P2)
+-- Webrail — e2e-iletisim çekirdek şeması (Agent 2, P2)
 -- RBAC enjeksiyonu: roles (Admin/Moderator/User) + users.role_id FK
 -- Motor: InnoDB · Karakter seti: utf8mb4 + utf8mb4_unicode_ci · B-Tree index
 
@@ -58,7 +58,7 @@ CREATE TABLE messages (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- source: SQL/migrations/schema/002_kvkk.sql
--- App-Fabrika Web Edition — e2e-iletisim KVKK/GDPR uyum şeması (Agent 2, P2)
+-- Webrail — e2e-iletisim KVKK/GDPR uyum şeması (Agent 2, P2)
 -- 6698 sayılı KVKK m.5/1 (açık rıza) + m.11 (ilgili kişinin hakları) kapsamında:
 --   user_consents     → açık rıza kaydı (çerez onay banner'ı + yasal metin onayları)
 --   anonymization_log → anonimleştirme izi (users fiziksel silinmez; iz bırakılır)
@@ -106,7 +106,7 @@ CREATE TABLE anonymization_log (
 
 -- ============ SEED ============
 -- source: SQL/migrations/seed/001_seed.sql
--- App-Fabrika Web Edition — e2e-iletisim seed verisi (Agent 2, P2)
+-- Webrail — e2e-iletisim seed verisi (Agent 2, P2)
 -- 4 satır: 3 rol (RBAC katmanı) + 1 admin hesabı (PASSWORD_ARGON2ID hash).
 -- NOT: admin@example.com / Fabrika!2026 bir DEMO hesabıdır — canlıya almadan önce
 -- parola mutlaka değiştirilmelidir (Argon2id hash, password_verify ile doğrulanır).

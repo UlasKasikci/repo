@@ -8,7 +8,7 @@ final class Database
     public function pdo(): PDO
     {
         if ($this->pdo === null) {
-            $dsn = 'mysql:host=127.0.0.1;dbname=appfabrika_web;charset=utf8mb4';
+            $dsn = 'mysql:host=127.0.0.1;dbname=webrail_web;charset=utf8mb4';
             $this->pdo = new PDO($dsn, 'app_user', '', [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

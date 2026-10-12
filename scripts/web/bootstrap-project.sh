@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# App-Fabrika Web Edition — temiz bootstrap: fabrika iskeletini yeni projeye kopyalar
+# Webrail — temiz bootstrap: Webrail iskeletini yeni projeye kopyalar
 #
 # Kullanım:
 #   bash scripts/web/bootstrap-project.sh <hedef_dizini> [--yes] [--force] [--allow-existing-git]
@@ -20,7 +20,7 @@ set -euo pipefail
 #   .opencode/{agent,command}, docs/**, CLAUDE.md, .cursorrules, antigravity.yaml,
 #   opencode.json, .gitignore
 # KOPYALANMAZ:
-#   tests/ (fabrika fixture), .github/ (fabrika CI), scripts/web/{self-test,bootstrap-project}.sh,
+#   tests/ (Webrail fixture), .github/ (Webrail CI), scripts/web/{self-test,bootstrap-project}.sh,
 #   .factory/{context,e2e-runs,test-runs,freeze.json} + runtime (web-state.json, domain-report.json,
 #   lighthouse-report.json, smoke-report.json, qa/debug/packaging-report.json,
 #   yukleme-{staging,archive,failed}/), .cursor/{skills,snapshots,history,cache,mcp.json},
@@ -28,7 +28,7 @@ set -euo pipefail
 #   node_modules/, Yukleme/, ._*, .DS_Store
 #
 # Git izi: hedefte taze `git init`; ilk commit
-#   "bootstrap from app-fabrika@<12-hex>"  (fabrika deposunun HEAD'i — sürüm izlenebilirliği)
+#   "bootstrap from webrail@<12-hex>"  (Webrail deposunun HEAD'i — sürüm izlenebilirliği)
 
 PROJECT="${1:-}"
 shift || true
@@ -66,7 +66,7 @@ if [[ -e "$PROJECT" && ! -d "$PROJECT" ]]; then
   exit 1
 fi
 # Tur 2-16 B.1 (ChatGPT 2.2): veri bütünlüğü ön kontrolleri — kopyalamadan ÖNCE.
-# 1) hedef == fabrika deposu → DUR  2) hedef fabrikanın İÇİNDE → DUR
+# 1) hedef == Webrail deposu → DUR  2) hedef Webrail’in İÇİNDE → DUR
 # 3) hedefte mevcut .git → DUR (--allow-existing-git ile geçilir; geçildiğinde
 #    stage edilmiş değişiklik varsa yine DUR — bootstrap commit'e karışmasın).
 PROJ_N="${PROJECT%/}"
@@ -77,12 +77,12 @@ elif [[ -d "$(dirname "$PROJ_N")" ]]; then
   PROJ_ABS="$(cd "$(dirname "$PROJ_N")" && pwd)/$(basename "$PROJ_N")"
 fi
 if [[ "$PROJ_ABS" == "$SOURCE" ]]; then
-  echo "bootstrap: hedef fabrika deposunun KENDİSİ — duruldu: $PROJ_ABS" >&2
+  echo "bootstrap: hedef Webrail deposunun KENDİSİ — duruldu: $PROJ_ABS" >&2
   exit 1
 fi
 case "$PROJ_ABS" in
   "$SOURCE"/*)
-    echo "bootstrap: hedef fabrika deposunun İÇİNDE — duruldu: $PROJ_ABS (fabrika dışı bir dizin seçin)" >&2
+    echo "bootstrap: hedef Webrail deposunun İÇİNDE — duruldu: $PROJ_ABS (Webrail dışı bir dizin seçin)" >&2
     exit 1
     ;;
 esac
@@ -259,9 +259,9 @@ if command -v git >/dev/null 2>&1; then
     exit 1
   fi
   git -C "$PROJECT" config user.name >/dev/null 2>&1 \
-    || git -C "$PROJECT" config user.name "App-Fabrika Bootstrap"
+    || git -C "$PROJECT" config user.name "Webrail Bootstrap"
   git -C "$PROJECT" config user.email >/dev/null 2>&1 \
-    || git -C "$PROJECT" config user.email "bootstrap@app-fabrika.local"
+    || git -C "$PROJECT" config user.email "bootstrap@webrail.local"
   # F2: yalnız bootstrap'ın yönettiği dosyaları add et (add -A DEĞİL).
   # --force'ta hedefte bootstrap dışı dosya varsa UYAR + atla (commit'e girmez).
   BOOT_MANIFEST="$PROJECT/.factory/.bootstrap-manifest"
@@ -296,9 +296,9 @@ if command -v git >/dev/null 2>&1; then
   if git -C "$PROJECT" diff --cached --quiet 2>/dev/null; then
     echo "  git: içerik aynı — commit atlanmadı (mevcut iz korundu)"
   else
-    git -C "$PROJECT" commit -qm "bootstrap from app-fabrika@${GIT_HASH}"
+    git -C "$PROJECT" commit -qm "bootstrap from webrail@${GIT_HASH}"
     git -C "$PROJECT" branch -M main 2>/dev/null || true
-    echo "  git: ilk commit 'bootstrap from app-fabrika@${GIT_HASH}' (main)"
+    echo "  git: ilk commit 'bootstrap from webrail@${GIT_HASH}' (main)"
   fi
 else
   echo "  git: kurulu değil — iz bırakılmadı" >&2

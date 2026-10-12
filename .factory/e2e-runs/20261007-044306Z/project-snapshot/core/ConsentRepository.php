@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * App-Fabrika Web Edition — user_consents (açık rıza) erişim katmanı.
+ * Webrail — user_consents (açık rıza) erişim katmanı.
  *
  * KVKK/GDPR açık rıza kayıtları: her rıza amacı, sürümü ve IP hash'i ile saklanır.
  */

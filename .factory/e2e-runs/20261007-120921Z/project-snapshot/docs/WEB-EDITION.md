@@ -1,9 +1,9 @@
-# APP-FABRIKA WEB EDITION — Teknik Spesifikasyon
+# WEBRAIL — Teknik Spesifikasyon
 
 **Sürüm:** 1.0.0 · **Mod:** deterministic · **Stack:** Sade PHP 8.1+ MVC + MySQL 8.0+/MariaDB
 **Kapsam:** Yalnızca Web. Mobil (Flutter, Compose, React Native, Gradle, APK) kod üretimi yasaktır.
 
-Bu dosya App-Fabrika Web Edition'in **kanonik** spesifikasyonudur. Tüm IDE/CLI konfigürasyonları
+Bu dosya Webrail'in **kanonik** spesifikasyonudur. Tüm IDE/CLI konfigürasyonları
 (`.cursorrules`, `CLAUDE.md`, `opencode.json`, `antigravity.yaml`) bu dosyaya bağlanır; çelişen
 talimat geçersizdir.
 
@@ -312,7 +312,7 @@ ve `debug config` öncesi `find . -name '._*' -delete` ile temizle.
 - Lighthouse (raporlayıcı): `bash scripts/web/lighthouse-verify.sh <proje> [--serve] [--strict]`
 - Temiz bootstrap: `bash scripts/web/bootstrap-project.sh <hedef> [--yes] [--force]`
   (dry-run default; kopya/hariç listesi betiğin baş yorumunda; ilk commit
-  `bootstrap from app-fabrika@<12-hex>` — fabrika sürümü izlenebilir)
+  `bootstrap from webrail@<12-hex>` — fabrika sürümü izlenebilir)
 - Smoke test: `bash scripts/web/smoke-test.sh <dizin> | --url <canlı> [--strict]`
   (`SMOKE_PORT`/`SMOKE_PATHS`/`SMOKE_REPORT` env; paketleme içinde otomatik çağrılır)
 - Öz-test: `bash scripts/web/self-test.sh` (CI ile aynı sahne; phpstan+phpunit+eslint gerektirir)

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://app-fabrika.local/contracts/p1-domain-report.schema.json",
-  "title": "App-Fabrika P1 Domain Report",
+  "$id": "https://webrail.local/contracts/p1-domain-report.schema.json",
+  "title": "Webrail P1 Domain Report",
   "description": "P1 → P2 geçiş kapısı: Domain Architect analiz çıktısı (.factory/domain-report.json)",
   "type": "object",
   "required": [

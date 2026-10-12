@@ -1,7 +1,7 @@
 <?php
 
 /**
- * App-Fabrika Web Edition — KVKK açık rıza çerez onay bileşeni.
+ * Webrail — KVKK açık rıza çerez onay bileşeni.
  *
  * Banner gizli başlar; assets/js/cookie-consent.js saklanan tercihe göre
  * gösterir. Açık rıza (kabul), ret (yalnızca zorunlu) ve tercih yönetimi

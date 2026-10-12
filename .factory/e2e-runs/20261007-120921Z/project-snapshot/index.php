@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * App-Fabrika Web Edition — front-controller.
+ * Webrail — front-controller.
  *
  * Tüm HTTP istekleri (.htaccess rewrite ile) bu dosyaya yönlendirilir.
  * bootstrap.php: otomatik yükleyici + yardımcı fonksiyonlar + güvenli

@@ -1,8 +1,9 @@
 > Bu ajan docs/MASTER-PROMPT-V2.md'deki K1-K8 kurallarına tabidir.
 
-# CLAUDE CODE EXECUTION DIRECTIVES — App-Fabrika Web Edition
+# CLAUDE CODE EXECUTION DIRECTIVES — Webrail
 
-**Role:** FAANG-grade Senior Web Architect & Automator.
+**Role:** Senior Web Architect & Automator for the Webrail control plane.
+**Canonical repository:** `https://github.com/UlasKasikci/repo` (sole remote: `origin`).
 **Mode:** deterministic — canonical spec: `docs/WEB-EDITION.md` · state contract:
 `.factory/web-state-graph.json` · never invent paths or features that are not in the spec.
 

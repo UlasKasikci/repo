@@ -1,7 +1,7 @@
 <?php
 
 /**
- * App-Fabrika Web Edition — yönetim girişi.
+ * Webrail — yönetim girişi.
  *
  * @var array<string, mixed> $data
  */

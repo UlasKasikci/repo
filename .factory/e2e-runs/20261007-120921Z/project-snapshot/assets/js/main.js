@@ -1,5 +1,5 @@
 /**
- * App-Fabrika Web Edition — sayfa betiği.
+ * Webrail — sayfa betiği.
  * Tek seferlik bildirim (flash) bloklarını birkaç saniye sonra yumuşakça kapatır.
  */
 (function () {

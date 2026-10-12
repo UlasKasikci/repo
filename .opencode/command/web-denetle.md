@@ -1,5 +1,5 @@
 ---
-description: App-Fabrika P3 — qa-gate.sh --record çalıştır, 0 Error 0 Warning ver, yoksa debug_report.json ile dur ($ARGUMENTS = proje dizini, boşsa .)
+description: Webrail P3 — qa-gate.sh --record çalıştır, 0 Error 0 Warning ver, yoksa debug_report.json ile dur ($ARGUMENTS = proje dizini, boşsa .)
 ---
 
 Proje dizini: `$ARGUMENTS` (boşsa `.`).

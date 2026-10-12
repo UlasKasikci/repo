@@ -4,13 +4,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="App-Fabrika Web Edition örnek proje">
-  <title>App-Fabrika Web Edition — Örnek</title>
+  <meta name="description" content="Webrail örnek proje">
+  <title>Webrail — Örnek</title>
   <link rel="stylesheet" href="assets/css/app.css">
 </head>
 <body>
   <main>
-    <h1>App-Fabrika Web Edition — Örnek</h1>
+    <h1>Webrail — Örnek</h1>
 
     <form method="post" action="">
       <input type="hidden" name="csrf_token" value="<?= htmlspecialchars((string)($_SESSION['csrf_token'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">

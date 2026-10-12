@@ -1,7 +1,7 @@
 <?php
 
 /**
- * App-Fabrika Web Edition — yönetim: kullanıcılar (yalnız Admin, RBAC).
+ * Webrail — yönetim: kullanıcılar (yalnız Admin, RBAC).
  *
  * @var array<string, mixed> $data
  */

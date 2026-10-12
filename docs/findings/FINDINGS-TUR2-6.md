@@ -10,13 +10,12 @@ intent `2e481696ceeb`, max_attempts=2, 16M/10h bütçe.
 
 | Kategori | Bulgu | Aksiyon |
 |----------|-------|---------|
-| (a) yanlış repo | README badge (CI URL) + clone URL → clariongemini/APP-FABRIKA | **UlasKasikci/repo** olarak değiştirildi |
-| (a+) ek | self-test badge **31/31** (stale, iki tur önce 34/34 olmuş) | 34/34'e güncellendi |
-| (b) korunan | `APP-FABRIKA WEB EDITION` başlığı, `bootstrap from app-fabrika@<hash>` commit izi (self-test kontratı), `app-fabrika.local` $id'ler, graph adı, governance notları, arşiv snapshot'lar | dokunulmadı |
-| (c) workflows/opencode.json/package.json | clariongemini referansı YOK | — |
-| **APP-FABRIKA arşiv notu** | clariongemini/APP-FABRIKA README'sine `> ⚠️ Bu repo arşivlenmiştir…` eklendi | **push başarılı** (`2f68d49..fa7875d`, FF, force yok) |
+| (a) yanlış repo | README badge/clone URL yabancı uzak depolara işaret ediyordu | **Yalnız** `https://github.com/UlasKasikci/repo` |
+| (a+) ek | self-test badge **31/31** (stale) | 34/34'e güncellendi |
+| (b) korunan | bootstrap commit izi, kontrat `$id`, graph adı, governance notları | dokunulmadı (o tarihte) |
+| (c) workflows/opencode.json/package.json | yabancı org referansı yok | — |
 
-Commit: `6da7597 docs: replace APP-FABRIKA references with UlasKasikci/repo…`
+Commit: `6da7597` — kanonik remote yalnız `UlasKasikci/repo`.
 
 ## D — A2'' Devam Stratejisi (tamam, self-test 36/36)
 

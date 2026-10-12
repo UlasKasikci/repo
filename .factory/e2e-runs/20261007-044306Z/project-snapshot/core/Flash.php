@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * App-Fabrika Web Edition — oturum bazlı flash mesaj kuyruğu.
+ * Webrail — oturum bazlı flash mesaj kuyruğu.
  *
  * Form hataları / başarı bildirimleri bir sonraki istekte tek kullanımlık okunur.
  */

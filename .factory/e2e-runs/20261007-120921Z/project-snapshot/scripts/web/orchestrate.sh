@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# App-Fabrika Web Edition — Orkestratör (State Graph faz sürücüsü)
+# Webrail — Orkestratör (State Graph faz sürücüsü)
 # Kontrat: .factory/web-state-graph.json · Şemalar: .factory/contracts/*.schema.json
 # Kullanım: bash scripts/web/orchestrate.sh <proje_dizini> [--auto] [--strict]
 #   --auto   eksik LLM adımlarını `opencode run --format json --agent ...` ile
@@ -443,7 +443,7 @@ p1_prompt() {
   local c
   c="$(compliance_mode)"
   cat <<EOF
-P1 (Domain & Scope) analizini uygula — App-Fabrika Web Edition.
+P1 (Domain & Scope) analizini uygula — Webrail.
 Proje dizini: $PROJECT
 Kanonik şartname: $ROOT/docs/WEB-EDITION.md (§3 proaktif domain denetimi: RBAC, sepet/sipariş, SEO/KVKK).
 Çıktıyı MUTLAKA UTF-8 JSON olarak şu dosyaya yaz: $PROJECT/.factory/domain-report.json
@@ -467,7 +467,7 @@ p2_prompt() {
   local c
   c="$(compliance_mode)"
   cat <<EOF
-P2 (Code Generation) — App-Fabrika Web Edition MVC iskeletini tamamla.
+P2 (Code Generation) — Webrail MVC iskeletini tamamla.
 Proje dizini: $PROJECT
 $WRITE_RULE
 Girdi kontratı: $PROJECT/.factory/domain-report.json (P1 çıktısı) — entities[] tablo

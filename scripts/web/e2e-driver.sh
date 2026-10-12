@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# App-Fabrika E2E driver — orchestrate --auto attempt döngüsü + Faz 1.4 L3
+# Webrail E2E driver — orchestrate --auto attempt döngüsü + Faz 1.4 L3
 # att0-0-write watchdog: P2 fazında dosya-değişikliği idle_max saniye durursa
 # çocuklar + orchestrate TERM edilir, deneme retry'a sayılır (WASTE-AUDIT §2-A:
 # att0-0-write erken dönüşleri 6.2 saat duvar israfı — E2E-3 275dk / ab1 71dk).

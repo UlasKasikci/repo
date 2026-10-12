@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# App-Fabrika Web Edition — State Graph kontrolcüsü
+# Webrail — State Graph kontrolcüsü
 # Kontrat: .factory/web-state-graph.json  ·  Durum: <proje>/.factory/web-state.json
 # Exit: 0 = OK · 1 = geçersiz geçiş/hata · 2 = HALT
 

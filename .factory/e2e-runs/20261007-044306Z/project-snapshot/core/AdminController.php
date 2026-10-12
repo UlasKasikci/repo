@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * App-Fabrika Web Edition — yönetim paneli denetleyicisi (rol korumalı).
+ * Webrail — yönetim paneli denetleyicisi (rol korumalı).
  *
  * /admin/mesajlar   → Admin + Moderatör (listeleme, durum güncelleme)
  * /admin/kullanicilar → yalnız Admin (kullanıcı listesi)

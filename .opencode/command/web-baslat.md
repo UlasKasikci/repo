@@ -1,12 +1,12 @@
 ---
-description: App-Fabrika P1 — domain analizi başlat, state'i P1'e al, proaktif eksik modül denetimini çalıştır ($ARGUMENTS = proje dizini, boşsa .)
+description: Webrail P1 — domain analizi başlat, state'i P1'e al, proaktif eksik modül denetimini çalıştır ($ARGUMENTS = proje dizini, boşsa .)
 ---
 
 Proje dizini: `$ARGUMENTS` (boşsa `.`).
 
 0. Proje henüz hiç yoksa iskeleti kur: `bash scripts/web/bootstrap-project.sh <hedef>`
    — önce DRY-RUN (kopya/hariç planı, hedefe dokunmaz), onaylanınca `--yes` (dolu hedefe
-   `--force`). İlk commit `bootstrap from app-fabrika@<hash>` fabrika izini taşır.
+   `--force`). İlk commit `bootstrap from webrail@<hash>` fabrika izini taşır.
    (Bootstrapped boş projede ilk `qa-gate.sh` P2 öncesi kasıtlı FAIL verir — yapısal
    dosyalar + phpstan/phpunit yapılandırması zorunlu; bu beklenen durumdur.)
 1. `bash scripts/web/state.sh status $ARGUMENTS || bash scripts/web/state.sh start $ARGUMENTS`

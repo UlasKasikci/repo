@@ -1,4 +1,4 @@
--- App-Fabrika Web Edition — veritabani.sql (sql-dump.sh ile üretildi)
+-- Webrail — veritabani.sql (sql-dump.sh ile üretildi)
 -- Kaynak: SQL/migrations/schema (2 dosya) + SQL/migrations/seed (1 dosya)
 -- Sürüm Tarihi: 2026-10-07 · Kaynak Hash: 77aea4567e64
 -- Deterministik: saat damgası yok — aynı kaynak = byte-identical çıktı
@@ -8,7 +8,7 @@
 
 -- ============ SCHEMA ============
 -- source: SQL/migrations/schema/001_core_schema.sql
--- App-Fabrika Web Edition — çekirdek şema (roles, users, messages)
+-- Webrail — çekirdek şema (roles, users, messages)
 -- Motor: InnoDB · Karakter seti: utf8mb4 · Index: B-Tree (InnoDB varsayılanı)
 -- Sıra: roles → users → messages (FK bağımlılık sırasına göre)
 
@@ -54,7 +54,7 @@ CREATE TABLE messages (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- source: SQL/migrations/schema/002_kvkk.sql
--- App-Fabrika Web Edition — KVKK bloğu (compliance=kvkk)
+-- Webrail — KVKK bloğu (compliance=kvkk)
 -- user_consents: açık rıza kaydı — P1 consent_type karşılığı `purpose`;
 --   user_id FK cascade (rıza verilen kullanıcı silindiğinde rıza kaydı da silinir);
 --   kullanıcı hesabı olmayan ziyaretçiler (iletişim formu) için user_id NULL kalır.
@@ -97,7 +97,7 @@ CREATE TABLE anonymization_log (
 
 -- ============ SEED ============
 -- source: SQL/migrations/seed/100_seed.sql
--- App-Fabrika Web Edition — seed verileri
+-- Webrail — seed verileri
 -- Rollere Admin/Moderatör/Kullanıcı katmanı (RBAC, P1 domain-report enjeksiyonu).
 -- Seed parola: Fabrika!2026 (PASSWORD_ARGON2ID ile üretilmiş tek yönlü hash —
 --   düz metin parola dump'ta asla bulunmaz; canlıya alınmadan değiştirilmelidir).

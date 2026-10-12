@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * App-Fabrika Web Edition — uygulama çekirdeği (router + dispatch).
+ * Webrail — uygulama çekirdeği (router + dispatch).
  *
  * Yol normalizasyonu (sondaki eğik çizgi, url-decode) ve HTTP durum kodları
  * buradan yönetilir; 404 fallback tek noktadan üretilir.

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# App-Fabrika — frontmatter kontrat doğrulayıcı (qa-gate 14. kontrol / self-test 0).
+# Webrail — frontmatter kontrat doğrulayıcı (qa-gate 14. kontrol / self-test 0).
 # Gerekçe (K6 istisnası — somut bug): K1-K8 ref satırı frontmatter'ın ÜSTÜNE eklenince
 # opencode mode/permission parse'ı sessiz kırıldı (14 dosya; A/B kanıtı: qa-gatekeeper
 # permission.edit=deny kaybı). Kural eklemek kontratı bozmasın diye bu doğrulayıcı

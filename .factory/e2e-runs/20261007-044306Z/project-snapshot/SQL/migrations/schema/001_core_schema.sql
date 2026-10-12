@@ -1,4 +1,4 @@
--- App-Fabrika Web Edition — çekirdek şema (roles, users, messages)
+-- Webrail — çekirdek şema (roles, users, messages)
 -- Motor: InnoDB · Karakter seti: utf8mb4 · Index: B-Tree (InnoDB varsayılanı)
 -- Sıra: roles → users → messages (FK bağımlılık sırasına göre)
 

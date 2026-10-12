@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * App-Fabrika Web Edition — CSRF token üretimi ve doğrulaması.
+ * Webrail — CSRF token üretimi ve doğrulaması.
  *
  * Token oturum bazlıdır; hash_equals ile zaman-güvenli karşılaştırma yapılır.
  * Tüm POST istekleri bu doğrulamadan geçmek zorundadır.

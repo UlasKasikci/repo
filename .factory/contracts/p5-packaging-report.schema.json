@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://app-fabrika.local/contracts/p5-packaging-report.schema.json",
-  "title": "App-Fabrika P5 Packaging Report",
+  "$id": "https://webrail.local/contracts/p5-packaging-report.schema.json",
+  "title": "Webrail P5 Packaging Report",
   "description": "P5 paketleme çıktısı (package-yukleme.sh): <proje>/packaging-report.json",
   "type": "object",
   "required": [

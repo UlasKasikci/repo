@@ -1,5 +1,5 @@
 ---
-description: App-Fabrika P5 — QA PASS ise Yukleme/ üret, sha256 manifestli teslim raporunu sun ($ARGUMENTS = proje dizini, boşsa .)
+description: Webrail P5 — QA PASS ise Yukleme/ üret, sha256 manifestli teslim raporunu sun ($ARGUMENTS = proje dizini, boşsa .)
 ---
 
 Proje dizini: `$ARGUMENTS` (boşsa `.`).

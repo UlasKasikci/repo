@@ -1,5 +1,5 @@
 /**
- * App-Fabrika Web Edition — KVKK çerez onay bileşeni (açık rıza).
+ * Webrail — KVKK çerez onay bileşeni (açık rıza).
  *
  * Davranış:
  *  - Tercih yoksa onay banner'ı gösterilir (açık rıza).

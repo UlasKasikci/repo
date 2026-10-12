@@ -1,4 +1,4 @@
--- App-Fabrika Web Edition — seed verileri
+-- Webrail — seed verileri
 -- Rollere Admin/Moderatör/Kullanıcı katmanı (RBAC, P1 domain-report enjeksiyonu).
 -- Seed parola: Fabrika!2026 (PASSWORD_ARGON2ID ile üretilmiş tek yönlü hash —
 --   düz metin parola dump'ta asla bulunmaz; canlıya alınmadan değiştirilmelidir).

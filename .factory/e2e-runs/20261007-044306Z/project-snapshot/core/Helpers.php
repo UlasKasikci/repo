@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * App-Fabrika Web Edition — global yardımcı fonksiyonlar.
+ * Webrail — global yardımcı fonksiyonlar.
  *
  * Tüm çıktılar htmlspecialchars üzerinden kaçırılır (XSS koruması).
  */

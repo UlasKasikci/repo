@@ -1,4 +1,4 @@
-# MASTER PROMPT v2 — App-Fabrika Web Edition
+# MASTER PROMPT v2 — Webrail
 # JEV Entegrasyon Fazı ve Stratejik Karar Belgesi
 
 ## 0. Bu Belgenin Rolü

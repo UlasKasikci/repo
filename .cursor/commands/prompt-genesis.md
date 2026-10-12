@@ -6,10 +6,10 @@ Bu komut proje başlatmaz; önce workspace intent kilidi oluşturur.
 
 Bu workspace'in rolü nedir?
 
-1. `factory-template` — APP-FABRIKA standart kaynağı; product genesis yok
+1. `factory-template` — Webrail standart kaynağı; product genesis yok
 2. `android-app` — Yeni veya bu workspace'te Android uygulama
 3. `web-app` — Web uygulaması (Leo Compatibility Layer veya ayrı factory)
-4. `laravel-mysql-fullstack` — Laravel/MySQL full-stack (Leo layer; APP-FABRIKA core scaffold üretmez)
+4. `laravel-mysql-fullstack` — Laravel/MySQL full-stack (Leo layer; Webrail core scaffold üretmez)
 5. `existing-project-import` — Mevcut kod tabanına standart aktarım
 6. `test-sandbox` — Geçici deneme; kalıcı scaffold için promotion gerekir
 
@@ -19,7 +19,7 @@ Bu workspace'in rolü nedir?
 - Kullanıcı explicit onay vermeden `.factory/project-intent.json` yazma.
 - `android-app` için `project_name` ve `package_name` zorunludur.
 - `web-app` için `package_name` zorunlu değildir.
-- `laravel-mysql-fullstack` için APP-FABRIKA core scaffold üretmez; Leo Compatibility Layer veya ayrı factory gerekir.
+- `laravel-mysql-fullstack` için Webrail core scaffold üretmez; Leo Compatibility Layer veya ayrı factory gerekir.
 - `factory-template` intent product `/baslat`, `init-new-app` ve scaffold işlemlerini bloke eder.
 - `test-sandbox` kalıcı scaffold için yeterli değildir; explicit promotion gerekir.
 

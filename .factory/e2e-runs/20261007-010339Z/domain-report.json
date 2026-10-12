@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "e2e-iletisim",
   "compliance": "kvkk",
-  "analyzer": "Agent 1 — Requirement & Domain Architect (App-Fabrika Web Edition)",
+  "analyzer": "Agent 1 — Requirement & Domain Architect (Webrail)",
   "generated_at": "2026-10-07",
   "intent_source": ".factory/project-intent.json",
   "entities": [

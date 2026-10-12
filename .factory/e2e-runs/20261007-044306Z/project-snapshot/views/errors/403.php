@@ -1,7 +1,7 @@
 <?php
 
 /**
- * App-Fabrika Web Edition — 403 hatası (yetkisiz erişim / geçersiz CSRF).
+ * Webrail — 403 hatası (yetkisiz erişim / geçersiz CSRF).
  *
  * @var array<string, mixed> $data
  */

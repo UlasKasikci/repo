@@ -1,8 +1,8 @@
-# Plan: App-Fabrika Web Edition — Tam Sistem Uygulaması
+# Plan: Webrail — Tam Sistem Uygulaması
 
 ## Bağlam & Kararlar
 
-Repo şu an HEAD'de Android fabrikası (v3.1.0, FROZEN); çalışma ağacında `AGENTS.md`, `README.md`, `docs/`, `scripts/`, `templates/`, `governance/`, `APP-FABRIKASI/` dahil **588 takip edilen dosya diskten silinmiş** (commit edilmemiş).
+Repo şu an HEAD'de Android fabrikası (v3.1.0, FROZEN); çalışma ağacında `AGENTS.md`, `README.md`, `docs/`, `scripts/`, `templates/`, `governance/`, `WebrailSI/` dahil **588 takip edilen dosya diskten silinmiş** (commit edilmemiş).
 
 Kullanıcı kararları:
 1. **Kapsam:** Tam sistem — 4 IDE/CLI config matrisi + `.cursor/` State Graph governance (kural/ajan/komut) + çalıştırılabilir QA & paketleme scriptleri.

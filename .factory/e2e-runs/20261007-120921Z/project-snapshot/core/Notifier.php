@@ -34,7 +34,7 @@ final class Notifier
         $headers = implode("\r\n", [
             'From: no-reply@example.com',
             'Content-Type: text/plain; charset=UTF-8',
-            'X-Mailer: App-Fabrika-Web-Edition',
+            'X-Mailer: Webrail-Web-Edition',
         ]);
 
         $sent = @mail($to, $subject, $body, $headers);

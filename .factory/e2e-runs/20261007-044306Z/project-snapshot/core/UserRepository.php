@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * App-Fabrika Web Edition — users/roles tablosu erişim katmanı.
+ * Webrail — users/roles tablosu erişim katmanı.
  *
  * Tüm sorgular PDO prepared statement; parola hash'i yalnız doğrulama için okunur,
  * arayüze asla basılmaz.

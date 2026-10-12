@@ -1,4 +1,4 @@
-# GERÇEK PROJE KOŞU KILAVUZU — App-Fabrika Web Edition
+# GERÇEK PROJE KOŞU KILAVUZU — Webrail
 
 Fabrikayı sıfırdan gerçek bir domain'e koymak için adım adım, kopyalanabilir
 komutlar. Tüm sözdizimleri betik `usage` satırlarıyla doğrulanmıştır

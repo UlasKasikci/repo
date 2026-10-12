@@ -1,4 +1,4 @@
--- App-Fabrika Web Edition — e2e-iletisim çekirdek şeması (Agent 2, P2)
+-- Webrail — e2e-iletisim çekirdek şeması (Agent 2, P2)
 -- RBAC enjeksiyonu: roles (Admin/Moderator/User) + users.role_id FK
 -- Motor: InnoDB · Karakter seti: utf8mb4 + utf8mb4_unicode_ci · B-Tree index
 

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * App-Fabrika Web Edition — iletişim formu denetleyicisi.
+ * Webrail — iletişim formu denetleyicisi.
  *
  * POST akışı: CSRF doğrulaması → doğrulama → mesaj kaydı (PDO prepared)
  * → açık rıza kaydı (user_consents) → flash ile yönlendirme.
@@ -16,7 +16,7 @@ final class ContactController extends Controller
     public function form(): void
     {
         $this->view('contact', [
-            'pageTitle' => 'İletişim · App-Fabrika',
+            'pageTitle' => 'İletişim · Webrail',
             'pageDesc' => 'Bize yazın — talebinizi en kısa sürede değerlendirip dönüş yapalım.',
             'flash' => Flash::take(),
         ]);
@@ -92,6 +92,6 @@ final class ContactController extends Controller
             return null;
         }
 
-        return hash('sha256', $ip . '|appfabrika-contact');
+        return hash('sha256', $ip . '|webrail-contact');
     }
 }

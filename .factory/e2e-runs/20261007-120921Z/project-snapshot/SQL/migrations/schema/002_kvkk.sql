@@ -1,4 +1,4 @@
--- App-Fabrika Web Edition — e2e-iletisim KVKK/GDPR uyum şeması (Agent 2, P2)
+-- Webrail — e2e-iletisim KVKK/GDPR uyum şeması (Agent 2, P2)
 -- 6698 sayılı KVKK m.5/1 (açık rıza) + m.11 (ilgili kişinin hakları) kapsamında:
 --   user_consents     → açık rıza kaydı (çerez onay banner'ı + yasal metin onayları)
 --   anonymization_log → anonimleştirme izi (users fiziksel silinmez; iz bırakılır)

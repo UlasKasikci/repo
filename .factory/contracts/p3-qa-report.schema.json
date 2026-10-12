@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://app-fabrika.local/contracts/p3-qa-report.schema.json",
-  "title": "App-Fabrika P3 QA Report",
+  "$id": "https://webrail.local/contracts/p3-qa-report.schema.json",
+  "title": "Webrail P3 QA Report",
   "description": "P3 QA kapısı çıktısı (qa-gate.sh her koşuda üretir): <proje>/qa-report.json",
   "type": "object",
   "required": [

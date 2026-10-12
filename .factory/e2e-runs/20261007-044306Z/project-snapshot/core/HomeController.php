@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * App-Fabrika Web Edition — anasayfa ve yasal sayfa denetleyicisi.
+ * Webrail — anasayfa ve yasal sayfa denetleyicisi.
  */
 
 final class HomeController extends Controller
@@ -11,7 +11,7 @@ final class HomeController extends Controller
     public function index(): void
     {
         $this->view('home', [
-            'pageTitle' => 'App-Fabrika — Kurumsal İletişim',
+            'pageTitle' => 'Webrail — Kurumsal İletişim',
             'pageDesc' => 'Kurumsal iletişim sitesi: taleplerinizi iletin, yönetim panelimizle hızlı dönüş yapalım.',
         ]);
     }
@@ -49,7 +49,7 @@ final class HomeController extends Controller
     private function renderLegal(string $page, string $title, string $desc): void
     {
         $this->view('legal/' . $page, [
-            'pageTitle' => $title . ' · App-Fabrika',
+            'pageTitle' => $title . ' · Webrail',
             'pageDesc' => $desc,
             'legalPage' => $page,
         ]);

@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# App-Fabrika — C.2 (Tur 2-15): insan ölçümü satırı ekleme yardımcısı.
+# Webrail — C.2 (Tur 2-15): insan ölçümü satırı ekleme yardımcısı.
 # Gerçek proje ölçümü için gerekli opsiyonel alanlar metrics.jsonl'e buradan
 # yazılır (agent satırlarından ayrık `kind: measure` satırı — append-only).
 #

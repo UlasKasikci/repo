@@ -1,7 +1,7 @@
 <?php
 
 /**
- * App-Fabrika Web Edition — ortak sayfa başlığı (layout/header).
+ * Webrail — ortak sayfa başlığı (layout/header).
  *
  * @var array<string, mixed> $data
  */
@@ -17,7 +17,7 @@ $isAdmin = $isLoggedIn && Auth::isAdmin();
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="<?= e($data['pageDesc'] ?? '') ?>">
-  <title><?= e($data['pageTitle'] ?? 'App-Fabrika') ?></title>
+  <title><?= e($data['pageTitle'] ?? 'Webrail') ?></title>
   <link rel="stylesheet" href="<?= e(url('/assets/css/style.css')) ?>">
 </head>
 <body>

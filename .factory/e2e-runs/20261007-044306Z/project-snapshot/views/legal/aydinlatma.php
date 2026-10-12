@@ -1,7 +1,7 @@
 <?php
 
 /**
- * App-Fabrika Web Edition — KVKK Aydınlatma Metni (6698 sayılı KVKK m.10).
+ * Webrail — KVKK Aydınlatma Metni (6698 sayılı KVKK m.10).
  *
  * @var array<string, mixed> $data
  */
@@ -20,7 +20,7 @@ require VIEW_DIR . '/layout/header.php';
 <article class="legal-doc container">
   <h2>1. Veri Sorumlusu</h2>
   <p>
-    Kişisel verileriniz, veri sorumlusu sıfatıyla App-Fabrika (Örnek Mah. Teknoloji Cad. No: 1, 34100
+    Kişisel verileriniz, veri sorumlusu sıfatıyla Webrail (Örnek Mah. Teknoloji Cad. No: 1, 34100
     İstanbul) tarafından aşağıda açıklanan kapsamda işlenmektedir. Sorularınız için:
     <a href="mailto:info@example.com">info@example.com</a>.
   </p>

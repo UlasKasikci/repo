@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * App-Fabrika Web Edition — uygulama önyükleyici (bootstrap).
+ * Webrail — uygulama önyükleyici (bootstrap).
  *
  * index.php tarafından yüklenir: otomatik yükleyici, yardımcı fonksiyonlar,
  * oturum çerez yapılandırması (HttpOnly + Secure + SameSite=Strict) ve

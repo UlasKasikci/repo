@@ -1,7 +1,7 @@
 <?php
 
 /**
- * App-Fabrika Web Edition — 500 hatası (ayrıntı sızdırılmaz).
+ * Webrail — 500 hatası (ayrıntı sızdırılmaz).
  */
 
 require VIEW_DIR . '/layout/header.php';

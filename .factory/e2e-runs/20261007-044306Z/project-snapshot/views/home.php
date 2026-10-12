@@ -1,7 +1,7 @@
 <?php
 
 /**
- * App-Fabrika Web Edition — anasayfa.
+ * Webrail — anasayfa.
  *
  * @var array<string, mixed> $data
  */
@@ -14,7 +14,7 @@ require VIEW_DIR . '/layout/header.php';
   <div class="container">
     <h1 class="hero__title">Kurumsal iletişim, tek çatı altında</h1>
     <p class="hero__lead">
-      App-Fabrika; taleplerinizi tek bir iletişim kanalında toplayan, yönetim paneliyle
+      Webrail; taleplerinizi tek bir iletişim kanalında toplayan, yönetim paneliyle
       hızlı dönüş sağlayan hafif ve güvenli bir kurumsal çözümdür.
     </p>
     <div class="hero__actions">

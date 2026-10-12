@@ -10,7 +10,7 @@ State Graph'in başlangıç kapısı (Agent 1 · `25-web-domain-architect`).
 bash scripts/web/bootstrap-project.sh <hedef>   # dry-run (plan) → onayla --yes
 ```
 
-   Dolu hedefe `--force`. İlk commit `bootstrap from app-fabrika@<hash>` fabrika izini
+   Dolu hedefe `--force`. İlk commit `bootstrap from webrail@<hash>` fabrika izini
    taşır. Bootstrapped boş projede ilk qa-gate P2 öncesi **kasıtlı FAIL** verir
    (yapısal dosyalar + phpstan/phpunit yapılandırması zorunlu) — beklenen durumdur.
 

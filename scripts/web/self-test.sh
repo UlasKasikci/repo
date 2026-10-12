@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# App-Fabrika Web Edition — öz-test (CI ile aynı sahne)
+# Webrail — öz-test (CI ile aynı sahne)
 # Senaryolar: syntax → araç ön-şartı → pozitif QA (statik 3'lü PASS) →
 # paketleme + exclusion → state graph (qa-pass / 3 retry / 4. fail HALT) →
 # negatif RBAC → negatif sepet → --allow-no-cart kaçışı → QA'sız paketleme reddi →
@@ -680,7 +680,7 @@ for f in scripts/web/self-test.sh scripts/web/bootstrap-project.sh tests .github
   [[ ! -e "$BOOT/$f" ]] || die "kopyalanmamalıydı: $f"
 done
 MSG="$(git -C "$BOOT" log -1 --format=%s)"
-grep -Eq '^bootstrap from app-fabrika@[0-9a-f]{12}$' <<<"$MSG" || die "git izi beklenen biçimde değil: $MSG"
+grep -Eq '^bootstrap from webrail@[0-9a-f]{12}$' <<<"$MSG" || die "git izi beklenen biçimde değil: $MSG"
 BR="$(git -C "$BOOT" rev-parse --abbrev-ref HEAD)"
 [[ "$BR" == "main" ]] || die "branch main değil: $BR"
 echo "    --yes: kritik dosyalar kopyalandı, hariçler temiz, iz: $MSG"
@@ -2391,19 +2391,19 @@ git -C "$B54" diff --cached --quiet \
 rm -rf "$B54"
 echo "    stage edilmiş iş → DUR (dosya korundu, commit'e karışmadı) ✓"
 
-step "55) B.1 hedef fabrika deposunun içinde/kendisi → DUR (Tur 2-16)"
+step "55) B.1 hedef Webrail deposunun içinde/kendisi → DUR (Tur 2-16)"
 B55="$ROOT/.bootstrap-inside-probe-$$"
 mkdir -p "$B55"
 b55_rc=0
 b55_out="$(bash "$BOOTER" "$B55" --yes 2>&1)" || b55_rc=$?
-[[ "$b55_rc" == "1" ]] || die "B.1: fabrika içi hedef DUR (1) beklenir, gelen $b55_rc"
-grep -q "fabrika deposunun İÇİNDE" <<<"$b55_out" || die "B.1: iç hedef mesajı yok"
+[[ "$b55_rc" == "1" ]] || die "B.1: Webrail içi hedef DUR (1) beklenir, gelen $b55_rc"
+grep -q "Webrail deposunun İÇİNDE" <<<"$b55_out" || die "B.1: iç hedef mesajı yok"
 rm -rf "$B55"
 b55b_rc=0
 b55b_out="$(bash "$BOOTER" "$ROOT" 2>&1)" || b55b_rc=$?
-[[ "$b55b_rc" == "1" ]] || die "B.1: fabrika kökü hedef DUR (1) beklenir, gelen $b55b_rc"
+[[ "$b55b_rc" == "1" ]] || die "B.1: Webrail kökü hedef DUR (1) beklenir, gelen $b55b_rc"
 grep -q "KENDİSİ" <<<"$b55b_out" || die "B.1: kök hedef mesajı yok"
-echo "    fabrika içi → DUR · fabrika kökü → DUR ✓"
+echo "    Webrail içi → DUR · Webrail kökü → DUR ✓"
 
 step "56) B.2 --force altında bootstrap dışı dosya commit'e girmez (Tur 2-16)"
 # D7.1: manifest-tabanlı add — kullanıcının özel dosyası ne commit'e girer ne kaybolur.

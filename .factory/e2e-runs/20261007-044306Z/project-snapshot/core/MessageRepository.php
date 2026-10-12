@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * App-Fabrika Web Edition — messages tablosu erişim katmanı.
+ * Webrail — messages tablosu erişim katmanı.
  *
  * Tüm sorgular PDO prepared statement; N+1 yok (tek sorgu, listeleme sınırlı).
  */

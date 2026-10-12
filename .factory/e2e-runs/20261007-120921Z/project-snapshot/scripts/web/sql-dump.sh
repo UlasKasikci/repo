@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# App-Fabrika Web Edition — deterministik SQL dump üretici (P2/P5 yardımcı)
+# Webrail — deterministik SQL dump üretici (P2/P5 yardımcı)
 # Kaynak:  <proje>/SQL/migrations/schema/*.sql  +  <proje>/SQL/migrations/seed/*.sql
 # Çıktı:   <proje>/SQL/veritabani.sql  (veya --output <path>)
 # Kullanım: bash scripts/web/sql-dump.sh <proje_dizini> [--output <path>]
@@ -103,7 +103,7 @@ def section(title, files):
 
 
 header = "\n".join([
-    "-- App-Fabrika Web Edition — veritabani.sql (sql-dump.sh ile üretildi)",
+    "-- Webrail — veritabani.sql (sql-dump.sh ile üretildi)",
     f"-- Kaynak: SQL/migrations/schema ({len(schema)} dosya) + SQL/migrations/seed ({len(seed)} dosya)",
     f"-- Sürüm Tarihi: {date_note} · Kaynak Hash: {src_hash}",
     "-- Deterministik: saat damgası yok — aynı kaynak = byte-identical çıktı",

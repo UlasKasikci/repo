@@ -1,4 +1,4 @@
--- App-Fabrika Web Edition — KVKK bloğu (compliance=kvkk)
+-- Webrail — KVKK bloğu (compliance=kvkk)
 -- user_consents: açık rıza kaydı — P1 consent_type karşılığı `purpose`;
 --   user_id FK cascade (rıza verilen kullanıcı silindiğinde rıza kaydı da silinir);
 --   kullanıcı hesabı olmayan ziyaretçiler (iletişim formu) için user_id NULL kalır.

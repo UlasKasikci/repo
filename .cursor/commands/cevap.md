@@ -1,6 +1,6 @@
 # /cevap
 
-Bu command, Cursor işlem özetini APP-FABRIKA governance açısından değerlendirir.
+Bu command, Cursor işlem özetini Webrail governance açısından değerlendirir.
 
 ## Kullanım
 

@@ -1,5 +1,5 @@
 /**
- * App-Fabrika Web Edition — çerez onay banner'ı (KVKK m.5/1 açık rıza).
+ * Webrail — çerez onay banner'ı (KVKK m.5/1 açık rıza).
  *
  * Davranış:
  *  - Banner varsayılan gizlidir (hidden); geçerli bir tercih yoksa gösterilir.

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * App-Fabrika Web Edition — global yardımcı fonksiyonlar.
+ * Webrail — global yardımcı fonksiyonlar.
  *
  * Çıktı kuralı: kullanıcı verisi arayüze yalnız e() üzerinden basılır
  * (htmlspecialchars + ENT_QUOTES + UTF-8). Superglobal'lar doğrudan

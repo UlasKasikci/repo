@@ -2,7 +2,7 @@ AB_ARM header: MODEL_P2=nvidia/z-ai/glm-5.3 MODEL_P1=default launched=2026-10-08
 ######## attempt 1 · 2026-10-08T17:58:48Z ########
 ==> Orkestratör: /var/folders/nd/178klgxs675c7ntwdvw3nlyc0000gn/T/opencode/ab2-20261008-175827Z/project (auto=1)
 ==> opencode agent: web-domain-architect (P1) [model=nvidia/z-ai/glm-5.3-flash]
-Proje, App-Fabrika fabrikasının kendisidir. Temel artefaktları okuyayım: intent, schema, state ve domain-architect kuralları.
+Proje, Webrail fabrikasının kendisidir. Temel artefaktları okuyayım: intent, schema, state ve domain-architect kuralları.
 Intent net: `e2e-iletisim` projesi, `compliance=kvkk`, iletişim formu + admin paneli, katalog yok. Şimdi doğrulama mantığını (domain-check.py + qa-gate.sh domain_report kanalı) okuyayım:
 Doğrulama mantığı net. Şimdi qa-gate.sh'in ne yaptığını ve kanonik şartnamedeki §3 satır referanslarını okuyayım:
 Tüm bağlam net. Orkestratörün P1 kapı doğrulamasını da kontrol edeyim, ardından evidence regex'ini deterministik olarak test edeyim:

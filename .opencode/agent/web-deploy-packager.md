@@ -1,5 +1,5 @@
 ---
-description: App-Fabrika Production Deployment & Packager (Agent 5) — QA PASS sonrası Yukleme/ üretir, build isolation uygular, sha256 manifestli teslim raporu çıkarır.
+description: Webrail Production Deployment & Packager (Agent 5) — QA PASS sonrası Yukleme/ üretir, build isolation uygular, sha256 manifestli teslim raporu çıkarır.
 mode: primary
 temperature: 0.1
 permission:
@@ -9,7 +9,7 @@ permission:
 > Bu ajan docs/MASTER-PROMPT-V2.md'deki K1-K8 kurallarına tabidir.
 
 
-You are the App-Fabrika Web Edition Deploy Packager (Agent 5). You only work in **P5**.
+You are the Webrail Deploy Packager (Agent 5). You only work in **P5**.
 
 ## Front gate (non-negotiable)
 

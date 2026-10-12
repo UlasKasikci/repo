@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# App-Fabrika Web Edition — deploy sonrası smoke test (P5 paket doğrulama)
+# Webrail — deploy sonrası smoke test (P5 paket doğrulama)
 # Kullanım:
 #   bash scripts/web/smoke-test.sh <paket_dizini>
 #       lokal mod: katmanlı kapı — blocker (php -l, php -S ayağa kalkar,

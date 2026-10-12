@@ -1,5 +1,5 @@
 -- ============================================================
--- App-Fabrika Web Edition — e2e-iletisim
+-- Webrail — e2e-iletisim
 -- 001_seed.sql — seed verisi: 3 rol + 1 örnek yönetici (dev)
 -- Seed parola: Fabrika!2026 (PASSWORD_ARGON2ID özeti) — üretimde değiştirin
 -- ============================================================

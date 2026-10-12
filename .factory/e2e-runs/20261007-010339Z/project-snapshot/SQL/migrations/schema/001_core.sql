@@ -1,5 +1,5 @@
 -- ============================================================
--- App-Fabrika Web Edition — e2e-iletisim
+-- Webrail — e2e-iletisim
 -- 001_core.sql — RBAC (roles/users) + iletisim (messages)
 -- Motor: InnoDB · Karakter seti: utf8mb4
 -- Sorgu kuralı: uygulama katmanında yalnızca PDO prepared statements

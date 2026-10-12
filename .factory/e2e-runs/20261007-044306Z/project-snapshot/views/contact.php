@@ -1,7 +1,7 @@
 <?php
 
 /**
- * App-Fabrika Web Edition — iletişim formu.
+ * Webrail — iletişim formu.
  *
  * @var array<string, mixed> $data
  */
@@ -27,7 +27,7 @@ require VIEW_DIR . '/layout/header.php';
     <div class="contact__info">
       <h2>İletişim Bilgileri</h2>
       <address>
-        <p>App-Fabrika<br>Örnek Mah. Teknoloji Cad. No: 1<br>34100 İstanbul</p>
+        <p>Webrail<br>Örnek Mah. Teknoloji Cad. No: 1<br>34100 İstanbul</p>
         <p><a href="mailto:info@example.com">info@example.com</a></p>
       </address>
       <h3>Kişisel Verileriniz</h3>

@@ -1,5 +1,5 @@
 /**
- * App-Fabrika Web Edition — Çerez Onay Bileşeni (açık rıza banner'ı)
+ * Webrail — Çerez Onay Bileşeni (açık rıza banner'ı)
  *
  * Rıza modeli: KVKK m.5/1 (açık rıza) + GDPR Art. 6(1)(a)/Art. 7 +
  * ePrivacy Direktifi 2002/58/EC m.5/3. Zorunlu olmayan hiçbir çerez,

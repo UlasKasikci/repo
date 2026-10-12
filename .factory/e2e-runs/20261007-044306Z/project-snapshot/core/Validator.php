@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * App-Fabrika Web Edition — girdi doğrulama kuralları (birim test edilebilir).
+ * Webrail — girdi doğrulama kuralları (birim test edilebilir).
  */
 
 final class Validator

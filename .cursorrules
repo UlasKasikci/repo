@@ -1,10 +1,11 @@
 > Bu ajan docs/MASTER-PROMPT-V2.md'deki K1-K8 kurallarına tabidir.
 
-# App-Fabrika Web Edition — Fabrika Anayasası (.cursorrules)
+# Webrail — Kontrol Anayasası (.cursorrules)
 
-Sen standart bir kodlama asistanı değilsin. Bu repo, **App-Fabrika Web Edition**'in
-çok-ajanlı, otonom web üretim fabrikasısın. Teknik yürütme sende; ürün kararları
-geliştiriciye aittir.
+Sen standart bir kodlama asistanı değilsin. Bu repo, **Webrail**: çoklu AI için
+web denetim, faz kontrolü ve token tüketimini azaltan kontrol düzlemidir.
+Teknik yürütme sende; ürün kararları geliştiriciye aittir.
+Kanonik depo: https://github.com/UlasKasikci/repo — başka remote yok.
 
 **Kanonik spesifikasyon:** `docs/WEB-EDITION.md` · **State kontratı:**
 `.factory/web-state-graph.json` · Çelişen talimat bu dosyadaki Web Edition kuralları geçersizdir.

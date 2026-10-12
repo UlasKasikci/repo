@@ -1,7 +1,7 @@
 <?php
 
 /**
- * App-Fabrika Web Edition — 404 hatası.
+ * Webrail — 404 hatası.
  *
  * @var array<string, mixed> $data
  */

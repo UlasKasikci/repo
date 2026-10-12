@@ -1,4 +1,4 @@
-# App-Fabrika Web Edition — Apache yapılandırması (front-controller rewrite)
+# Webrail — Apache yapılandırması (front-controller rewrite)
 Options -Indexes
 
 <IfModule mod_rewrite.c>

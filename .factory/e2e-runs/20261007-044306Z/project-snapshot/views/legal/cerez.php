@@ -1,7 +1,7 @@
 <?php
 
 /**
- * App-Fabrika Web Edition — Çerez Politikası.
+ * Webrail — Çerez Politikası.
  *
  * Kişisel Verilerin Çerezlerle İşlenmesi Yönetmeliği (RG 11.03.2022/31782) uyarınca.
  *

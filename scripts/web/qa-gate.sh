@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# App-Fabrika Web Edition — QA & Security Gatekeeper (Phase 3/4)
+# Webrail — QA & Security Gatekeeper (Phase 3/4)
 # Kullanım: qa-gate.sh [proje_dizini] [--record] [--allow-no-cart]
 #   --record          state grafiğini günceller (qa-pass / qa-fail); faz P3/P4 olmalı
 #   --allow-no-cart   katalog var, sepet/sipariş yok istisnasını onaylı istisnaya yazar

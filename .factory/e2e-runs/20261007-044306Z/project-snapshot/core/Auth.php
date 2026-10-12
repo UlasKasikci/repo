@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * App-Fabrika Web Edition — oturum kimlik doğrulama ve RBAC katmanı.
+ * Webrail — oturum kimlik doğrulama ve RBAC katmanı.
  *
  * Parola doğrulaması password_verify (Argon2id hash) ile; oturum fixation
  * koruması için giriş başarısında session_regenerate_id(true) çağrılır.

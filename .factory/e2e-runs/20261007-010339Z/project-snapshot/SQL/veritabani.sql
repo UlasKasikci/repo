@@ -1,4 +1,4 @@
--- App-Fabrika Web Edition — veritabani.sql (sql-dump.sh ile üretildi)
+-- Webrail — veritabani.sql (sql-dump.sh ile üretildi)
 -- Kaynak: SQL/migrations/schema (2 dosya) + SQL/migrations/seed (1 dosya)
 -- Sürüm Tarihi: 2026-10-07 · P2 iskelet: RBAC + iletisim + KVKK (user_consents/anonymization_log) · Kaynak Hash: 07d9b280355f
 -- Deterministik: saat damgası yok — aynı kaynak = byte-identical çıktı
@@ -9,7 +9,7 @@
 -- ============ SCHEMA ============
 -- source: SQL/migrations/schema/001_core.sql
 -- ============================================================
--- App-Fabrika Web Edition — e2e-iletisim
+-- Webrail — e2e-iletisim
 -- 001_core.sql — RBAC (roles/users) + iletisim (messages)
 -- Motor: InnoDB · Karakter seti: utf8mb4
 -- Sorgu kuralı: uygulama katmanında yalnızca PDO prepared statements
@@ -76,7 +76,7 @@ CREATE TABLE messages (
 
 -- source: SQL/migrations/schema/002_kvkk.sql
 -- ============================================================
--- App-Fabrika Web Edition — e2e-iletisim
+-- Webrail — e2e-iletisim
 -- 002_kvkk.sql — KVKK/GDPR açık rıza + anonimleştirme izi
 -- Rıza kaydı: user_consents (kullanıcı silinince CASCADE ile birlikte silinir)
 -- Anonimleştirme izi: anonymization_log (SET NULL — log satırı kalır, kullanıcı bağı kopar)
@@ -124,7 +124,7 @@ CREATE TABLE anonymization_log (
 -- ============ SEED ============
 -- source: SQL/migrations/seed/001_seed.sql
 -- ============================================================
--- App-Fabrika Web Edition — e2e-iletisim
+-- Webrail — e2e-iletisim
 -- 001_seed.sql — seed verisi: 3 rol + 1 örnek yönetici (dev)
 -- Seed parola: Fabrika!2026 (PASSWORD_ARGON2ID özeti) — üretimde değiştirin
 -- ============================================================

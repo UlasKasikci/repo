@@ -1,4 +1,4 @@
--- App-Fabrika Web Edition — e2e-iletisim seed verisi (Agent 2, P2)
+-- Webrail — e2e-iletisim seed verisi (Agent 2, P2)
 -- 4 satır: 3 rol (RBAC katmanı) + 1 admin hesabı (PASSWORD_ARGON2ID hash).
 -- NOT: admin@example.com / Fabrika!2026 bir DEMO hesabıdır — canlıya almadan önce
 -- parola mutlaka değiştirilmelidir (Argon2id hash, password_verify ile doğrulanır).

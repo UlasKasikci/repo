@@ -1,5 +1,5 @@
 -- ============================================================
--- App-Fabrika Web Edition — e2e-iletisim
+-- Webrail — e2e-iletisim
 -- 002_kvkk.sql — KVKK/GDPR açık rıza + anonimleştirme izi
 -- Rıza kaydı: user_consents (kullanıcı silinince CASCADE ile birlikte silinir)
 -- Anonimleştirme izi: anonymization_log (SET NULL — log satırı kalır, kullanıcı bağı kopar)

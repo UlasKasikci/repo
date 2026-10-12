@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * App-Fabrika Web Edition — front controller.
+ * Webrail — front controller.
  *
  * Ortam yapılandırması, güvenli oturum çerezi (HttpOnly/Secure/SameSite),
  * rota tablosu ve hata işleyicisi tek noktadan kurulur.
@@ -52,7 +52,7 @@ session_start();
 
 // --- Yakalanmayan hatalar: ayrıntı sızmadan 500 yanıtı ---
 set_exception_handler(static function (Throwable $exception): void {
-    error_log('[app-fabrika] ' . $exception->getMessage());
+    error_log('[webrail] ' . $exception->getMessage());
     ErrorView::render('500');
 });
 

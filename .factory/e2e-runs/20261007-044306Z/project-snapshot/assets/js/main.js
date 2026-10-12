@@ -1,5 +1,5 @@
 /**
- * App-Fabrika Web Edition — arayüz davranışları (mobil menü).
+ * Webrail — arayüz davranışları (mobil menü).
  */
 (function () {
   'use strict';

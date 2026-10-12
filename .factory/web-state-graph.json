@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "graph": "app-fabrika-web-edition",
+  "graph": "webrail",
   "version": "1.0.0",
   "mode": "deterministic",
   "max_retries": 3,

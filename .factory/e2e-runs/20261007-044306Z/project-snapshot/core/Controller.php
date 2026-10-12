@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * App-Fabrika Web Edition — denetleyici taban sınıfı.
+ * Webrail — denetleyici taban sınıfı.
  *
  * Görünüm üretimi, yönlendirme ve hata yanıtları buradan paylaşılır.
  */

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# App-Fabrika Web Edition — Production Deployment & Packager (Phase 5)
+# Webrail — Production Deployment & Packager (Phase 5)
 # Kullanım: package-yukleme.sh [proje_dizini]
 # Ön koşul: qa-gate.sh PASS (0 error, 0 warning) — aksi halde paketleme yasak.
 # Çıktı: <proje>/Yukleme/  (§14 ağaç) + <proje>/packaging-report.json

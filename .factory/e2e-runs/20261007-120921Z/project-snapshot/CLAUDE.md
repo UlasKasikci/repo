@@ -1,4 +1,4 @@
-# CLAUDE CODE EXECUTION DIRECTIVES — App-Fabrika Web Edition
+# CLAUDE CODE EXECUTION DIRECTIVES — Webrail
 
 **Role:** FAANG-grade Senior Web Architect & Automator.
 **Mode:** deterministic — canonical spec: `docs/WEB-EDITION.md` · state contract:

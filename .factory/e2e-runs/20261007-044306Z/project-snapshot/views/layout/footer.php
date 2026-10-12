@@ -1,7 +1,7 @@
 <?php
 
 /**
- * App-Fabrika Web Edition — ortak sayfa alt bilgisi (layout/footer).
+ * Webrail — ortak sayfa alt bilgisi (layout/footer).
  *
  * @var array<string, mixed> $data
  */
@@ -11,7 +11,7 @@ $data = $data ?? [];
 
   <footer class="site-footer">
     <div class="container site-footer__inner">
-      <p class="site-footer__copy">&copy; <?= e(date('Y')) ?> App-Fabrika — Tüm hakları saklıdır.</p>
+      <p class="site-footer__copy">&copy; <?= e(date('Y')) ?> Webrail — Tüm hakları saklıdır.</p>
 
       <nav class="site-footer__nav" aria-label="Yasal bağlantılar">
         <ul>

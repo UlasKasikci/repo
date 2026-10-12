@@ -1,7 +1,7 @@
 <?php
 
 /**
- * App-Fabrika Web Edition — Gizlilik Politikası.
+ * Webrail — Gizlilik Politikası.
  *
  * @var array<string, mixed> $data
  */
@@ -20,7 +20,7 @@ require VIEW_DIR . '/layout/header.php';
 <article class="legal-doc container">
   <h2>1. Kapsam</h2>
   <p>
-    Bu politika; App-Fabrika web sitesi ve iletişim kanalları üzerinden işlenen kişisel verilerin
+    Bu politika; Webrail web sitesi ve iletişim kanalları üzerinden işlenen kişisel verilerin
     6698 sayılı KVKK ve, yürürlükte olduğu ölçüde, 2016/679 sayılı GDPR (AB Genel Veri Koruma
     Tüzüğü) ile uyumlu biçimde işlenmesini kapsar. Ayrıntılı aydınlatma için
     <a href="<?= e(url('/yasal/aydinlatma')) ?>">KVKK Aydınlatma Metni</a>ne bakınız.

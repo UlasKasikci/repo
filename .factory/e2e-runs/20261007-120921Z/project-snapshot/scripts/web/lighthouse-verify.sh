@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# App-Fabrika Web Edition — Lighthouse canlı doğrulama (P5 SONRASI bağımsız raporlayıcı faz)
+# Webrail — Lighthouse canlı doğrulama (P5 SONRASI bağımsız raporlayıcı faz)
 # State graph'a girmez, qa-gate'i ağırlaştırmaz; bloklayıcı DEĞİLDİR (v1).
 #
 # Kullanım:

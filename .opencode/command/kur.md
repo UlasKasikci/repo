@@ -1,5 +1,5 @@
 ---
-description: App-Fabrika ilk kurulum — projeyi tara, bootstrap et, state'i başlat, QA doğrula, özet sun ($ARGUMENTS = hedef dizin, boşsa .)
+description: Webrail ilk kurulum — projeyi tara, bootstrap et, state'i başlat, QA doğrula, özet sun ($ARGUMENTS = hedef dizin, boşsa .)
 ---
 
 Hedef dizin: `$ARGUMENTS` (boşsa `.`).
@@ -14,7 +14,7 @@ Tek komutta ilk kurulum — sırayı DEĞİŞTİRME:
    (mevcut proje) → `bash scripts/web/state.sh status $ARGUMENTS` + adıma 5.
 3. **Bootstrap:** `bash scripts/web/bootstrap-project.sh $ARGUMENTS` — önce DRY-RUN
    çıktısını göster (kopya/hariç listesi), onaylanınca `--yes` ile kopyala + git init
-   + ilk commit (`bootstrap from app-fabrika@<12-hex>`). exFAT uyarısı: `._*` ikizleri
+   + ilk commit (`bootstrap from webrail@<12-hex>`). exFAT uyarısı: `._*` ikizleri
    betikçe temizlenir.
 4. **State başlat:** `bash scripts/web/state.sh start $ARGUMENTS` (P1, retry=0).
    State zaten varsa (HALT/önceki tur) `--reset` gerekir — önceki durum

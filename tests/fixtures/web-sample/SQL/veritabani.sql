@@ -1,4 +1,4 @@
--- App-Fabrika Web Edition — veritabani.sql (sql-dump.sh ile üretildi)
+-- Webrail — veritabani.sql (sql-dump.sh ile üretildi)
 -- Kaynak: SQL/migrations/schema (1 dosya) + SQL/migrations/seed (1 dosya)
 -- Sürüm Tarihi: 2026-10-07 · Kaynak Hash: b09e6eed3743
 -- Deterministik: saat damgası yok — aynı kaynak = byte-identical çıktı

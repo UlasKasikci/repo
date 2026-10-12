@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""App-Fabrika P1 domain artefaktı semantik denetimi — tek doğruluk kaynağı.
+"""Webrail P1 domain artefaktı semantik denetimi — tek doğruluk kaynağı.
 
 Kullanım: domain-check.py <domain-report.json> <proje_dizini>
 Çıktı: hatalar stderr · exit 0 = PASS · 1 = FAIL · 2 = kullanım hatası

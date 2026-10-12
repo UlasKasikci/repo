@@ -1,5 +1,5 @@
 /**
- * App-Fabrika Web Edition — arayüz iyileştirmeleri.
+ * Webrail — arayüz iyileştirmeleri.
  * Zorunlu işlevsellik sunucu tarafında çalışır; bu dosya yalnızca
  * kademeli iyileştirme (progressive enhancement) sağlar.
  */

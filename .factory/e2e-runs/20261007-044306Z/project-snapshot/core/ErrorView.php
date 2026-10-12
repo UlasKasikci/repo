@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * App-Fabrika Web Edition — hata yanıtı üreticisi (404/403/500).
+ * Webrail — hata yanıtı üreticisi (404/403/500).
  *
  * Hata ayrıntısı istemciye sızdırılmaz; yalnız sunucu günlüğüne yazılır.
  */

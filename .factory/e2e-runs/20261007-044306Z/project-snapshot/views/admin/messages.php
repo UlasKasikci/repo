@@ -1,7 +1,7 @@
 <?php
 
 /**
- * App-Fabrika Web Edition — yönetim: iletişim mesajları (Admin + Moderatör).
+ * Webrail — yönetim: iletişim mesajları (Admin + Moderatör).
  *
  * @var array<string, mixed> $data
  */

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * App-Fabrika Web Edition — oturum açma/kapama denetleyicisi.
+ * Webrail — oturum açma/kapama denetleyicisi.
  */
 
 final class AuthController extends Controller
@@ -15,7 +15,7 @@ final class AuthController extends Controller
         }
 
         $this->view('login', [
-            'pageTitle' => 'Yönetim Girişi · App-Fabrika',
+            'pageTitle' => 'Yönetim Girişi · Webrail',
             'pageDesc' => 'Yönetim paneli erişimi yetkili kullanıcılar içindir.',
             'flash' => Flash::take(),
         ]);

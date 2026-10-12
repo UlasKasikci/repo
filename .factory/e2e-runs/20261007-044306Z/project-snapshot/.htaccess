@@ -1,4 +1,4 @@
-# App-Fabrika Web Edition — front controller rewrite
+# Webrail — front controller rewrite
 Options -Indexes
 
 <IfModule mod_rewrite.c>

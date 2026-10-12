@@ -1,7 +1,7 @@
 ---
 name: after-action-review
 description: >-
-  Cursor işlem özetlerini APP-FABRIKA governance açısından değerlendirir.
+  Cursor işlem özetlerini Webrail governance açısından değerlendirir.
   /cevap command tarafından kullanılır. DIAGNOSTIC — dosya değiştirmez.
 ---
 
@@ -9,7 +9,7 @@ description: >-
 
 ## Purpose
 
-Cursor işlem özetlerini APP-FABRIKA governance açısından değerlendirmek.
+Cursor işlem özetlerini Webrail governance açısından değerlendirmek.
 
 Bu skill `/cevap` command tarafından kullanılır.
 

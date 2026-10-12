@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * App-Fabrika Web Edition — PDO veritabanı katmanı (lazy bağlantı).
+ * Webrail — PDO veritabanı katmanı (lazy bağlantı).
  *
  * Tüm sorgular prepared statement ile çalışır (SQL injection koruması);
  * bağlantı ilk kullanım anında açılır (bağlantısız ortamda statik sayfa çalışır).
