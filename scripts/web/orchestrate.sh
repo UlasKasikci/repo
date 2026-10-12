@@ -54,6 +54,9 @@ command -v python3 >/dev/null 2>&1 || { echo "orkestratör: python3 gerekli" >&2
 PROJECT="$(cd "$PROJECT" && pwd)"
 STATE_FILE="$PROJECT/.factory/web-state.json"
 GUARD=0
+# P1 ajan sandbox'i: proje bootstrap'inin kopyaladığı kontratlar varsa onlari goster —
+# mutlak $ROOT yolu dis dizin izni tetikler (helpdesk-app: auto-reject → exit 3).
+[[ -d "$PROJECT/.factory/contracts" ]] && CONTRACTS="$PROJECT/.factory/contracts"
 
 # Faz 1.4 L2 — compaction eşiği: proje-seviyesi opencode.json yoksa ÜRET (mevcut
 # opencode.json/jsonc'a asla dokunma). `opencode run` cwd=$PROJECT ile bu dosyayı
