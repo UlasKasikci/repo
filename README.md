@@ -347,6 +347,7 @@ Yukleme/
 | v1.0-rc5 | Release Candidate (2026-10-11) | Tur 2-16 güvenlik/bütünlük kapıları (A-F) — self-test 63/63 |
 | **v1.0** | **Final (2026-10-11)** | **İlk gerçek proje PASS: envanter-app** — kalite garantili üretim |
 | **v1.1** | **Final (2026-10-11)** | **Hız kanıtı: randevu-app, 27 dk** — pattern reuse ile rutinleşme (P2 235→12 dk) |
+| **v1.2** | **Final (2026-10-12)** | **Güvenlik fix: CSRF OOP desen + /register açığı kapatıldı** — CONTRACTS sandbox + P2 prompt guard; self-test 66/66; helpdesk-app 34 dk (3/3 proje PASS) |
 | v2 | Planlı | JEV routing + modül kütüphanesi |
 | v3 | Vizyon | Şablonlaşma |
 
