@@ -30,6 +30,9 @@ bash scripts/web/guard.sh write-code .
 # DENY → fix satırını uygula; yok sayma. Audit: .factory/guard-log.jsonl
 ```
 
+`git push` yasak (kullanıcı açıkça istemedikçe). Önce `guard.sh git-push .` —
+`customer-app` asla `UlasKasikci/repo`'ya push etmez.
+
 ## Modül önce (zorunlu)
 
 P2’de LLM yazmadan önce:

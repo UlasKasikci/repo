@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "role": "customer-app",
+  "factory_source": "https://github.com/UlasKasikci/repo",
+  "git_push_policy": "forbidden-unless-user-explicit",
+  "forbid_remotes": ["UlasKasikci/repo", "github.com/UlasKasikci/repo"],
+  "note": "Müşteri/ürün projesi. GitHub push YALNIZ kullanıcı açıkça isterse. Asla fabrika reposuna push/remote bağlama."
+}

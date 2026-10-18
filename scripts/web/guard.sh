@@ -6,18 +6,19 @@ set -euo pipefail
 #   bash scripts/web/guard.sh <op> [proje]
 #   bash scripts/web/guard.sh matrix [proje]
 #
-# Ops: write-code | promote | decide | advance | module-apply | qa | package | claim-pass | orchestrate
+# Ops: write-code | promote | decide | advance | module-apply | qa | package |
+#      claim-pass | orchestrate | git-push
 # Exit: 0 ALLOW · 1 DENY/hata
 #
-# Skill metni değil — deterministik denetim. Mevcut mode/state/qa kurallarını
-# tek sorguda birleştirir; DENY satırları .factory/guard-log.jsonl'e yazılır.
+# git-push: varsayılan DENY. Yalnız WEBRAIL_ALLOW_GIT_PUSH=1 (kullanıcı açıkça
+# istediğinde). customer-app asla UlasKasikci/repo'ya push edemez.
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 OP="${1:-}"
 PROJECT="${2:-.}"
 
 usage() {
-  echo "kullanım: guard.sh <write-code|promote|decide|advance|module-apply|qa|package|claim-pass|orchestrate|matrix> [proje]" >&2
+  echo "kullanım: guard.sh <write-code|promote|decide|advance|module-apply|qa|package|claim-pass|orchestrate|git-push|matrix> [proje]" >&2
   exit 1
 }
 
@@ -42,7 +43,7 @@ fac = project / ".factory"
 
 OPS = {
     "write-code", "promote", "decide", "advance", "module-apply",
-    "qa", "package", "claim-pass", "orchestrate", "matrix",
+    "qa", "package", "claim-pass", "orchestrate", "git-push", "matrix",
 }
 if op not in OPS:
     print(f"guard: bilinmeyen op: {op}", file=sys.stderr)
@@ -110,6 +111,32 @@ st = read_json(fac / "web-state.json") or {}
 phase = st.get("current_phase") or "—"
 status = st.get("status") or "—"
 halted = status == "halted" or phase == "HALT"
+ws = read_json(fac / "workspace-role.json") or {}
+ws_role = str(ws.get("role") or "")
+# bootstrap izi veya customer role → müşteri projesi
+if not ws_role:
+    if (fac / ".bootstrap-manifest").is_file():
+        ws_role = "customer-app"
+    elif (project / "WEBRAIL-CUSTOMER.md").is_file():
+        ws_role = "customer-app"
+    else:
+        ws_role = "webrail-factory"
+
+
+def origin_url() -> str:
+    import subprocess
+    try:
+        return subprocess.check_output(
+            ["git", "-C", str(project), "remote", "get-url", "origin"],
+            stderr=subprocess.DEVNULL, text=True,
+        ).strip()
+    except Exception:
+        return ""
+
+
+def points_at_factory(url: str) -> bool:
+    u = (url or "").lower()
+    return "ulaskasikci/repo" in u
 
 
 def row(name: str, allow: bool, reason: str, fix: str) -> dict:
@@ -121,6 +148,7 @@ def row(name: str, allow: bool, reason: str, fix: str) -> dict:
         "mode": mode,
         "phase": phase,
         "status": status,
+        "workspace_role": ws_role,
     }
 
 
@@ -214,6 +242,35 @@ def eval_op(name: str) -> dict:
             return row(name, False, "mode≠factory", "from-brief / promote")
         return row(name, True, f"phase={phase}", "bash scripts/web/orchestrate.sh . --auto")
 
+    if name == "git-push":
+        # Varsayılan: kapalı. Kullanıcı açıkça istemeden ajan push etmez.
+        allow_env = os.environ.get("WEBRAIL_ALLOW_GIT_PUSH", "").strip() == "1"
+        origin = origin_url()
+        if ws_role == "customer-app" and points_at_factory(origin):
+            return row(
+                name, False,
+                "TEHLİKE: müşteri projesi fabrika remote'una (UlasKasikci/repo) bağlı — push yasak",
+                "git remote remove origin   # veya kendi ürün remote'unu ayarla; fabrika reposunu bozma",
+            )
+        if ws_role == "customer-app" and not allow_env:
+            return row(
+                name, False,
+                "customer-app: git push yasak (kullanıcı açıkça istemedi)",
+                "Kullanıcı 'push et' demeden push yapma. İsterse: WEBRAIL_ALLOW_GIT_PUSH=1 git push (kendi remote)",
+            )
+        if not allow_env:
+            return row(
+                name, False,
+                "git push varsayılan DENY — kullanıcı açık komutu yok",
+                "Yalnız kullanıcı 'github a yükle/push' derse: WEBRAIL_ALLOW_GIT_PUSH=1 git push",
+            )
+        # customer-app + allow_env: yalnız kendi remote (fabrika URL yukarıda zaten DENY)
+        return row(
+            name, True,
+            f"WEBRAIL_ALLOW_GIT_PUSH=1 · role={ws_role}",
+            "git push  # kullanıcı onaylı",
+        )
+
     return row(name, False, "op tanımsız", "guard.sh matrix .")
 
 
@@ -227,11 +284,11 @@ def log_entry(r: dict) -> None:
 
 NAMES = (
     "write-code", "promote", "decide", "advance", "module-apply",
-    "qa", "package", "claim-pass", "orchestrate",
+    "qa", "package", "claim-pass", "orchestrate", "git-push",
 )
 
 if op == "matrix":
-    print(f"==> guard matrix · {project.name} · mode={mode} phase={phase} status={status}")
+    print(f"==> guard matrix · {project.name} · role={ws_role} mode={mode} phase={phase} status={status}")
     for name in NAMES:
         r = eval_op(name)
         mark = "ALLOW" if r["allow"] else "DENY "

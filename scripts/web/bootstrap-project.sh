@@ -176,6 +176,7 @@ PRUNE_FILES = {
     "sync.json",
     ".bootstrap-manifest",
     "mode.json",
+    "workspace-role.json",
 }
 
 
@@ -261,6 +262,39 @@ bash "$ROOT_BOOT/scripts/web/mode.sh" init "$PROJECT" || {
   exit 1
 }
 
+# Müşteri workspace rolü — fabrika GitHub'ına push yasak (ajan karışıklığı önleme)
+mkdir -p "$PROJECT/.factory"
+if [[ -f "$ROOT_BOOT/.factory/workspace-role.customer.json" ]]; then
+  cp "$ROOT_BOOT/.factory/workspace-role.customer.json" "$PROJECT/.factory/workspace-role.json"
+else
+  printf '%s\n' '{
+  "schema_version": 1,
+  "role": "customer-app",
+  "git_push_policy": "forbidden-unless-user-explicit",
+  "forbid_remotes": ["UlasKasikci/repo"]
+}' > "$PROJECT/.factory/workspace-role.json"
+fi
+# Cursor domain skill parity (kapı: module-apply / P2)
+if [[ -d "$PROJECT/.opencode/skills" && -d "$PROJECT/.cursor" ]]; then
+  mkdir -p "$PROJECT/.cursor/skills"
+  for sk in auth-rbac admin-crud kvkk-compliance seo-basics; do
+    if [[ -d "$PROJECT/.opencode/skills/$sk" && ! -e "$PROJECT/.cursor/skills/$sk" ]]; then
+      cp -a "$PROJECT/.opencode/skills/$sk" "$PROJECT/.cursor/skills/$sk"
+    fi
+  done
+fi
+# Müşteri anayasa notu (GitHub push kilidi — kısa)
+cat > "$PROJECT/WEBRAIL-CUSTOMER.md" <<'NOTE'
+# Bu klasör bir müşteri / ürün projesidir (Webrail bootstrap)
+
+- **GitHub push YASAK** — kullanıcı açıkça "push et / GitHub'a yükle" demedikçe `git push` yapma.
+- **Asla** `UlasKasikci/repo` (fabrika) remote'una bağlama veya push etme.
+- Dağıtım: `qa-gate` PASS sonrası `Yukleme/` → FTP; GitHub zorunlu değil.
+- Kontrol: `bash scripts/web/guard.sh git-push .` → varsayılan DENY.
+- Rol: `.factory/workspace-role.json` → `customer-app`.
+NOTE
+
+
 # --- git izi: taze depo + sürüm bağlayıcı ilk commit ---
 if command -v git >/dev/null 2>&1; then
   # Tur 2-16 B.2: init hatası YUTULMAZ — durulur (sessiz devam = bozuk iz).
@@ -299,7 +333,13 @@ if command -v git >/dev/null 2>&1; then
     git -C "$PROJECT" add -- .factory/.bootstrap-manifest 2>/dev/null || true
     # mode kilidi artefaktları (manifest'te olmayabilir — init sonrası üretilir)
     [[ -f "$PROJECT/.factory/mode.json" ]] && git -C "$PROJECT" add -- .factory/mode.json 2>/dev/null || true
+    [[ -f "$PROJECT/.factory/workspace-role.json" ]] && git -C "$PROJECT" add -- .factory/workspace-role.json 2>/dev/null || true
     [[ -f "$PROJECT/DISCOVERY.md" ]] && git -C "$PROJECT" add -- DISCOVERY.md 2>/dev/null || true
+    [[ -f "$PROJECT/WEBRAIL-CUSTOMER.md" ]] && git -C "$PROJECT" add -- WEBRAIL-CUSTOMER.md 2>/dev/null || true
+    # Cursor skill mount (S1 light — domain parity)
+    if [[ -d "$PROJECT/.cursor/skills" ]]; then
+      git -C "$PROJECT" add -- .cursor/skills 2>/dev/null || true
+    fi
   else
     # Tur 2-16 B.2: manifest yoksa add -A YASAK — hedefteki her şey commit'e
     # karışırdı (D7.1 veri bütünlüğü ihlali). Bozuk bootstrap: dur.
@@ -326,6 +366,8 @@ Sonraki adımlar (Şerit A → B — kod henüz YOK):
   4) bash scripts/web/state.sh start .      # P1 (factory kilidi gerekir)
   5) bash scripts/web/orchestrate.sh . --auto
      P2 tercihen hybrid: P2_HUMAN_ASSIST=true (saf IDE gücü + Webrail kapısı)
+GIT: Bu proje customer-app — git push YASAK (kullanıcı açıkça istemedikçe).
+     Asla UlasKasikci/repo'ya push etme. Bak: WEBRAIL-CUSTOMER.md
 NOT: P2 öncesi ilk \`qa-gate.sh\` koşusu KASITLI FAIL verir — yapısal dosyalar
 + phpstan/phpunit P2 iskeletinden gelir.
 EOF

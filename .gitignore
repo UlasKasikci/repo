@@ -115,6 +115,7 @@ debug_report.json
 packaging-report.json
 smoke-report.json
 metrics.jsonl
+.factory/guard-log.jsonl
 .factory/lighthouse-report.json
 .factory/hybrid-p2-start
 

@@ -22,6 +22,9 @@ bash scripts/web/guard.sh write-code .
 # DENY → follow fix; do not ignore. Audit: .factory/guard-log.jsonl
 ```
 
+Never `git push` unless the user explicitly asks. Check `guard.sh git-push .` first —
+`customer-app` must never push to `UlasKasikci/repo`.
+
 ## Modules first
 
 Before LLM writes in P2:

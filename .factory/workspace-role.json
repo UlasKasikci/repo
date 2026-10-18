@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "role": "webrail-factory",
+  "canonical_repository": "https://github.com/UlasKasikci/repo",
+  "git_push_policy": "explicit-user-only",
+  "note": "Bu dosya fabrika kökündedir. Bootstrap müşteriye role=customer-app yazar. Müşteri asla UlasKasikci/repo'ya push etmez."
+}

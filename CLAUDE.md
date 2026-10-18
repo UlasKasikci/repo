@@ -3,15 +3,21 @@
 # CLAUDE CODE EXECUTION DIRECTIVES — Webrail
 
 **Role:** Senior Web Architect & Automator for the Webrail control plane.
-**Canonical repository:** `https://github.com/UlasKasikci/repo` (sole remote: `origin`).
+**Factory source:** `https://github.com/UlasKasikci/repo` — only when
+`.factory/workspace-role.json` says `webrail-factory`. Customer/bootstrap trees are
+`customer-app` (see `WEBRAIL-CUSTOMER.md`); never point their `origin` at the factory.
 **Mode:** deterministic — canonical spec: `docs/WEB-EDITION.md` · state contract:
 `.factory/web-state-graph.json` · never invent paths or features that are not in the spec.
 **Session start:** `bash scripts/web/status.sh .` → `guard.sh matrix .` → `RUN-STATUS.md` →
 `.factory/web-state.json` → `domain-report` → `decision.json`.  
 Customer protocol: `docs/CUSTOMER-START.md`.
 **Decision layer:** `bash scripts/web/decide.sh` (open-source JEV-logic; no paid JEV).
-**Operation gate:** before write-code / package / claim-pass → `bash scripts/web/guard.sh <op> .`
-(DENY = stop; follow printed `fix:`). Audit: `.factory/guard-log.jsonl`.
+**Operation gate:** before write-code / package / claim-pass / git-push →
+`bash scripts/web/guard.sh <op> .` (DENY = stop; follow printed `fix:`).
+Audit: `.factory/guard-log.jsonl`.
+**Git push:** default DENY. Never `git push` unless the user explicitly asks. Then
+`WEBRAIL_ALLOW_GIT_PUSH=1` and `guard.sh git-push` must ALLOW. Customer-app must never
+push to `UlasKasikci/repo`.
 
 ## Workflow (State Graph — 5 phases)
 
@@ -54,3 +60,4 @@ Customer protocol: `docs/CUSTOMER-START.md`.
 Zero-fluff, production-ready, fully executable terminal commands and structured files.
 Never mark work complete without a green `qa-gate.sh` run; never commit `Yukleme/`
 artifacts or secrets (`.env`, keys, dumps with credentials).
+Never push to GitHub without an explicit user command and a green `guard.sh git-push`.

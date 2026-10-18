@@ -678,9 +678,16 @@ for f in scripts/web/qa-gate.sh scripts/web/orchestrate.sh scripts/web/domain-ch
 done
 for f in scripts/web/self-test.sh scripts/web/bootstrap-project.sh tests .github \
          .factory/context .factory/freeze.json .factory/web-state.json \
-         .cursor/skills .cursor/mcp.json .opencode/node_modules .opencode/plans; do
+         .cursor/mcp.json .opencode/node_modules .opencode/plans; do
   [[ ! -e "$BOOT/$f" ]] || die "kopyalanmamalıydı: $f"
 done
+# S1-light: domain skills OC→Cursor mount (fabrika .cursor/skills kopyalanmaz; mount sonrası oluşur)
+[[ -f "$BOOT/WEBRAIL-CUSTOMER.md" ]] || die "WEBRAIL-CUSTOMER.md yazılmadı"
+ROLE15="$(python3 -c "import json;print(json.load(open('$BOOT/.factory/workspace-role.json'))['role'])")"
+[[ "$ROLE15" == "customer-app" ]] || die "bootstrap role=customer-app beklenir, olan $ROLE15"
+if [[ -d "$BOOT/.opencode/skills/auth-rbac" ]]; then
+  [[ -d "$BOOT/.cursor/skills/auth-rbac" ]] || die "Cursor skill mount eksik: auth-rbac"
+fi
 MSG="$(git -C "$BOOT" log -1 --format=%s)"
 grep -Eq '^bootstrap from webrail@[0-9a-f]{12}$' <<<"$MSG" || die "git izi beklenen biçimde değil: $MSG"
 BR="$(git -C "$BOOT" rev-parse --abbrev-ref HEAD)"
@@ -690,7 +697,7 @@ BR="$(git -C "$BOOT" rev-parse --abbrev-ref HEAD)"
 MODE15="$(python3 -c "import json;print(json.load(open('$BOOT/.factory/mode.json'))['mode'])")"
 [[ "$MODE15" == "discovery" ]] || die "bootstrap mode=discovery beklenir, olan $MODE15"
 [[ -f "$BOOT/scripts/web/mode.sh" ]] || die "mode.sh bootstrap'a kopyalanmadı"
-echo "    --yes: kritik dosyalar kopyalandı, hariçler temiz, iz: $MSG · mode=discovery"
+echo "    --yes: kritik dosyalar kopyalandı, hariçler temiz, iz: $MSG · mode=discovery · customer-app"
 
 rc="$(run_rc bash "$BOOTER" "$BOOT" --yes)"
 [[ "$rc" == "1" ]] || die "dolu/bootstrapped hedef --force'suz red (1) beklenir, gelen $rc"
@@ -2770,6 +2777,37 @@ grep -q 'guard.sh' "$ROOT/CLAUDE.md" || die "CLAUDE.md guard anmaz"
 grep -q 'guard.sh' "$ROOT/antigravity.yaml" || die "antigravity.yaml guard anmaz"
 rm -rf "$G76"
 echo "    guard DENY/ALLOW · audit log · IDE anayasaları ✓"
+
+step "77) guard git-push DENY + customer-app fabrika remote RED + anayasa kilidi"
+G77="$TMP/guard77"
+mkdir -p "$G77/.factory"
+bash "$ROOT/scripts/web/mode.sh" init "$G77" >/dev/null
+# varsayılan (fabrika rolü yok / customer yok) → yine DENY (allow env yok)
+rc="$(run_rc bash "$ROOT/scripts/web/guard.sh" git-push "$G77")"
+[[ "$rc" == "1" ]] || die "git-push varsayılan DENY=1 beklenir, gelen $rc"
+# customer-app + sahte fabrika remote
+printf '%s\n' '{"schema_version":1,"role":"customer-app","git_push_policy":"forbidden-unless-user-explicit"}' \
+  > "$G77/.factory/workspace-role.json"
+git -C "$G77" init -q
+git -C "$G77" remote add origin "https://github.com/UlasKasikci/repo.git"
+rc="$(run_rc env WEBRAIL_ALLOW_GIT_PUSH=1 bash "$ROOT/scripts/web/guard.sh" git-push "$G77")"
+[[ "$rc" == "1" ]] || die "customer+fabrika remote allow_env ile bile DENY beklenir, gelen $rc"
+# customer + kendi remote + allow → ALLOW
+git -C "$G77" remote set-url origin "https://github.com/example/musteri-urun.git"
+rc="$(run_rc env WEBRAIL_ALLOW_GIT_PUSH=1 bash "$ROOT/scripts/web/guard.sh" git-push "$G77")"
+[[ "$rc" == "0" ]] || die "customer+kendi remote+allow ALLOW=0 beklenir, gelen $rc"
+grep -q 'git-push\|GitHub push\|git push' "$ROOT/.cursorrules" \
+  || die ".cursorrules git-push kilidi yok"
+grep -q 'git-push\|Git push\|git push' "$ROOT/CLAUDE.md" \
+  || die "CLAUDE.md git-push kilidi yok"
+grep -q 'git-push\|git push' "$ROOT/antigravity.yaml" \
+  || die "antigravity.yaml git-push kilidi yok"
+grep -q 'git-push\|GitHub' "$ROOT/docs/CUSTOMER-START.md" \
+  || die "CUSTOMER-START git kilidi yok"
+[[ -f "$ROOT/.factory/workspace-role.json" ]] || die "fabrika workspace-role.json yok"
+[[ -f "$ROOT/.factory/workspace-role.customer.json" ]] || die "workspace-role.customer.json yok"
+rm -rf "$G77"
+echo "    git-push DENY · customer fabrika-remote RED · allow+kendi-remote OK ✓"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

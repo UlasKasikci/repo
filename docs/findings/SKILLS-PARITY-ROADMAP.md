@@ -221,7 +221,7 @@ antigravity.yaml           →  + skills: [...] per phase
 
 | Sprint | Çıktı | Dur kapısı |
 |--------|--------|------------|
-| **S1** | `skills/` kök + domain 4 + process 5 migrate + anatomi şablon | skills-parity.sh + preflight |
+| **S1** | ~~tam `skills/` kök~~ → **S1-light DONE:** bootstrap `.opencode/skills` → `.cursor/skills` mount + `guard`/`module-apply` kapı | preflight + self-test 77+ |
 | **S2** | Komut/ajan parity (OC + CLAUDE.md + antigravity.yaml) | dört IDE smoke checklist |
 | **S3** | P2 process skill’leri 8–19 (önce 8,9,11,13,16) | self-test + doküman |
 | **S4** | Domain cart + harden/observability | module-apply + qa kanalları |

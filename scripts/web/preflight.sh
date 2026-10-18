@@ -11,15 +11,40 @@ ERR=0
 ok() { echo "  OK  $*"; }
 bad() { echo "  FAIL $*" >&2; ERR=1; }
 
-echo "==> Webrail preflight @ $(git rev-parse --short HEAD 2>/dev/null || echo '?')"
+# workspace-role: fabrika vs müşteri (bootstrap → customer-app)
+WS_ROLE="webrail-factory"
+if [[ -f .factory/workspace-role.json ]]; then
+  WS_ROLE="$(python3 -c "import json; print(json.load(open('.factory/workspace-role.json')).get('role') or '')" 2>/dev/null || true)"
+fi
+[[ -n "$WS_ROLE" ]] || WS_ROLE="webrail-factory"
+if [[ -f WEBRAIL-CUSTOMER.md ]] || [[ -f .factory/.bootstrap-manifest ]]; then
+  WS_ROLE="customer-app"
+fi
 
-# 1) tek remote (yalnız ad listesi — URL biçimi CI/local'de tab/space fark eder)
-REMOTE_LIST="$(git remote 2>/dev/null | sort | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
-[[ "$REMOTE_LIST" == "origin" ]] || bad "yalnız origin olmalı — mevcut: [${REMOTE_LIST}]"
-ok "remote: yalnız origin"
+echo "==> Webrail preflight @ $(git rev-parse --short HEAD 2>/dev/null || echo '?') · role=$WS_ROLE"
+
 ORIGIN="$(git remote get-url origin 2>/dev/null || true)"
-[[ "$ORIGIN" == *UlasKasikci/repo* ]] || bad "origin UlasKasikci/repo değil: $ORIGIN"
-ok "origin=$ORIGIN"
+REMOTE_LIST="$(git remote 2>/dev/null | sort | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+
+# 1) remote politikası — role'e göre
+if [[ "$WS_ROLE" == "customer-app" ]]; then
+  if [[ "$ORIGIN" == *UlasKasikci/repo* ]]; then
+    bad "müşteri projesi fabrika remote'una (UlasKasikci/repo) bağlı — TEHLİKE; git remote remove origin"
+  else
+    ok "customer remote fabrika değil (${ORIGIN:-yok})"
+  fi
+  # müşteride origin zorunlu değil; varsa tek origin yeter
+  if [[ -n "$REMOTE_LIST" && "$REMOTE_LIST" != "origin" ]]; then
+    bad "müşteri: beklenen remote yalnız origin veya yok — mevcut: [${REMOTE_LIST}]"
+  else
+    ok "customer remote list: [${REMOTE_LIST:-boş}]"
+  fi
+else
+  [[ "$REMOTE_LIST" == "origin" ]] || bad "yalnız origin olmalı — mevcut: [${REMOTE_LIST}]"
+  ok "remote: yalnız origin"
+  [[ "$ORIGIN" == *UlasKasikci/repo* ]] || bad "origin UlasKasikci/repo değil: $ORIGIN"
+  ok "origin=$ORIGIN"
+fi
 
 # 2) yasaklı marka / org (bu betiği hariç tut — pattern string'i self-hit yapmasın)
 git grep -n -i -e 'clariongemini' -e 'App-Fabrika' -e 'APP-FABRIKA' -e 'app-fabrika' -- \
@@ -43,6 +68,8 @@ for f in scripts/web/decide.sh scripts/web/decision.py scripts/web/run-status.sh
          scripts/web/qa-gate.sh scripts/web/state.sh scripts/web/mode.sh \
          scripts/web/measure.sh scripts/web/webrail.sh scripts/web/status.sh \
          scripts/web/module-apply.sh scripts/web/p2-checklist.sh scripts/web/guard.sh \
+         .factory/workspace-role.json \
+         .factory/workspace-role.customer.json \
          .factory/contracts/decision.schema.json \
          .factory/modules/catalog.json \
          .factory/modules/auth-rbac/manifest.json \

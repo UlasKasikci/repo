@@ -106,3 +106,27 @@ bash scripts/web/orchestrate.sh . --auto
 ```
 
 `RUN-STATUS.md` ve `.factory/*` commit’lenir — sohbet hafızasına güvenilmez.
+
+---
+
+## 6) GitHub / push — müşteri projelerinde kilit
+
+Bootstrap sonrası hedef **customer-app** olur (`.factory/workspace-role.json` +
+`WEBRAIL-CUSTOMER.md`).
+
+| Kural | Açıklama |
+|-------|----------|
+| Varsayılan | `git push` **yasak** — kullanıcı açıkça demedikçe |
+| Fabrika remote | `UlasKasikci/repo` **asla** bağlanmaz / push edilmez |
+| Kontrol | `bash scripts/web/guard.sh git-push .` → DENY |
+| Dağıtım | `qa-gate` PASS → `Yukleme/` → FTP (GitHub zorunlu değil) |
+
+Açık kullanıcı komutu + kendi ürün remote’u varsa:
+
+```bash
+bash scripts/web/guard.sh git-push .   # önce DENY olmamalı (fabrika URL yok)
+WEBRAIL_ALLOW_GIT_PUSH=1 git push -u origin main
+```
+
+Fabrika deposunu (`~/webrail`) bozmamak için müşteri ağacında `origin` fabrika URL’si
+ise hemen kaldırın: `git remote remove origin`.
