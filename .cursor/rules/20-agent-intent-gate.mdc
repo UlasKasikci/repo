@@ -1,35 +1,16 @@
 ---
-description: Intent Gate — Diagnostic vs Implementation (CL4R1T4S discipline, no new agents)
+description: Agent Intent Gate — DIAGNOSTIC vs IMPLEMENTATION (Webrail)
 alwaysApply: true
 ---
 
-# Agent Intent Gate
+# Agent Intent Gate (Webrail)
 
-Her kullanıcı mesajında **önce modu belirle**. Soru soruldu diye kod değiştirme.
+| Mod | Ne zaman | İzin | Yasak |
+|-----|----------|------|-------|
+| **DIAGNOSTIC** | soru, incele, puanla, “ne dersin” | okuma, grep, öneri | dosya yaz/sil, commit, push |
+| **IMPLEMENTATION** | yap, ekle, düzelt, `/webrail`, `/web-faz`, doctor | kod + governance (P1–P5) | Android scaffold, kapsam dışı refactor |
 
-## Modlar
+Belirsizse DIAGNOSTIC kal; sor.
 
-| Mod | Ne zaman? | İzinli | Yasak |
-|-----|-----------|--------|-------|
-| **DIAGNOSTIC** | Soru, inceleme, karar, plan, "ne dersin", gap analizi | Okuma, grep, açıklama, öneri | Dosya oluşturma/düzenleme/silme, commit, script değişikliği |
-| **IMPLEMENTATION** | Açık "yap", "ekle", "düzelt", "uygula", `/devam-et`, YAPILACAKLAR görevi | Kod, config, governance (YAPILACAKLAR kapısı ile) | Kapsam dışı refactor, yeni ajan/council |
-
-**Belirsizse:** DIAGNOSTIC kal; tek cümleyle uygulama isteyip istemediğini sor.
-
-## IMPLEMENTATION öncesi (sıra)
-
-1. `YAPILACAKLAR.md` — aktif faz `işleniyor`
-2. `./scripts/factory/assemble-context.sh` (proje kökünde)
-3. Açılmamış dosya hakkında spekülasyon yok (`00-overmind-zero-hallucination`)
-4. Android/Gradle değişikliği → batch sonunda `gradle-build-loop.sh`
-5. `19-claude-reasoning.mdc` tetikleyicileri geçerliyse üç blok
-
-## DIAGNOSTIC kuralları
-
-- Kullanıcı açıkça implement istemedikçe repo değiştirme
-- "Repo geliştir" = IMPLEMENTATION; "değerlendir / karar ver" = DIAGNOSTIC
-- Freeze döneminde meta-fabrika genişlemesi önerisi → DIAGNOSTIC yanıt; uygulama yalnızca explicit istek + maintenance kapsamında
-
-## Kaynak
-
-Tasarım ilkesi: [CL4R1T4S](https://github.com/elder-plinius/CL4R1T4S) FACTORY/DROID Phase 0 — prompt kopyalanmaz.
+IMPLEMENTATION öncesi: `status.sh` → `guard.sh <op>` → (QA FAIL ise) `doctor.sh`.
+Git push: yalnız açık kullanıcı komutu + `guard.sh git-push` ALLOW.

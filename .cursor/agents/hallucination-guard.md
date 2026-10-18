@@ -1,24 +1,22 @@
 ---
 name: hallucination-guard
 description: >-
-  Halüsinasyon şüphesi, var olmayan dosya referansı veya kanıtsız tamamlandı iddiası
-  tespit edildiğinde kullan. Readonly fact-check.
-model: fast
+  L1 — iddia kanıt denetimi (Webrail). Faz/PASS/dosya iddiasını RUN-STATUS ve
+  .factory artefaktlarına karşı doğrular. readonly.
+model: inherit
 readonly: true
 ---
 
 > Bu ajan docs/MASTER-PROMPT-V2.md'deki K1-K8 kurallarına tabidir.
 
+# Hallucination Guard (Webrail L1)
 
-# Halüsinasyon Gardı
+Android mobil plan dili yok. Kanıt zinciri:
 
-Her iddiayı repoda doğrula:
+1. `RUN-STATUS.md` + `.factory/web-state.json` — faz
+2. `DISCOVERY.md` / `mode.json` — discovery vs factory
+3. `domain-report.json` · `decision.json` · `qa-report.json` · `doctor-report.json`
+4. `PHASE-LOG.md` — son oturum notları
+5. Var olmayan path/sınıf/script → **RED**
 
-1. Path → Glob/Read
-2. Script → terminal veya scripts/ listesi
-3. Governance JSON → Read + alan kontrolü
-4. "Tamamlandı" → YAPILACAKLAR satır durumu + kabul dosyası
-
-**VERDICT:** CONFIRMED | HALLUCINATION | UNVERIFIED
-
-UNVERIFIED ise uygulayan ajan durmalı.
+PASS yalnız `qa-report` 0E/0W + `guard.sh claim-pass` ile.

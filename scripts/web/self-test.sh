@@ -125,7 +125,7 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 step "0) bash -n söz dizimi + python söz dizimi"
-for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh bootstrap-project.sh smoke-test.sh frontmatter-check.sh mode.sh decide.sh measure.sh preflight.sh run-status.sh webrail.sh status.sh module-apply.sh p2-checklist.sh guard.sh doctor.sh; do
+for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh bootstrap-project.sh smoke-test.sh frontmatter-check.sh mode.sh decide.sh measure.sh preflight.sh run-status.sh webrail.sh status.sh module-apply.sh p2-checklist.sh guard.sh doctor.sh phase-log.sh; do
   bash -n "$ROOT/scripts/web/$s" || die "bash -n: $s"
   echo "    OK: $s"
 done
@@ -2841,6 +2841,28 @@ META_N="$(python3 -c "import json;print(json.load(open('$ROOT/.factory/meta.json
 [[ "$META_N" == "$TOTAL_STEPS" ]] || die "meta self_test_scenarios ($META_N) != TOTAL_STEPS ($TOTAL_STEPS)"
 rm -rf "$D78" "$D78b"
 echo "    doctor apply+loop PASS · Cursor skill mount · meta sayaç ✓"
+
+step "79) web-only: Android kırıntı yok + IDE-HANDOFF + phase-log + OC L1"
+[[ ! -f "$ROOT/.cursor/rules/03-android-elite.mdc" ]] || die "03-android-elite hâlâ var"
+[[ ! -f "$ROOT/.cursor/commands/baslat.md" ]] || die "/baslat legacy hâlâ var"
+[[ ! -d "$ROOT/.cursor/skills/yapilacaklar-planner" ]] || die "yapilacaklar-planner hâlâ var"
+[[ -f "$ROOT/docs/IDE-HANDOFF.md" ]] || die "IDE-HANDOFF.md yok"
+[[ -f "$ROOT/docs/templates/PHASE-LOG.md" ]] || die "PHASE-LOG şablon yok"
+[[ -f "$ROOT/.opencode/agent/hallucination-guard.md" ]] || die "OC hallucination-guard yok"
+[[ -f "$ROOT/.opencode/agent/phase-verifier.md" ]] || die "OC phase-verifier yok"
+PL="$TMP/phaselog79"
+mkdir -p "$PL/.factory"
+printf '{"current_phase":"P2","status":"in_progress"}\n' > "$PL/.factory/web-state.json"
+bash "$ROOT/scripts/web/phase-log.sh" "$PL" "test kayıt" "kalan yok" "self-test" >/dev/null
+grep -q 'test kayıt' "$PL/PHASE-LOG.md" || die "phase-log yazmadı"
+# bootstrap müşteriye android rule taşımamalı
+B79="$TMP/boot79"
+bash "$BOOTER" "$B79" --yes >/dev/null 2>&1 || die "bootstrap 79 fail"
+[[ ! -f "$B79/.cursor/rules/03-android-elite.mdc" ]] || die "bootstrap android rule kopyaladı"
+[[ -f "$B79/PHASE-LOG.md" ]] || die "bootstrap PHASE-LOG yazmadı"
+[[ -f "$B79/.opencode/agent/phase-verifier.md" ]] || die "bootstrap OC L1 kopyalamadı"
+rm -rf "$PL" "$B79"
+echo "    web-only purge · IDE-HANDOFF · phase-log · OC L1 ✓"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

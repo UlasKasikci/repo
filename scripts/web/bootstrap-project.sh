@@ -277,11 +277,16 @@ fi
 # Cursor domain skill parity (kapı: module-apply / P2)
 if [[ -d "$PROJECT/.opencode/skills" && -d "$PROJECT/.cursor" ]]; then
   mkdir -p "$PROJECT/.cursor/skills"
-  for sk in auth-rbac admin-crud kvkk-compliance seo-basics error-doctor; do
+  for sk in auth-rbac admin-crud kvkk-compliance seo-basics error-doctor \
+            zero-hallucination hierarchical-audit after-action-review; do
     if [[ -d "$PROJECT/.opencode/skills/$sk" && ! -e "$PROJECT/.cursor/skills/$sk" ]]; then
       cp -a "$PROJECT/.opencode/skills/$sk" "$PROJECT/.cursor/skills/$sk"
     fi
   done
+fi
+# PHASE-LOG şablonu (IDE handoff)
+if [[ -f "$ROOT_BOOT/docs/templates/PHASE-LOG.md" && ! -f "$PROJECT/PHASE-LOG.md" ]]; then
+  cp "$ROOT_BOOT/docs/templates/PHASE-LOG.md" "$PROJECT/PHASE-LOG.md"
 fi
 # Müşteri anayasa notu (GitHub push kilidi — kısa)
 cat > "$PROJECT/WEBRAIL-CUSTOMER.md" <<'NOTE'
@@ -336,7 +341,7 @@ if command -v git >/dev/null 2>&1; then
     [[ -f "$PROJECT/.factory/workspace-role.json" ]] && git -C "$PROJECT" add -- .factory/workspace-role.json 2>/dev/null || true
     [[ -f "$PROJECT/DISCOVERY.md" ]] && git -C "$PROJECT" add -- DISCOVERY.md 2>/dev/null || true
     [[ -f "$PROJECT/WEBRAIL-CUSTOMER.md" ]] && git -C "$PROJECT" add -- WEBRAIL-CUSTOMER.md 2>/dev/null || true
-    # Cursor skill mount (S1 light — domain parity)
+    [[ -f "$PROJECT/PHASE-LOG.md" ]] && git -C "$PROJECT" add -- PHASE-LOG.md 2>/dev/null || true
     if [[ -d "$PROJECT/.cursor/skills" ]]; then
       git -C "$PROJECT" add -- .cursor/skills 2>/dev/null || true
     fi

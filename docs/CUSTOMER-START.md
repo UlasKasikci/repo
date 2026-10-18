@@ -64,24 +64,37 @@ P2_HUMAN_ASSIST=true bash scripts/web/orchestrate.sh . --auto
 
 Her oturum başı:
 
-1. `bash scripts/web/status.sh .` (veya `DISCOVERY.md` + `mode.json`)
-2. `RUN-STATUS.md`
-3. `.factory/web-state.json`
-4. `.factory/domain-report.json`
-5. `.factory/decision.json`
+1. `bash scripts/web/status.sh .`
+2. `RUN-STATUS.md` + `PHASE-LOG.md`
+3. `.factory/web-state.json` · `mode.json`
+4. `.factory/domain-report.json` · `decision.json`
+
+Oturum sonu:
+
+```bash
+bash scripts/web/phase-log.sh . "ne yaptım" "ne kaldı" "OpenCode|Cursor|Claude|Antigravity"
+bash scripts/web/run-status.sh .
+```
 
 ---
 
 ## 3) IDE fark etmez — aynı kapılar
+
+Detay playbook: [`docs/IDE-HANDOFF.md`](IDE-HANDOFF.md)  
+(Örn. OpenCode’da P1–P2 → Cursor’da P3–P5 paket.)
 
 | İş | Cursor | OpenCode | Claude / Antigravity / terminal |
 |----|--------|----------|----------------------------------|
 | Tek giriş | `/webrail` | `/webrail` | `webrail.sh` |
 | Keşif | `/kesfet` | `/kesfet` | `mode.sh from-brief` |
 | P1 | `/web-baslat` | `/web-baslat` | `orchestrate` + decide |
+| Doctor | `/doktor` | `/doktor` | `doctor.sh --loop` |
 | Yama | `/yama` | `/yama` | qa-gate + düzelt |
 | QA | `/web-denetle` | `/web-denetle` | `qa-gate.sh` |
 | Paket | `/web-yukle` | `/web-yukle` | `package-yukleme.sh` |
+| Handoff log | `phase-log.sh` | aynı | aynı |
+
+Android / YAPILACAKLAR komutları **yok** — kullanma.
 
 ---
 

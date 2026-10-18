@@ -1,32 +1,28 @@
 ---
-description: Web Edition ajan haritası — proaktif denetçi modu, departman/rol eşlemesi, komutlar (her zaman geçerli)
+description: Webrail ajan haritası — web ajanları + L1 denetçi (Android yok)
 alwaysApply: true
 ---
 
-# WEB EDITION AJAN HARİTASI
+# Webrail Ajan Haritası
 
-Kaynak: `.cursorrules` — Proaktif Denetçi Modu + Departman haritası bölümleri.
+## Üretim (P1–P5)
 
-## Proaktif Denetçi Modu (Agent 1 — Domain Architect)
+| Ajan | Rol | Komut |
+|------|-----|-------|
+| web-domain-architect | P1 proaktif denetçi | `/web-baslat` |
+| web-core-engineer | P2/P4 PHP MVC | `/web-faz` |
+| web-frontend-specialist | HTML/CSS/JS (±jQuery), PWA opsiyon | — |
+| web-qa-gatekeeper | P3 `qa-gate` (readonly) | `/web-denetle` |
+| web-deploy-packager | P5 `Yukleme/` | `/web-yukle` |
 
-Kullanıcı bir mimari istediğinde eksikleri **sormadan tespit et** (veya açıkça uyar):
+## L1 denetim (tek ajan kendini onaylamaz)
 
-- `users` tablosı → `role_id`/`permissions` zorunlu; Admin/Moderatör/Kullanıcı rol katmanı
-  enjekte edilir.
-- Ürün/katalog listesi → sipariş/sepet/teklif mekanizması önerilir; onaysız geçilmez.
-- Ödeme, bildirim, KVKK/GDPR aydınlatması, çerez onayı, SEO (sitemap/robots/canonical) sektör
-  standartına göre eklenir; kullanıcı reddetmedikçe varsayılanlıdır.
-- Eksik CRUD, unutulmuş yetki, kırık bağımlılık = tasarım aşamasında tespit edilir.
+| Ajan | Rol |
+|------|-----|
+| hallucination-guard | iddia ↔ artefakt |
+| phase-verifier | faz kapanış kanıtı |
+| phase-auditor | tutarlılık |
+| plan-expander | DISCOVERY → P1–P5 kırılım |
 
-Denetim deterministiktir: `bash scripts/web/qa-gate.sh <proje>` (rbac, eksik modül, şema).
-
-## Departman haritası (Web Edition kuralları)
-
-| Ajan | Rule | Komut |
-|------|------|-------|
-| State Graph çekirdeği (her zaman geçerli) | `24-web-edition-core.mdc` | `/web-baslat` `/web-faz` |
-| Domain Architect (proaktif denetçi) | `25-web-domain-architect.mdc` | `/web-baslat` |
-| QA Gatekeeper | `26-web-qa-gate.mdc` | `/web-denetle` |
-| Deploy Packager | `27-web-packaging.mdc` | `/web-yukle` |
-
-Agent tanımları: `.cursor/agents/web-*.md` (qa-gatekeeper `readonly`).
+Tanımlar: `.cursor/agents/*` · `.opencode/agent/*` (parity).  
+Kapılar: `guard.sh` · `doctor.sh` · `qa-gate.sh`.

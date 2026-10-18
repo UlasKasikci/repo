@@ -38,5 +38,5 @@ Faz geçişleri yalnız bu araçlarla yapılır: `start`, `advance`, `qa-pass`, 
 
 ## Legacy geçersizlik
 
-Web Edition modunda Android'e özgü referanslar (YAPILACAKLAR.md, 33 katman, Gradle döngüsü,
-`init-new-app.sh`, mobil scaffold) geçersizdir; kanonik kaynak her zaman `docs/WEB-EDITION.md`.
+Mobil fabrika plan dili ve scaffold bu repoda **yok**. Kanonik kaynak: `docs/WEB-EDITION.md`
+· fazlar yalnız P1–P5 · handoff: `docs/IDE-HANDOFF.md`.

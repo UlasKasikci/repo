@@ -1,100 +1,32 @@
 ---
-description: Overmind — halüsinasyon sıfır, YAPILACAKLAR zorunlu, hiyerarşik denetim kapısı
+description: Overmind — halüsinasyon sıfır, Webrail faz kapısı, kanıt zorunlu (web-only)
 alwaysApply: true
 ---
 
-# Overmind — Halüsinasyon Sıfır & YAPILACAKLAR Kapısı
+# Overmind — Halüsinasyon Sıfır (Webrail)
 
-Bu kural **her oturumda otomatik** uygulanır. Geliştirici uyarı yazmasa bile bu protokol geçerlidir.
+Bu kural **her oturumda** geçerlidir. Android / YAPILACAKLAR / Gradle / 33-katman **geçersiz**.
 
-## Mutlak ön koşul (kod/dosya değişikliği öncesi)
+## Mutlak ön koşul (yazmadan önce)
 
-1. **`YAPILACAKLAR.md` oku** — yoksa, boşsa veya `uninitialized` ise **önce** `/baslat` veya `init-new-app.sh` / `init-yapilacaklar.sh` akışını uygula.
-2. **`docs/00-INDEX.md`** + aktif faz satırlarını oku.
-3. **Context OS:** `./scripts/factory/assemble-context.sh` → `.factory/context/SESSION_CONTEXT.md` (varsa `LAST_DECISION.md`).
-4. **Intent Gate:** Soru/inceleme = DIAGNOSTIC (dosya değiştirme yok). Uygulama = IMPLEMENTATION. Sıra: `21-project-intent-gate.mdc` → `20-agent-intent-gate.mdc`.
-5. **Halüsinasyon sıfır:** Var olmayan dosya, sınıf, API, script veya governance kaydı **uydurma**. Okumadan referans verme.
-6. **Araç zorunluluğu:** Dosya içeriği, grep, glob, terminal — tahmin değil kanıt.
-7. **Tek faz kuralı:** Aynı anda yalnızca **bir** faz `işleniyor` olabilir.
-8. **Claude-Native reasoning (v2):** Kod/core değişikliği öncesi `19-claude-reasoning.mdc` — `<thinking>` + `<architecture_check>` (muafiyetler hariç). Rehber: `docs/CLAUDE_REASONING.md`.
-9. **Build kanıtı (F3+):** Android/Gradle değişikliği sonrası `./scripts/gradle-build-loop.sh` çalıştır. FAIL → `.cursor/snapshots/build/LATEST.gradle.log` oku; aynı parse hatası tekrarlanırsa `./scripts/state-recovery.sh --recover`. PASS olmadan F3+ satırını `tamamlandı` yapma.
+1. `bash scripts/web/status.sh .` — mode + faz + doctor ipucu
+2. Varsa oku: `RUN-STATUS.md`, `DISCOVERY.md`, `PHASE-LOG.md`, `.factory/web-state.json`
+3. Intent: soru = DIAGNOSTIC (dosya yok); “yap/düzelt” = IMPLEMENTATION → `guard.sh <op>`
+4. **Halüsinasyon sıfır:** Okumadığın dosya/API/script’i uydurma
+5. Tek aktif faz: P1→P2→P3→P4→P5 (state.sh dışında geçiş yok)
+6. QA FAIL → `doctor.sh --loop` → yalnız `FIX-BRIEF.md`
+7. PASS iddiası → `guard.sh claim-pass` + `qa-report.json`
 
-## Cursor terminal köprüsü
+## Web-only
 
-Cursor IDE derleme/emülatör görmez. Zorunlu script'ler:
+Üretim: PHP 8.1+ MVC · MySQL 8 · HTML/CSS/JS (± jQuery) · isteğe PWA · `Yukleme/` FTP.  
+**Yasak:** Flutter, Compose, React Native, Kotlin, Swift, Gradle, APK.
 
-| Script | Ne zaman? |
-|--------|-----------|
-| `./scripts/gradle-build-loop.sh` | Her `.kt`/`.kts` değişikliği batch'i sonrası (F3+) |
-| `./scripts/state-recovery.sh` | Truncation / yarım Gradle → `--checkpoint` / `--recover` |
-| `./scripts/run-maestro.sh` | F5 UI smoke / release öncesi (cihaz varsa) |
-| `.cursor/snapshots/mcp/` | MCP Browser/GitHub çıktısı — dosyaya yaz, sohbete güvenme |
+## Token
 
-Detay: `docs/CURSOR_TERMINAL_BRIDGE.md` · `.cursor/snapshots/README.md`
+Önce `module-apply` / katalog skill; sonra dar LLM. qa-report dump yasak.
 
-## Context budget (token)
+## Handoff
 
-Tam `33-LAYER-MANIFEST.yaml` okuma **yasak**. Yalnızca `docs/33-LAYER-MANIFEST/layer-NN.yaml` dilimleri.  
-Rehber: `docs/CURSOR_CONTEXT_BUDGET.md` · `python3 scripts/split-layer-manifest.py`
-
-| Faz | Katman | Anlam |
-|-----|--------|-------|
-| F0 | Zemin & temel | Governance, MCP, hafıza, sprint lock |
-| F1 | Kolon & taşıyıcı | CPO vizyon, pazar, monetizasyon |
-| F2 | Kat döşeme | Mimari, modül haritası, bağımlılıklar |
-| F3 | Duvar & tesisat | Android iskelet, core modüller |
-| F4 | Cephe & UI | Compose, i18n, Liquid Glass |
-| F5 | Elektrik & güvenlik | Denetim, güvenlik, OEM |
-| F6 | Ölçüm & analitik | AID Sprint P, analytics |
-| F7 | İç mekan & detay | Feature WP'ler, ince işçilik |
-| F8 | Anahtar teslim | CAO + CEO + EGC denetimi, release gate |
-
-Durum ibareleri (satır sonunda veya tabloda): **`bekliyor`** · **`işleniyor`** · **`tamamlandı`**
-
-## Faz çalıştırma protokolü
-
-Her görev satırında: **Ajan** · **L1 üst denetim** · **Kabul kriteri**
-
-1. Fazı `işleniyor` yap → `YAPILACAKLAR.md` güncelle.
-2. İlgili `.cursor/rules/XX-*.mdc` ajanını uygula.
-3. İş bitince **L1 ajan/subagent** ile doğrula (`phase-verifier`, departman L1).
-4. Satırı `tamamlandı` yap; sonraki fazın ilk satırını `işleniyor` yap.
-5. **Keşif kuralı:** Uygulama sırasında eksik/güncelleme gerekiyorsa aynı faza veya uygun üst faza **`[EK-YYYYMMDD]`** ile yeni madde ekle; atlama.
-
-## Hiyerarşik denetim (tek onay yasak)
-
-- Zincir: `governance/executive/HIERARCHICAL_AUDIT_CHAIN.md`
-- Faz tamamlanması ≠ proje tamamlandı; F8'de CAO + CEO + approval gate zorunlu.
-
-## Project Intent and After Action Ordering
-
-Before domain-specific genesis/scaffold/implementation, apply:
-
-1. `21-project-intent-gate.mdc` — workspace role/domain lock
-2. `20-agent-intent-gate.mdc` — message-level DIAGNOSTIC vs IMPLEMENTATION mode
-3. `00-overmind-zero-hallucination.mdc` — YAPILACAKLAR, evidence-first execution, no hallucination
-
-After an implementation or diagnostic execution summary, `/cevap` may be used as a DIAGNOSTIC/AAR command. `/cevap` must follow:
-
-- `docs/CEVAP_REPORT_CONTRACT.md`
-- `.cursor/skills/after-action-review/SKILL.md`
-- `.cursor/rules/22-quality-after-action-contract.mdc` (when invoked)
-
-`/cevap` does not modify files, advance phases, run remediation, scaffold projects, or commit changes.
-
-## Yasaklar
-
-- YAPILACAKLAR olmadan kod üretmek
-- Tamamlanmamış üst fazda alt fazı `tamamlandı` saymak
-- Tek ajanın kendi işini nihai onaylaması
-- `docs/TODO.md` ile `YAPILACAKLAR.md` çelişkisi — çelişkide YAPILACAKLAR öncelikli, TODO senkronize edilir
-
-## Komutlar & beceriler
-
-- `/baslat` — prompt → YAPILACAKLAR oluştur, F0 başlat
-- `/devam-et` — aktif fazdan devam
-- `/denetle` — hiyerarşik denetim
-- `/faz-durumu` — özet
-- `/cevap` — After Action Review (DIAGNOSTIC; dosya değiştirmez)
-- Skill: `.cursor/skills/yapilacaklar-planner/`, `yapilacaklar-executor/`, `zero-hallucination/`, `hierarchical-audit/`
-- Reasoning (v2): `19-claude-reasoning.mdc` · `docs/CLAUDE_REASONING.md`
+IDE değişince sohbet hafızasına güvenme: `RUN-STATUS.md` + `.factory/*` + `PHASE-LOG.md`.  
+Playbook: `docs/IDE-HANDOFF.md`.

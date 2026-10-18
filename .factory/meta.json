@@ -14,7 +14,7 @@
   "stack": ["php8.1+", "mysql8", "html5", "css", "js"],
   "agents": 5,
   "qa_controls": 14,
-  "self_test_scenarios": 79,
+  "self_test_scenarios": 80,
   "decision_layer": "scripts/web/decide.sh",
   "guard": "scripts/web/guard.sh",
   "doctor": "scripts/web/doctor.sh",

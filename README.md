@@ -11,12 +11,12 @@ projesinin aynı denetim kapılarından geçmesi, eksik modül/güvenlik boşluk
 |---|---|
 | Fabrika deposu | [`github.com/UlasKasikci/repo`](https://github.com/UlasKasikci/repo) |
 | Stack | PHP 8.1+ (framework’süz MVC) · MySQL 8 / MariaDB · HTML/CSS/JS · FTP/`Yukleme/` |
-| Doğrulama | self-test **79/79** · `preflight` · `guard` · **doctor** (hata→düzelt) · 14 kanallı QA |
+| Doğrulama | self-test **80/80** · web-only · `guard` · **doctor** · IDE-HANDOFF · 14 kanallı QA |
 | Sürüm | **v1.3** · Şerit A · Decision Layer · git-push kilidi · Error Doctor |
 
 [![CI](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml/badge.svg)](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![self-test](https://img.shields.io/badge/self--test-79%2F79%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
+[![self-test](https://img.shields.io/badge/self--test-80%2F80%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
 
 > **Fabrika** (`role=webrail-factory`): tek remote `origin` → `UlasKasikci/repo`.  
 > **Müşteri / ürün** (`bootstrap` → `role=customer-app`): asla fabrika remote’una bağlanmaz;
@@ -73,7 +73,7 @@ git clone https://github.com/UlasKasikci/repo.git ~/webrail
 cd ~/webrail
 
 composer global require phpstan/phpstan phpunit/phpunit
-bash scripts/web/self-test.sh    # 79/79
+bash scripts/web/self-test.sh    # 80/80
 bash scripts/web/preflight.sh    # READY
 
 # Tek giriş — fabrika köküne YAZMA; hedef customer-app olur
@@ -125,7 +125,7 @@ webrail/   (= fabrika: UlasKasikci/repo)
 | **v1.0** | envanter-app | Kalite: 4s 48dk, QA PASS, DONE |
 | **v1.1** | randevu-app | Hız (benzer domain): **27 dk**, pattern reuse |
 | **v1.2** | helpdesk-app + çift AI denetimi | CSRF OOP + `/register` + CONTRACTS sandbox |
-| **v1.3** | Decision + guard + doctor | Şerit A · modüller · git-push kilidi · **Error Doctor** · self-test 79/79 |
+| **v1.3** | Decision + guard + doctor + web-only | Android purge · IDE-HANDOFF · self-test 80/80 |
 
 Release: [v1.2](https://github.com/UlasKasikci/repo/releases/tag/v1.2) · [v1.3](https://github.com/UlasKasikci/repo/releases/tag/v1.3)
 
@@ -182,7 +182,7 @@ Yeni QA kontrolü yalnız somut bug ile eklenir (K6).
 ## Katkı (yalnız fabrika deposu)
 
 1. Bu depoda çalışın: `https://github.com/UlasKasikci/repo` — müşteri ağacından buraya push **yasak**
-2. PR / push öncesi: `preflight.sh` READY + `self-test.sh` → **79/79** + `guard.sh git-push` ALLOW
+2. PR / push öncesi: `preflight.sh` READY + `self-test.sh` → **80/80** + `guard.sh git-push` ALLOW
 3. Push yalnız açık kullanıcı komutu + `WEBRAIL_ALLOW_GIT_PUSH=1`
 4. Doküman güncellemesi kanıttan türer (K5)
 

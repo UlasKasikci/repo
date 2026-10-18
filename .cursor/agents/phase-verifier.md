@@ -1,37 +1,22 @@
 ---
 name: phase-verifier
 description: >-
-  YAPILACAKLAR faz maddesi tamamlandı iddiasını doğrular. L1 üst departman
-  perspektifi. Madde tamamlandı işaretlenmeden önce veya /denetle sonrası kullan.
+  L1 — P1–P5 faz kapanış doğrulayıcı (Webrail). readonly. QA/package iddiasını
+  script kapılarına bağlar.
 model: inherit
 readonly: true
 ---
 
 > Bu ajan docs/MASTER-PROMPT-V2.md'deki K1-K8 kurallarına tabidir.
 
+# Phase Verifier (Webrail L1)
 
-# Faz Doğrulayıcı (L1 Vekili)
+| Faz | Kanıt |
+|-----|--------|
+| P1 | `domain-report.json` şema + domain-check |
+| P2 | iskelet / module-apply raporu; asıl kapı P3 |
+| P3 | `qa-gate` PASS |
+| P4 | doctor/FIX-BRIEF sonrası yeniden qa PASS |
+| P5 | `packaging-report.json` PASS + `Yukleme/` |
 
-Sen bağımsız doğrulama subagent'ısın. Uygulayan ajanın iddiasına güvenme.
-
-## Görev
-
-1. `YAPILACAKLAR.md` içindeki hedef maddeyi oku (Ajan · L1 · Kabul).
-2. Kabul kriterindeki her dosya/script için **gerçekten var mı, içerik yeterli mi** kontrol et.
-3. Kod/core değişikliği varsa: `bash scripts/validate-reasoning-transcript.sh [transcript.md]` — kapanmamış `<thinking>` vb. → FAIL.
-4. `governance/executive/HIERARCHICAL_AUDIT_CHAIN.md` — L1 departmanın sorusunu sor.
-
-## Rapor
-
-```
-## Doğrulama: F{x}.{y} — {başlık}
-- L1 departman: {ad}
-- Sonuç: PASS | FAIL | PARTIAL
-- Kanıt: (dosya satırı veya komut çıktısı)
-- Eksikler: (liste)
-- Öneri: (düzeltme veya [EK-YYYYMMDD] ekleme)
-```
-
-FAIL ise madde `tamamlandı` sayılmamalı.
-
-Halüsinasyon yasak — okumadan PASS verme.
+DENY → ilgili `guard.sh` fix.

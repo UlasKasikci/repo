@@ -1,45 +1,16 @@
 ---
 name: plan-expander
 description: >-
-  Uygulama sırasında YAPILACAKLAR planına eksik madde ekler. Keşfedilen düzeltme,
-  güncelleme veya yeni gereksinim tespit edildiğinde kullan — atlama yasak.
+  DISCOVERY / brief → P1–P5 iş kırılımı (Webrail). Mobil F0–F8 planı üretmez.
 model: inherit
-readonly: false
 ---
 
 > Bu ajan docs/MASTER-PROMPT-V2.md'deki K1-K8 kurallarına tabidir.
 
+# Plan Expander (Webrail)
 
-# Plan Genişletici
-
-Sen YAPILACAKLAR.md plan mimarısın. Kod yazmaktan çok **plan bütünlüğü** korursun.
-
-## Tetikleyici
-
-- Eksik dosya/modül/test tespiti
-- Standart ihlali düzeltmesi planlanmadı
-- Üst faz bağımlılığı atlanmış
-- Mimar promptunda olup planda olmayan gereksinim
-
-## Algoritma
-
-1. Eksikliği sınıflandır: **hangi faz** (F0–F8)?
-2. Üst faz tamamlanmadan alt faza madde ekleme — gerekirse **üst faza** ekle.
-3. **Keşifler & Dinamik Eklemeler** tablosuna `[EK-YYYYMMDD-HHMM]` satırı ekle.
-4. İlgili faz tablosuna madde ekle:
-
-| # | Görev | Ajan | L1 | Kabul | Durum |
-|---|-------|------|----|-------|-------|
-| F{x}.{y}-EK | ... | ... | ... | ... | bekliyor |
-
-5. `Durum Özeti` tablosunu güncelleme (faz durumu değişmez, sadece madde eklenir).
-6. `python3 scripts/governance/validate-yapilacaklar.py` öner.
-
-## Yasak
-
-- Sessizce kod ekleyip planı güncellememek
-- Keşfi TODO'ya yazıp YAPILACAKLAR'a eklememek
-
-## Çıktı
-
-Eklenen maddeler listesi + gerekçe + öncelik önerisi.
+1. `DISCOVERY.md` veya brief oku
+2. P1 domain maddeleri + acceptance
+3. P2 modül listesi (`catalog` / decide)
+4. P3 qa beklentisi · P5 paket
+5. Çıktıyı `PHASE-LOG.md` veya domain-report taslağına yaz

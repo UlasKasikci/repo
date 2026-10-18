@@ -1,44 +1,17 @@
 ---
-description: MCP orkestrasyonu — ilk kurulumda zorunlu MCP kontrolü ve ajan-MCP eşlemesi.
-alwaysApply: true
+description: MCP — web araştırma/doğrulama (Android Gradle MCP yok)
+alwaysApply: false
+globs: [".cursor/mcp.json", ".cursor/mcp.json.example", ".cursor/mcp.required.json", "docs/MCP_SETUP.md"]
 ---
-# MCP ORKESTRATÖR — Ajan Güçlendirme Katmanı
 
-Fabrika ajanları MCP olmadan kısıtlı kalır. **İlk oturumda** ve **her yeni proje bootstrap'inde** MCP kontrolü zorunludur.
+# MCP (Webrail)
 
-## İLK OTURUM PROTOKOLÜ
+İsteğe bağlı. P0 Android emülatör/Gradle MCP **yok**.
 
-1. `./scripts/check-mcp.sh` çalıştır (veya kullanıcıdan çalıştırmasını iste)
-2. P0 eksikse:
-   - `docs/MCP_SETUP.md` adımlarını sun
-   - `.cursor/mcp.json.example` → `.cursor/mcp.json` kopyala
-   - GitHub PAT ve browser MCP etkinleştirmesini hatırlat
-3. P0 tamamlanmadan **Android kod üretimine başlama** (belge okuma hariç)
+| Kullanım | MCP |
+|----------|-----|
+| Rakip / doküman | Browser, Fetch |
+| CI / PR | GitHub (fabrika deposunda) |
 
-## AJAN → MCP HARİTASI
-
-| Ajan | MCP | Kullanım |
-|------|-----|----------|
-| CPO | Browser, Fetch | Rakip analizi, Play Store, pazar verisi |
-| Baş Mimar | GitHub, Docker | CI durumu, build ortamı |
-| Android Elite | — | Kod üretimi (MCP gerekmez) |
-| Denetçi | GitHub | PR check, CI sonuçları |
-| OEM Denetçi | Browser | Üretici dokümantasyonu, MIUI rehberleri |
-
-## KURULUM KOMUTU
-
-```bash
-./scripts/first-setup.sh
-```
-
-Kaynak: `.cursor/mcp.required.json`
-
-## MCP HANDOFF (ZORUNLU)
-
-MCP ile toplanan veri **sohbet hafızasında taşınmaz**. Her MCP oturumu sonunda:
-
-1. `.cursor/snapshots/mcp/{agent}-{timestamp}.json` yaz (şema: `.cursor/snapshots/HANDOFF.template.json`)
-2. `mcp/LATEST.handoff.json` güncelle
-3. Kalıcı belgeye de yaz (`docs/01-VISION/`, `governance/market/` vb.)
-
-Sonraki ajan handoff dosyasını **okumadan** devam etmez.
+MCP çıktısı sohbette taşınmaz → `.cursor/snapshots/mcp/` veya `docs/findings/` yaz.
+Kurulum: `docs/MCP_SETUP.md` (varsa) / `.cursor/mcp.json.example`.

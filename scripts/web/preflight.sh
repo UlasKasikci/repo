@@ -78,6 +78,11 @@ for f in scripts/web/decide.sh scripts/web/decision.py scripts/web/run-status.sh
          .opencode/command/web-faz.md \
          .cursor/skills/auth-rbac/SKILL.md \
          .cursor/skills/error-doctor/SKILL.md \
+         .cursor/skills/zero-hallucination/SKILL.md \
+         docs/IDE-HANDOFF.md docs/templates/PHASE-LOG.md \
+         scripts/web/phase-log.sh \
+         .opencode/agent/hallucination-guard.md \
+         .opencode/agent/phase-verifier.md \
          .factory/modules/catalog.json \
          .factory/modules/auth-rbac/manifest.json \
          .factory/modules/kvkk/manifest.json \
@@ -142,9 +147,21 @@ for s in scripts/web/decide.sh scripts/web/run-status.sh scripts/web/preflight.s
          scripts/web/state.sh scripts/web/orchestrate.sh scripts/web/bootstrap-project.sh \
          scripts/web/mode.sh scripts/web/measure.sh scripts/web/webrail.sh \
          scripts/web/status.sh scripts/web/module-apply.sh scripts/web/p2-checklist.sh \
-         scripts/web/guard.sh scripts/web/doctor.sh; do
+         scripts/web/guard.sh scripts/web/doctor.sh scripts/web/phase-log.sh; do
   bash -n "$s" || bad "bash -n FAIL: $s"
 done
+# Android kırıntı — kurallar ağacında olmamalı
+if [[ -f .cursor/rules/03-android-elite.mdc ]] || [[ -f .cursor/commands/baslat.md ]]; then
+  bad "Android/legacy kırıntı hâlâ kurallarda (03-android veya /baslat)"
+else
+  ok "Android legacy rules/commands yok"
+fi
+# Olumlu Android uygulama izi (yasak listesindeki "Compose yasak" cümlesi FAIL değil)
+if grep -Rql 'gradle-build-loop\.sh\|@AndroidEntryPoint\|init-new-app\.sh\|YAPILACAKLAR\.md oku' .cursor/rules --include='*.mdc' 2>/dev/null; then
+  bad "Webrail rules içinde Android uygulama protokolü kaldı"
+else
+  ok "rules web-only (Android protokol yok)"
+fi
 python3 -m py_compile scripts/web/decision.py || bad "decision.py compile FAIL"
 ok "bash -n + decision.py"
 

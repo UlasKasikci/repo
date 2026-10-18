@@ -1,21 +1,14 @@
 ---
-description: Web Edition IDE/CLI handoff — ortak anayasa, IDE matrisi, legacy red (doküman/ide dosyalarında)
-alwaysApply: false
-globs: ["docs/**", "*.md", ".cursor/**", ".opencode/**", ".cursorrules", "CLAUDE.md"]
+description: IDE el değiştirme — OpenCode/Antigravity → Cursor paket (always)
+alwaysApply: true
 ---
 
-# WEB EDITION IDE / CLI HANDOFF
+# IDE Handoff (Webrail)
 
-Kaynak: `.cursorrules` — IDE/CLI matrisi bölümü.
+Kanonik: `docs/IDE-HANDOFF.md` · `docs/WEB-EDITION.md`
 
-Bu anayasa `.cursorrules` (Cursor), `CLAUDE.md` (Claude Code), `opencode.json` (opencode)
-ve `antigravity.yaml` (Antigravity/Freebuff) için ortaktır; hepsi `docs/WEB-EDITION.md`'e
-bağlıdır. Çelişen talimat geçersizdir.
-
-- **Bağlayıcı strateji dokümanı:** `docs/MASTER-PROMPT-V2.md` (K1-K8 — her tur başında okunur).
-- Agent tanımları: `.opencode/agent/*` (opencode) + `.cursor/agents/*` (Cursor) — ikisi
-  aynı rolü paylaşıyor; değişiklik iki IDE'de de yapılır (K7).
-- Frontmatter kontratı: YAML frontmatter **1. satırda** başlar; `scripts/web/frontmatter-check.sh`
-  (qa-gate 14. kontrol) her koşuda doğrular — üstüne satır eklemek parse'ı sessiz kırar.
-- Legacy Android kural/metin referansları (YAPILACAKLAR.md, 33 katman, Gradle döngüsü,
-  mobil scaffold) Web Edition modunda geçersizdir.
+1. Hangi IDE olursa olsun **aynı script kapıları** (mode/state/decide/module-apply/qa/doctor/package)
+2. Oturum başı: `status.sh` → `RUN-STATUS.md` → `PHASE-LOG.md` (varsa)
+3. Tipik yol: ucuz IDE’de P1–P2 → Cursor’da P3–P5 / `Yukleme/`
+4. Sohbet hafızası kanıt değildir; JSON/MD olmadan “bitti” deme
+5. Legacy Android kural/komut **yok sayılır** (silinmiş kabul)

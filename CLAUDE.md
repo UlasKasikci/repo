@@ -9,8 +9,9 @@
 **Mode:** deterministic — canonical spec: `docs/WEB-EDITION.md` · state contract:
 `.factory/web-state-graph.json` · never invent paths or features that are not in the spec.
 **Session start:** `bash scripts/web/status.sh .` → `guard.sh matrix .` → `RUN-STATUS.md` →
-`.factory/web-state.json` → `domain-report` → `decision.json`.  
-Customer protocol: `docs/CUSTOMER-START.md`.
+`PHASE-LOG.md` → `.factory/web-state.json` → `domain-report` → `decision.json`.  
+Customer protocol: `docs/CUSTOMER-START.md` · IDE switch: `docs/IDE-HANDOFF.md`.  
+**Web-only:** no Android/YAPILACAKLAR/Gradle. Session end: `phase-log.sh`.
 **Decision layer:** `bash scripts/web/decide.sh` (open-source JEV-logic; no paid JEV).
 **Operation gate:** before write-code / package / claim-pass / git-push / doctor →
 `bash scripts/web/guard.sh <op> .` (DENY = stop; follow printed `fix:`).

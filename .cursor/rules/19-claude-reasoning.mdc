@@ -1,81 +1,27 @@
 ---
-description: Claude-Native yapılandırılmış akıl yürütme — thinking, architecture_check, negative_constraints (v2.1 stable)
+description: Webrail kısa reasoning — P2/P4 kod öncesi (Android/Gradle yok)
 alwaysApply: true
 ---
-# Claude-Native Akıl Yürütme Protokolü (v2.1 stable)
 
-Tüm departman ajanları (01–17, 18-state-recovery) **kendi kural setini uygulamadan önce** bu süzgeci uygular.  
-Executive OS, YAPILACAKLAR faz kapısı ve `00-overmind-zero-hallucination` **üstünde değil — onlarla birlikte** çalışır.
+# Webrail Reasoning (kısa)
 
-Rehber: `docs/CLAUDE_REASONING.md`
-
-## Kelime bütçesi (over-thinking önleme)
-
-`<thinking>`, `<architecture_check>` ve `<negative_constraints>` bloklarının **her biri görev başına en fazla 150–200 kelime**.
-
-- Tekrarlayan paragraf yasak; madde işaretli, doğrudan boşluk analizi
-- Uzun geçmiş özetleme yasak — yalnızca aktif YAPILACAKLAR satırı
-- Muafiyet durumlarında blok açma (token koruma)
-
-## Ne zaman zorunlu?
-
-Aşağıdakilerden **biri** geçerliyse, kullanıcıya görünür çıktının **en başında** üç bloğu **sırayla** aç; kod/dosya değişikliğinden **önce** doldur:
-
-1. YAPILACAKLAR fazı `işleniyor` olarak güncellendi veya yeni faz görevi başlatıldı
-2. **Core dosyalar:** `*.gradle.kts`, `AndroidManifest.xml`, `libs.versions.toml`, Hilt `@Module`, Room `@Database`, Navigation graph
-3. Modüller arası kod taşıma veya yeni Gradle modülü
-4. Veritabanı / ağ katmanı şeması (Entity, DAO, DTO, API interface)
-5. `factory-quality-gate.sh` veya `gradle-build-loop.sh` hata ayıklama
-6. F3+ Android kod batch'i (Compose, repository, use-case)
-
-## Ne zaman muaf?
-
-- Yazım/noktalama, yalnızca markdown/doc typo
-- `/faz-durumu` özet raporu
-- Salt okuma / soru-cevap (dosya değişikliği yok) — **Intent Gate: DIAGNOSTIC** (`20-agent-intent-gate.mdc`)
-- Audit script çıktısını aktarma
-
-## Şablon (etiketleri kapat — Format Hatası sayılır)
+Kod/`core`/`views`/`SQL` yazmadan önce (keşif/typo muaf):
 
 ```xml
 <thinking>
-- Aktif YAPILACAKLAR fazı / görev ID?
-- Etkilenen Gradle modülleri; dependency-rules ihlali var mı?
-- Bağlayıcı 13 standart (i18n, Security, OEM…)?
-- Context budget: yalnızca layer-NN.yaml?
-- Script kanıtı: gradle-build-loop / state-recovery?
+- mode=factory mi? faz P2/P4 mi? guard write-code ALLOW mı?
+- decision.json / module-apply yapıldı mı?
+- Etkilenen dosyalar allowlist’te mi?
 </thinking>
-
 <architecture_check>
-- Clean Architecture: data → domain → presentation sınırları?
-- DTO → Entity → Domain mapping boşluğu?
-- Hilt: @Module / @Inject / @AndroidEntryPoint / @HiltViewModel?
-- i18n: hard-coded string yok?
+- PDO prepared · CSRF POST · htmlspecialchars çıktı · Argon2id/Bcrypt
+- MVC: core/ ↔ views/ sızıntı yok mu?
 </architecture_check>
-
 <negative_constraints>
-- Asla mimari katman bypass — üst/alt katmana veri sızdırma.
-- Asla geçici mock / hard-coded test verisi bırakma.
-- Asla @Inject / Hilt kurallarını es geçme.
+- Mobil/Android/Gradle kod yok
+- Mock/hard-coded secret yok
+- Kanıtsız PASS yok
 </negative_constraints>
 ```
 
-## Rewrite loop önleme
-
-1. Gradle parse hatası → log → **tek dosya** düzelt → `gradle-build-loop.sh`
-2. Aynı hata 2× → `state-recovery.sh --recover`
-3. Üç blok tamamlanmadan geniş refactor yasak
-
-## Linter / fix döngü limiti (max 3)
-
-Aynı dosyada lint veya aynı derleme hatası için **en fazla 3 düzeltme denemesi**.
-
-- 3. denemeden sonra hâlâ FAIL → dur, kök nedeni raporla, kullanıcıya sor
-- "fix fix fix" sonsuz döngüsü yasak
-- Her denemede farklı hipotez veya yeni kanıt (log satırı) olmalı
-
-## Denetim
-
-- Statik şablon XML: `scripts/validate-reasoning-template-xml.sh` · audit V2.7
-- Canlı transcript XML (v2.2): `phase-verifier` — henüz runtime parser yok
-- CAO / F8: blok atlandıysa görev `tamamlandı` sayılmaz
+Her blok ≤ 120 kelime. Aynı hatada max 3 düzeltme → `doctor.sh` / kullanıcıya sor.

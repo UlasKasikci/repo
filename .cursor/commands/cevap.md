@@ -1,61 +1,22 @@
-# /cevap
+# /cevap — After Action (Webrail, DIAGNOSTIC)
 
-Bu command, Cursor işlem özetini Webrail governance açısından değerlendirir.
+Dosya değiştirmez. Oturum özetini governance açısından değerlendir.
 
-## Kullanım
-
-Kullanıcı Cursor işlem özetini `/cevap` ile verir (yapılan değişiklikler, komutlar, faz, riskler).
-
-## Ön Koşul
-
-Bu command **DIAGNOSTIC / AAR** modudur. **Dosya değiştirme yapmaz.**
-
-Önce şu kontrolleri değerlendir (okuma veya mevcut özetten):
+## Önce oku
 
 ```bash
-python3 scripts/governance/validate-project-intent.py --mode diagnostic
-python3 scripts/governance/validate-yapilacaklar.py
-```
-
-Gerekirse:
-
-```bash
-python3 scripts/governance/validate-audit-chain.py
+bash scripts/web/status.sh .
+cat RUN-STATUS.md PHASE-LOG.md 2>/dev/null
 ```
 
 **Skill:** `.cursor/skills/after-action-review/SKILL.md`  
-**Contract:** `docs/CEVAP_REPORT_CONTRACT.md`
+**Playbook:** `docs/IDE-HANDOFF.md`
 
-## Görev
+## Çıktı
 
-Kullanıcıdan gelen Cursor işlem özetini `docs/CEVAP_REPORT_CONTRACT.md` formatına göre değerlendir.
+1. Yapılan / kalan (P1–P5)
+2. Kanıt dosyaları var mı?
+3. Token notu (module-apply / doctor)
+4. Sonraki IDE için 3 satır handoff
 
-Şunları kontrol et:
-
-1. Intent uyumu
-2. Domain/platform uyumu
-3. YAPILACAKLAR aktif faz uyumu
-4. Kullanıcı onayı gereken değişiklikler
-5. Security/privacy riski
-6. Architecture boundary riski
-7. Design/accessibility etkisi
-8. Validation kanıtı
-9. Rollback notu
-10. Eksik bilgiler
-11. Sonraki hiyerarşik adım
-
-## Yasaklar
-
-- Dosya değiştirme
-- Script çalıştırıp remediation yapma
-- Feature implementation başlatma
-- Scaffold oluşturma
-- Commit atma
-- Yeni faza geçme
-- Kullanıcı onayı olmadan sonraki promptu uygulama
-
-## Output
-
-`docs/CEVAP_REPORT_CONTRACT.md` içindeki **`/CEVAP REVIEW REPORT`** formatını kullan.
-
-Son bölümde **`Cursor'a Verilecek Sonraki Prompt`** başlığında kopyalanabilir tek `text` bloğu üret.
+Android / mobil plan dili yok.

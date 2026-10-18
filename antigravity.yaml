@@ -8,12 +8,16 @@ customer_start: "docs/CUSTOMER-START.md"
 skills_root: ".opencode/skills"
 skills_prefer:
   - error-doctor
+  - zero-hallucination
+  - hierarchical-audit
   - auth-rbac
   - admin-crud
   - kvkk-compliance
   - seo-basics
 directives:
-  - "Read RUN-STATUS.md and .factory/web-state.json before any generation."
+  - "Web-only: never Android/Flutter/Gradle/YAPILACAKLAR. PHP MVC + MySQL + HTML/CSS/JS only."
+  - "Read RUN-STATUS.md, PHASE-LOG.md, and .factory/web-state.json before any generation."
+  - "On IDE switch follow docs/IDE-HANDOFF.md; append phase-log.sh at session end."
   - "Before write-code/package/claim-pass/git-push/doctor: bash scripts/web/guard.sh <op> . — DENY means stop and follow fix."
   - "Never git push unless the user explicitly asks; default is DENY via guard.sh git-push."
   - "If workspace-role is customer-app or WEBRAIL-CUSTOMER.md exists: never set origin to UlasKasikci/repo; never push to the factory."

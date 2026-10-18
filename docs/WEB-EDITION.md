@@ -1,9 +1,10 @@
 # Webrail — Teknik Spesifikasyon
 
-**Sürüm:** 1.3.0 · **Mod:** deterministic · **Stack:** Sade PHP 8.1+ MVC + MySQL 8.0+/MariaDB  
-**Kapsam:** Yalnızca Web. Mobil (Flutter, Compose, React Native, Gradle, APK) kod üretimi yasaktır.  
-**Fabrika deposu:** `https://github.com/UlasKasikci/repo` (`role=webrail-factory`).  
-**Müşteri ağacı:** bootstrap → `role=customer-app` — fabrika remote’una push yasak.
+**Sürüm:** 1.3.0 · **Mod:** deterministic · **Stack:** PHP 8.1+ MVC + MySQL 8 + HTML/CSS/JS (±jQuery) · PWA opsiyonel · FTP/`Yukleme/`  
+**Kapsam:** Yalnızca Web. Mobil kod üretimi yasaktır (Flutter/Compose/RN/Gradle/APK).  
+**Fabrika:** `https://github.com/UlasKasikci/repo` (`webrail-factory`).  
+**Müşteri:** bootstrap → `customer-app` — fabrika remote’una push yasak.  
+**IDE el değiştirme:** `docs/IDE-HANDOFF.md` · oturum günlüğü: `PHASE-LOG.md` / `phase-log.sh`.
 
 Bu dosya Webrail'in **kanonik** spesifikasyonudur. Tüm IDE/CLI konfigürasyonları
 (`.cursorrules`, `CLAUDE.md`, `opencode.json`, `antigravity.yaml`) bu dosyaya bağlanır; çelişen
@@ -364,6 +365,7 @@ ve `debug config` öncesi `find . -name '._*' -delete` ile temizle.
 - Lighthouse: `bash scripts/web/lighthouse-verify.sh <proje> [--serve] [--strict]`
 - Bootstrap: `bash scripts/web/bootstrap-project.sh <hedef> [--yes] [--force]`
 - Smoke: `bash scripts/web/smoke-test.sh`
-- Öz-test: `bash scripts/web/self-test.sh` (79 senaryo) · preflight: `preflight.sh`
+- Öz-test: `bash scripts/web/self-test.sh` (80 senaryo) · preflight: `preflight.sh`
+- IDE handoff: `docs/IDE-HANDOFF.md` · `scripts/web/phase-log.sh`
 - Bulgular: `docs/findings/` · CI: `.github/workflows/validate.yml`
 - AppleDouble: `find . -name '._*' -delete` (exFAT; paketleme/IDE listesini bozar)

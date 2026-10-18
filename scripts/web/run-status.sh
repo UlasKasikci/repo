@@ -87,12 +87,14 @@ bash scripts/web/package-yukleme.sh .        # yalnız QA PASS
 ## Okunacak tek doğruluk kaynakları
 
 1. `.factory/web-state.json` — faz
-2. `.factory/domain-report.json` — P1 dondurulmuş gereksinim
-3. `.factory/decision.json` — modül/bağlam/routing kararı
-4. `qa-report.json` — son QA (varsa)
-5. `docs/WEB-EDITION.md` — kanonik spec
+2. `PHASE-LOG.md` — oturum günlüğü (IDE el değiştirme)
+3. `.factory/domain-report.json` — P1 dondurulmuş gereksinim
+4. `.factory/decision.json` — modül/bağlam/routing kararı
+5. `qa-report.json` / `doctor-report.json` — son QA / doctor (varsa)
+6. `docs/WEB-EDITION.md` · `docs/IDE-HANDOFF.md`
 
 Cursor · OpenCode · Claude Code · Antigravity: hepsi aynı dosyalara bağlıdır.
+Kayıt ekle: `bash scripts/web/phase-log.sh . \"<yapılan>\" \"<kalan>\" \"<IDE>\"`
 """
 out.write_text(text, encoding="utf-8")
 print(f"run-status: yazıldı → {out} (faz={phase})")

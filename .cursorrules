@@ -126,6 +126,5 @@ Talep → /webrail [--brief] (veya /kesfet → promote)
 ## IDE/CLI matrisi
 
 Bu anayasa `.cursorrules` (Cursor), `CLAUDE.md` (Claude Code), `opencode.json` (opencode)
-ve `antigravity.yaml` (Antigravity/Freebuff) için ortaktır; hepsi `docs/WEB-EDITION.md`'e
-bağlıdır. Legacy Android kural/metin referansları (YAPILACAKLAR.md, 33 katman, Gradle
-döngüsü, mobil scaffold) Web Edition modunda geçersizdir.
+ve `antigravity.yaml` (Antigravity) için ortaktır; hepsi `docs/WEB-EDITION.md` +
+`docs/IDE-HANDOFF.md`'e bağlıdır. Mobil fabrika plan dili bu repoda yoktur.

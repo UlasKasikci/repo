@@ -1,35 +1,35 @@
 ---
 name: zero-hallucination
 description: >-
-  Halüsinasyon sıfır protokolü. Her dosya/API/script referansından önce okuma/grep
-  zorunlu. YAPILACAKLAR ve hiyerarşik denetim kapısı. Yeni oturum, kod yazımı,
-  dosya referansı veya "tamamlandı" iddiası öncesi otomatik uygula.
+  Webrail kanıt protokolü — dosya/API uydurma yasak; RUN-STATUS ve .factory zorunlu.
+category: think
+applies-to: [cursor, opencode, claude, antigravity]
+webrail_phase: ANY
+version: "2.0.0"
 ---
 
-# Halüsinasyon Sıfır Protokolü
+# Zero Hallucination (Webrail)
 
-## Tetikleyiciler
+**Durum:** READY · **Kapı:** `status.sh` · `guard.sh` · okuma kanıtı
 
-- Yeni proje veya yeni oturum
-- Dosya/sınıf/script adı söylenmeden önce
-- "Tamamlandı", "hazır", "çalışıyor" iddiası
-- Governance veya `.cursor` yapılandırması
+## When to Use
 
-## Zorunlu adımlar
+Her IMPLEMENTATION oturumu başı; IDE el değiştirme; “tamamlandı” iddiası öncesi.
 
-1. **Okumadan yazma:** Referans verilen her path için `Read`, `Glob` veya `Grep` kanıtı.
-2. **YAPILACAKLAR kapısı:** `YAPILACAKLAR.md` yoksa `bash scripts/governance/init-yapilacaklar.sh` veya `/baslat`.
-3. **Tek aktif faz:** Birden fazla faz `işleniyor` olamaz.
-4. **Komut kanıtı:** Script iddiası → terminal çıktısı veya dosya satır referansı.
-5. **Uydurma yasak:** Package adı, modül listesi, JSON alanları — repodan oku.
+## Process
 
-## Doğrulama checklist
+1. `bash scripts/web/status.sh .`
+2. Oku: `RUN-STATUS.md`, `PHASE-LOG.md` (varsa), ilgili `.factory/*.json`
+3. Referans vereceğin her path’i oku/grep et
+4. QA/PASS → `qa-report.json` + `guard.sh claim-pass`
+5. Eksik iş → `doctor.sh` veya ilgili faza dön
 
-- [ ] Path gerçekten var mı?
-- [ ] İçerik iddia ile uyumlu mu?
-- [ ] Aktif faz `YAPILACAKLAR.md` ile uyumlu mu?
-- [ ] L1 denetim yapıldı mı (tek ajan onayı yok)?
+## Red Flags
 
-## Hata durumunda
+- YAPILACAKLAR / Gradle / Compose / Android planı
+- Okunmamış dosyaya atıf
+- Sohbet hafızasına güvenerek devam
 
-Dur, uydurmayı bırak, eksik dosyayı oluştur veya Mimar'a sor.
+## Verification
+
+`status.sh` ile faz uyumu; iddia edilen dosya diskte var.
