@@ -11,12 +11,12 @@ projesinin aynı denetim kapılarından geçmesi, eksik modül/güvenlik boşluk
 |---|---|
 | Fabrika deposu | [`github.com/UlasKasikci/repo`](https://github.com/UlasKasikci/repo) |
 | Stack | PHP 8.1+ (framework’süz MVC) · MySQL 8 / MariaDB · HTML/CSS/JS · FTP/`Yukleme/` |
-| Doğrulama | self-test **80/80** · web-only · `guard` · **doctor** · IDE-HANDOFF · 14 kanallı QA |
-| Sürüm | **v1.3** · Şerit A · Decision Layer · git-push kilidi · Error Doctor |
+| Doğrulama | self-test **81/81** · web-only · `guard` · **doctor** · **denetle/gap-scan** · IDE-HANDOFF |
+| Sürüm | **v1.3.1** (v1.4 S0) · PLAN.md · auto-hooks · Decision · git-push kilidi |
 
 [![CI](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml/badge.svg)](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![self-test](https://img.shields.io/badge/self--test-80%2F80%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
+[![self-test](https://img.shields.io/badge/self--test-81%2F81%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
 
 > **Fabrika** (`role=webrail-factory`): tek remote `origin` → `UlasKasikci/repo`.  
 > **Müşteri / ürün** (`bootstrap` → `role=customer-app`): asla fabrika remote’una bağlanmaz;
@@ -46,7 +46,8 @@ projesinin aynı denetim kapılarından geçmesi, eksik modül/güvenlik boşluk
 ## Nasıl çalışır?
 
 ```text
-/kesfet (discovery) → mode.sh promote → P1 Domain → P2 Code → P3 QA ──PASS──→ P5 → DONE
+brief|/kesfet → PLAN.md + gap-scan → P1 Domain → P2 Code → P3 QA ──PASS──→ P5 → DONE
+         (auto: plan-from-brief · denetle)              (auto: doctor+denetle)  (auto: denetle)
                                               │
                                               ├─ FAIL (retry 1–3) → P4 → P3
                                               └─ 4. FAIL → HALT + debug_report.json
@@ -73,8 +74,7 @@ git clone https://github.com/UlasKasikci/repo.git ~/webrail
 cd ~/webrail
 
 composer global require phpstan/phpstan phpunit/phpunit
-bash scripts/web/self-test.sh    # 80/80
-bash scripts/web/preflight.sh    # READY
+bash scripts/web/self-test.sh    # 81/81bash scripts/web/preflight.sh    # READY
 
 # Tek giriş — fabrika köküne YAZMA; hedef customer-app olur
 bash scripts/web/webrail.sh ../musteri-projesi --yes \
@@ -126,8 +126,10 @@ webrail/   (= fabrika: UlasKasikci/repo)
 | **v1.1** | randevu-app | Hız (benzer domain): **27 dk**, pattern reuse |
 | **v1.2** | helpdesk-app + çift AI denetimi | CSRF OOP + `/register` + CONTRACTS sandbox |
 | **v1.3** | Decision + guard + doctor + web-only | Android purge · IDE-HANDOFF · self-test 80/80 |
+| **v1.3.1** | v1.4 S0: PLAN + gap-scan + denetle auto-hooks | brief→PLAN · orchestrate otomatik `/denetle` · 81/81 |
 
-Release: [v1.2](https://github.com/UlasKasikci/repo/releases/tag/v1.2) · [v1.3](https://github.com/UlasKasikci/repo/releases/tag/v1.3)
+Release: [v1.2](https://github.com/UlasKasikci/repo/releases/tag/v1.2) · [v1.3](https://github.com/UlasKasikci/repo/releases/tag/v1.3)  
+Yol haritası: [`docs/V1.4-ROADMAP.md`](docs/V1.4-ROADMAP.md)
 
 ---
 
@@ -162,6 +164,15 @@ bash scripts/web/doctor.sh . --loop       # güvenli tarifleri uygula → qa yen
 IDE: `/doktor` (Cursor + OpenCode). Kanıt: `doctor-report.json`.  
 Katalog skill sitelerinden fark: metin playbook değil — **qa-report → script tarif**.
 
+### Denetle + gap-scan (v1.4 S0)
+
+```bash
+bash scripts/web/plan-from-brief.sh . "E-ticaret …"   # → PLAN.md
+bash scripts/web/denetle.sh .                         # gap + DENETIM.md (auto: orchestrate)
+```
+
+IDE: `/denetle`. Unutsan bile `mode from-brief` / `orchestrate` P1·P3·P5’te çalışır (`.factory/auto-hooks.json`).
+
 ---
 
 ## Müşteri öncesi kapanış
@@ -182,7 +193,7 @@ Yeni QA kontrolü yalnız somut bug ile eklenir (K6).
 ## Katkı (yalnız fabrika deposu)
 
 1. Bu depoda çalışın: `https://github.com/UlasKasikci/repo` — müşteri ağacından buraya push **yasak**
-2. PR / push öncesi: `preflight.sh` READY + `self-test.sh` → **80/80** + `guard.sh git-push` ALLOW
+2. PR / push öncesi: `preflight.sh` READY + `self-test.sh` → **81/81** + `guard.sh git-push` ALLOW
 3. Push yalnız açık kullanıcı komutu + `WEBRAIL_ALLOW_GIT_PUSH=1`
 4. Doküman güncellemesi kanıttan türer (K5)
 

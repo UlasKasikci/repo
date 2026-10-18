@@ -86,9 +86,10 @@ Detay playbook: [`docs/IDE-HANDOFF.md`](IDE-HANDOFF.md)
 | İş | Cursor | OpenCode | Claude / Antigravity / terminal |
 |----|--------|----------|----------------------------------|
 | Tek giriş | `/webrail` | `/webrail` | `webrail.sh` |
-| Keşif | `/kesfet` | `/kesfet` | `mode.sh from-brief` |
+| Keşif | `/kesfet` | `/kesfet` | `mode.sh from-brief` (+ PLAN.md) |
 | P1 | `/web-baslat` | `/web-baslat` | `orchestrate` + decide |
-| Doctor | `/doktor` | `/doktor` | `doctor.sh --loop` |
+| Doctor | `/doktor` | `/doktor` | `doctor.sh --loop` (QA FAIL’de auto) |
+| Denetim / gap | `/denetle` | `/denetle` | `denetle.sh` (P1/P3/P5 auto) |
 | Yama | `/yama` | `/yama` | qa-gate + düzelt |
 | QA | `/web-denetle` | `/web-denetle` | `qa-gate.sh` |
 | Paket | `/web-yukle` | `/web-yukle` | `package-yukleme.sh` |

@@ -1,6 +1,6 @@
 engine: "Multi-Agent-State-Graph"
 context: "Web-Only-Production"
-version: "1.3.0"
+version: "1.3.1"
 canonical_spec: "docs/WEB-EDITION.md"
 factory_repository: "https://github.com/UlasKasikci/repo"
 workspace_role: ".factory/workspace-role.json"
@@ -22,6 +22,9 @@ directives:
   - "Never git push unless the user explicitly asks; default is DENY via guard.sh git-push."
   - "If workspace-role is customer-app or WEBRAIL-CUSTOMER.md exists: never set origin to UlasKasikci/repo; never push to the factory."
   - "On QA FAIL: bash scripts/web/doctor.sh . --loop then fix only FIX-BRIEF.md leftovers — never dump full qa-report into the model."
+  - "After brief: bash scripts/web/plan-from-brief.sh . \"<brief>\" → PLAN.md (not Android YAPILACAKLAR)."
+  - "Run bash scripts/web/denetle.sh . at P1/P3/P5; orchestrate auto-hooks do this if you forget /denetle."
+  - "gap-scan WARN/BLOCKER (cart, payment, reviews, rbac, seo, kvkk) → update PLAN before packaging."
   - "Run bash scripts/web/decide.sh after P1 (open-source decision layer; no paid JEV)."
   - "Scan missing dependencies and missing business features automatically."
   - "Run local linter and PHP syntax checks before build step."
@@ -44,6 +47,7 @@ pipeline:
       name: "QA & Automated Test Pool"
       agent: web-qa-gatekeeper
       command: "bash scripts/web/qa-gate.sh <project>"
+      auto_hooks: ["doctor.sh (on FAIL)", "denetle.sh (on PASS)"]
     - id: P4
       name: "Revision Loop"
       agent: web-core-engineer
@@ -51,9 +55,13 @@ pipeline:
       name: "Packaging & Deployment Gate"
       agent: web-deploy-packager
       command: "bash scripts/web/package-yukleme.sh <project>"
+      auto_hooks: ["denetle.sh (pre-package)"]
   state: "bash scripts/web/state.sh status|start|advance|qa-pass|qa-fail|halt"
   max_retries: 3
   self_test: "bash scripts/web/self-test.sh"
+  auto_hooks: ".factory/auto-hooks.json"
+  denetle: "bash scripts/web/denetle.sh <project>"
+  plan_from_brief: "bash scripts/web/plan-from-brief.sh <project> \"<brief>\""
 outputs:
   deploy_dir: "./Yukleme"
   sql_dump: "./Yukleme/SQL/veritabani.sql"
@@ -61,3 +69,6 @@ outputs:
     - "qa-report.json"
     - "debug_report.json"
     - "packaging-report.json"
+    - "gap-report.json"
+    - "DENETIM.md"
+    - "PLAN.md"

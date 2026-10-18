@@ -12,6 +12,9 @@
 `PHASE-LOG.md` → `.factory/web-state.json` → `domain-report` → `decision.json`.  
 Customer protocol: `docs/CUSTOMER-START.md` · IDE switch: `docs/IDE-HANDOFF.md`.  
 **Web-only:** no Android/YAPILACAKLAR/Gradle. Session end: `phase-log.sh`.
+**Brief → plan:** `plan-from-brief.sh` → `PLAN.md`. `mode.sh from-brief` runs it.
+**Self-audit:** `denetle.sh` (gap-scan + DENETIM.md). Orchestrate auto-hooks at P1/P3/P5 —
+do not wait for the user to type `/denetle` (see `.factory/auto-hooks.json`).
 **Decision layer:** `bash scripts/web/decide.sh` (open-source JEV-logic; no paid JEV).
 **Operation gate:** before write-code / package / claim-pass / git-push / doctor →
 `bash scripts/web/guard.sh <op> .` (DENY = stop; follow printed `fix:`).
@@ -21,6 +24,7 @@ Audit: `.factory/guard-log.jsonl`.
 push to `UlasKasikci/repo`.
 **Error Doctor:** on QA FAIL run `bash scripts/web/doctor.sh . --loop` then apply only
 `FIX-BRIEF.md` (do not paste full `qa-report.json` into the model — token waste).
+Orchestrate also auto-runs doctor on QA FAIL.
 
 ## Workflow (State Graph — 5 phases)
 

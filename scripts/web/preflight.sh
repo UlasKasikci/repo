@@ -69,6 +69,14 @@ for f in scripts/web/decide.sh scripts/web/decision.py scripts/web/run-status.sh
          scripts/web/measure.sh scripts/web/webrail.sh scripts/web/status.sh \
          scripts/web/module-apply.sh scripts/web/p2-checklist.sh scripts/web/guard.sh \
          scripts/web/doctor.sh \
+         scripts/web/plan-from-brief.sh \
+         scripts/web/gap-scan.sh \
+         scripts/web/denetle.sh \
+         docs/templates/PLAN.md \
+         docs/V1.4-ROADMAP.md \
+         .factory/auto-hooks.json \
+         .cursor/commands/denetle.md \
+         .opencode/command/denetle.md \
          .factory/workspace-role.json \
          .factory/workspace-role.customer.json \
          .factory/contracts/doctor-recipes.json \
@@ -147,7 +155,8 @@ for s in scripts/web/decide.sh scripts/web/run-status.sh scripts/web/preflight.s
          scripts/web/state.sh scripts/web/orchestrate.sh scripts/web/bootstrap-project.sh \
          scripts/web/mode.sh scripts/web/measure.sh scripts/web/webrail.sh \
          scripts/web/status.sh scripts/web/module-apply.sh scripts/web/p2-checklist.sh \
-         scripts/web/guard.sh scripts/web/doctor.sh scripts/web/phase-log.sh; do
+         scripts/web/guard.sh scripts/web/doctor.sh scripts/web/phase-log.sh \
+         scripts/web/plan-from-brief.sh scripts/web/gap-scan.sh scripts/web/denetle.sh; do
   bash -n "$s" || bad "bash -n FAIL: $s"
 done
 # Android kırıntı — kurallar ağacında olmamalı

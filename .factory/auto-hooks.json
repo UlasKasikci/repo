@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "tool": "auto-hooks",
+  "note": "IDE chat sihri değil — orchestrate/mode script orkestrasyonu. Kullanıcı /denetle unutsa bile bu noktalarda çalışır.",
+  "hooks": [
+    {
+      "id": "from-brief-plan",
+      "when": "mode.sh from-brief",
+      "runs": ["plan-from-brief.sh", "denetle.sh (soft)"],
+      "blocking": false
+    },
+    {
+      "id": "p1-denetle",
+      "when": "orchestrate P1 → P2",
+      "runs": ["denetle.sh"],
+      "blocking": true
+    },
+    {
+      "id": "p3-qa-pass",
+      "when": "orchestrate QA PASS",
+      "runs": ["doctor.sh (teşhis)", "denetle.sh"],
+      "blocking": true
+    },
+    {
+      "id": "p3-qa-fail",
+      "when": "orchestrate QA FAIL",
+      "runs": ["doctor.sh --qa-first → FIX-BRIEF.md", "P4: doctor --loop veya ajan"],
+      "blocking": false
+    },
+    {
+      "id": "p5-pre-package",
+      "when": "orchestrate P5",
+      "runs": ["denetle.sh"],
+      "blocking": true
+    }
+  ]
+}

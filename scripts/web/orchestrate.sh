@@ -957,6 +957,12 @@ while true; do
         _QE="$(python3 -c "import json;print(json.load(open('$PROJECT/.factory/decision.json',encoding='utf-8')).get('qa_gate_extra') or '')")"
         [[ -n "$_QE" ]] && export QA_GATE_EXTRA="$_QE" && echo "==> Decision: QA_GATE_EXTRA=$_QE"
       fi
+      # v1.4 auto-hook: P1 sonrası gap/denetle (kullanıcı /denetle unutsa bile)
+      echo "==> auto-hook: denetle (P1 soft)"
+      bash "$ROOT/scripts/web/denetle.sh" "$PROJECT" || {
+        echo "orkestratör: denetle BLOCKER — PLAN/domain-report'a sepet/RBAC vb. ekle" >&2
+        exit 1
+      }
       echo "==> P1 → P2 (requirements-frozen + decision.json)"
       ;;
 
@@ -1056,19 +1062,37 @@ PY
       # QA_GATE_EXTRA: koşuya özel ek bayraklar (ör. --allow-no-cart); boşsa davranış değişmez.
       bash "$QA_GATE" "$PROJECT" --record ${QA_GATE_EXTRA:-} || rc=$?
       case "$rc" in
-        0) echo "==> QA PASS $PHASE → P5" ;;
+        0)
+          echo "==> QA PASS $PHASE → P5"
+          # v1.4 auto-hook: QA PASS sonrası doctor teşhis + soft denetle
+          echo "==> auto-hook: doctor teşhis + denetle (P3)"
+          bash "$ROOT/scripts/web/doctor.sh" "$PROJECT" >/dev/null 2>&1 || true
+          bash "$ROOT/scripts/web/denetle.sh" "$PROJECT" || {
+            echo "orkestratör: denetle BLOCKER — paketleme öncesi PLAN/gap kapat" >&2
+            exit 1
+          }
+          ;;
         2) echo "orkestratör: HALT — 4. QA başarısızlığı, debug_report.json" >&2; exit 2 ;;
         1)
+          # v1.4 auto-hook: QA FAIL → doctor teşhis + FIX-BRIEF (loop = P4 ajan/kullanıcı)
+          echo "==> auto-hook: doctor teşhis (QA FAIL → FIX-BRIEF.md)"
+          bash "$ROOT/scripts/web/doctor.sh" "$PROJECT" --qa-first >/dev/null 2>&1 || true
           if [[ "$AUTO" -eq 1 ]]; then
             continue
           fi
-          wait_for "QA FAIL (retry $(get_retry)/3) — qa-report.json hatalarını düzelt"
+          wait_for "QA FAIL (retry $(get_retry)/3) — FIX-BRIEF.md · doctor.sh --loop"
           ;;
         *) echo "orkestratör: qa-gate beklenmeyen çıkış: $rc" >&2; exit 1 ;;
       esac
       ;;
 
     P5)
+      # v1.4 auto-hook: paket öncesi son denetle
+      echo "==> auto-hook: denetle (P5 pre-package)"
+      bash "$ROOT/scripts/web/denetle.sh" "$PROJECT" || {
+        echo "orkestratör: denetle BLOCKER — Yukleme/ oluşturulamaz" >&2
+        exit 1
+      }
       rc=0
       bash "$PACKAGER" "$PROJECT" || rc=$?
       if [[ "$rc" -ne 0 ]]; then

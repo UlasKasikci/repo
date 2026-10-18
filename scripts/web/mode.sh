@@ -277,6 +277,13 @@ PY
 
   from-brief)
     fill_from_brief
+    # v1.4: brief → hiyerarşik PLAN.md (YAPILACAKLAR değil)
+    bash "$ROOT/scripts/web/plan-from-brief.sh" "$PROJECT" "$BRIEF" || {
+      echo "mode: plan-from-brief başarısız" >&2
+      exit 1
+    }
+    # soft denetle (blocker yoksa WARN yaz; promote'u engellemez)
+    bash "$ROOT/scripts/web/denetle.sh" "$PROJECT" >/dev/null 2>&1 || true
     do_promote
     ;;
 

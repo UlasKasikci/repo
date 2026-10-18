@@ -125,7 +125,7 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 step "0) bash -n söz dizimi + python söz dizimi"
-for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh bootstrap-project.sh smoke-test.sh frontmatter-check.sh mode.sh decide.sh measure.sh preflight.sh run-status.sh webrail.sh status.sh module-apply.sh p2-checklist.sh guard.sh doctor.sh phase-log.sh; do
+for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh bootstrap-project.sh smoke-test.sh frontmatter-check.sh mode.sh decide.sh measure.sh preflight.sh run-status.sh webrail.sh status.sh module-apply.sh p2-checklist.sh guard.sh doctor.sh phase-log.sh plan-from-brief.sh gap-scan.sh denetle.sh; do
   bash -n "$ROOT/scripts/web/$s" || die "bash -n: $s"
   echo "    OK: $s"
 done
@@ -1168,11 +1168,13 @@ assert evs.index("qa-fail") < evs.index("qa-pass"), evs
 PY
 python3 - "$MP21/.factory/metrics.jsonl" <<'PY' || die "metrics: P1/P4 satırları doğrulanamadı"
 import json, sys
+# doctor measure satırları (kind=measure) ajan metriklerini kirletmez — yalnız agent satırları
 lines = [json.loads(l) for l in open(sys.argv[1], encoding="utf-8") if l.strip()]
-assert len(lines) == 2, lines
-assert [(m["phase"], m["agent"], m["rc"]) for m in lines] == [
-    ("P1", "web-domain-architect", 0), ("P4", "web-core-engineer", 0)], lines
-assert all(m["parse_error"] is False for m in lines), lines
+agents = [m for m in lines if m.get("agent")]
+assert len(agents) == 2, lines
+assert [(m["phase"], m["agent"], m["rc"]) for m in agents] == [
+    ("P1", "web-domain-architect", 0), ("P4", "web-core-engineer", 0)], agents
+assert all(m["parse_error"] is False for m in agents), agents
 PY
 if grep -q 'INJECTED' "$MP21/core/App.php"; then die "P4 enjeksiyon kalıntısı core/App.php'de duruyor"; fi
 python3 - "$MP21/qa-report.json" <<'PY' || die "son qa-report PASS değil"
@@ -1476,9 +1478,10 @@ PY
 python3 - "$M25/.factory/metrics.jsonl" <<'PY' || die "metrics: P2→P1→P2 sırası yok"
 import json, sys
 lines = [json.loads(l) for l in open(sys.argv[1], encoding="utf-8") if l.strip()]
-phases = [m["phase"] for m in lines]
+agents = [m for m in lines if m.get("agent")]
+phases = [m["phase"] for m in agents]
 assert phases == ["P2", "P1", "P2"], phases
-assert all(m["rc"] == 0 for m in lines), lines
+assert all(m["rc"] == 0 for m in agents), agents
 PY
 echo "    soru döngüsü: P2→P1 (questions-asked) → prompt enjeksiyonu → tüketim → iskelet tamam → DONE (metrics: P2,P1,P2)"
 
@@ -2863,6 +2866,43 @@ bash "$BOOTER" "$B79" --yes >/dev/null 2>&1 || die "bootstrap 79 fail"
 [[ -f "$B79/.opencode/agent/phase-verifier.md" ]] || die "bootstrap OC L1 kopyalamadı"
 rm -rf "$PL" "$B79"
 echo "    web-only purge · IDE-HANDOFF · phase-log · OC L1 ✓"
+
+step "80) v1.4: plan-from-brief + gap-scan uyarı + denetle + auto-hooks"
+[[ -f "$ROOT/docs/templates/PLAN.md" ]] || die "PLAN.md şablon yok"
+[[ -f "$ROOT/docs/V1.4-ROADMAP.md" ]] || die "V1.4-ROADMAP yok"
+[[ -f "$ROOT/.factory/auto-hooks.json" ]] || die "auto-hooks.json yok"
+grep -q 'plan-from-brief.sh' "$ROOT/scripts/web/mode.sh" || die "mode from-brief PLAN kancası yok"
+grep -q 'auto-hook: denetle' "$ROOT/scripts/web/orchestrate.sh" || die "orchestrate denetle auto-hook yok"
+grep -q 'denetle.sh' "$ROOT/.cursor/commands/denetle.md" || die "Cursor /denetle yok"
+grep -q 'denetle.sh' "$ROOT/.opencode/command/denetle.md" || die "OpenCode /denetle yok"
+V14="$TMP/v14plan"
+mkdir -p "$V14/.factory"
+bash "$ROOT/scripts/web/mode.sh" init "$V14" >/dev/null
+# e-ticaret brief → PLAN + catalog sinyali + sepet BLOCKER (SQL yok)
+rc="$(run_rc bash "$ROOT/scripts/web/plan-from-brief.sh" "$V14" $'E-ticaret mağaza\nÜrün katalogu ve kullanıcı girişi')"
+[[ "$rc" == "0" ]] || die "plan-from-brief rc=$rc"
+[[ -f "$V14/PLAN.md" ]] || die "PLAN.md yazılmadı"
+grep -q 'Proaktif uyarılar\|cart\|Sepet\|sepet' "$V14/PLAN.md" || die "PLAN proaktif uyarı yok"
+bash "$ROOT/scripts/web/gap-scan.sh" "$V14" >/dev/null
+[[ -f "$V14/gap-report.json" ]] || die "gap-report.json yok"
+python3 - <<PY || die "e-ticaret brief'te cart_missing blocker beklenir"
+import json
+r=json.load(open("$V14/gap-report.json"))
+ids={f["id"] for f in r["findings"]}
+assert "cart_missing" in ids, ids
+assert r["blocker_count"] >= 1
+PY
+rc="$(run_rc bash "$ROOT/scripts/web/denetle.sh" "$V14")"
+[[ "$rc" == "1" ]] || die "denetle blocker exit 1 beklenir, gelen $rc"
+[[ -f "$V14/DENETIM.md" ]] || die "DENETIM.md yok"
+# web-sample: sepet+rbac var → denetle OK
+V14b="$TMP/v14ok"
+mkdir -p "$V14b"
+cp -a "$FIX/." "$V14b/"
+rc="$(run_rc bash "$ROOT/scripts/web/denetle.sh" "$V14b")"
+[[ "$rc" == "0" ]] || die "web-sample denetle OK=0 beklenir, gelen $rc"
+rm -rf "$V14" "$V14b"
+echo "    plan-from-brief · gap BLOCKER · denetle · auto-hooks ✓"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"
