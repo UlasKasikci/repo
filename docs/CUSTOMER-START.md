@@ -109,6 +109,16 @@ bash scripts/web/orchestrate.sh . --auto
 
 ---
 
+## 5b) QA FAIL → Error Doctor
+
+```bash
+bash scripts/web/doctor.sh . --qa-first   # teşhis
+bash scripts/web/doctor.sh . --loop       # güvenli düzeltmeler + qa yeniden
+# Kalan: yalnız FIX-BRIEF.md — IDE /doktor
+```
+
+---
+
 ## 6) GitHub / push — müşteri projelerinde kilit
 
 Bootstrap sonrası hedef **customer-app** olur (`.factory/workspace-role.json` +

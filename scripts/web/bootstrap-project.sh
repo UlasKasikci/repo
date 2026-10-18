@@ -277,7 +277,7 @@ fi
 # Cursor domain skill parity (kapı: module-apply / P2)
 if [[ -d "$PROJECT/.opencode/skills" && -d "$PROJECT/.cursor" ]]; then
   mkdir -p "$PROJECT/.cursor/skills"
-  for sk in auth-rbac admin-crud kvkk-compliance seo-basics; do
+  for sk in auth-rbac admin-crud kvkk-compliance seo-basics error-doctor; do
     if [[ -d "$PROJECT/.opencode/skills/$sk" && ! -e "$PROJECT/.cursor/skills/$sk" ]]; then
       cp -a "$PROJECT/.opencode/skills/$sk" "$PROJECT/.cursor/skills/$sk"
     fi

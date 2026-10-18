@@ -125,7 +125,7 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 step "0) bash -n söz dizimi + python söz dizimi"
-for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh bootstrap-project.sh smoke-test.sh frontmatter-check.sh mode.sh decide.sh measure.sh preflight.sh run-status.sh webrail.sh status.sh module-apply.sh p2-checklist.sh guard.sh; do
+for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh bootstrap-project.sh smoke-test.sh frontmatter-check.sh mode.sh decide.sh measure.sh preflight.sh run-status.sh webrail.sh status.sh module-apply.sh p2-checklist.sh guard.sh doctor.sh; do
   bash -n "$ROOT/scripts/web/$s" || die "bash -n: $s"
   echo "    OK: $s"
 done
@@ -2808,6 +2808,28 @@ grep -q 'git-push\|GitHub' "$ROOT/docs/CUSTOMER-START.md" \
 [[ -f "$ROOT/.factory/workspace-role.customer.json" ]] || die "workspace-role.customer.json yok"
 rm -rf "$G77"
 echo "    git-push DENY · customer fabrika-remote RED · allow+kendi-remote OK ✓"
+
+step "78) doctor.sh: teşhis + safe apply (phpstan/phpunit) + FIX-BRIEF"
+D78="$TMP/doctor78"
+mkdir -p "$D78"
+cp -a "$FIX/." "$D78/"
+rm -f "$D78/phpstan.neon.dist" "$D78/phpunit.xml"
+# qa FAIL üret
+bash "$QA" "$D78" >/dev/null 2>&1 || true
+[[ -f "$D78/qa-report.json" ]] || die "doctor78 qa-report yok"
+rc="$(run_rc bash "$ROOT/scripts/web/doctor.sh" "$D78" --apply)"
+[[ -f "$D78/doctor-report.json" ]] || die "doctor-report.json yazılmadı"
+[[ -f "$D78/FIX-BRIEF.md" ]] || die "FIX-BRIEF.md yazılmadı"
+[[ -f "$D78/phpstan.neon.dist" ]] || die "doctor safe apply phpstan kopyalamadı"
+[[ -f "$D78/phpunit.xml" ]] || die "doctor safe apply phpunit kopyalamadı"
+grep -q 'missing_phpstan\|missing_phpunit' "$D78/doctor-report.json" \
+  || die "doctor-report tarif eşlemedi"
+[[ -f "$ROOT/.factory/contracts/doctor-recipes.json" ]] || die "doctor-recipes.json yok"
+[[ -f "$ROOT/.opencode/skills/error-doctor/SKILL.md" ]] || die "error-doctor skill yok"
+grep -q 'doctor.sh' "$ROOT/.cursor/commands/doktor.md" || die "Cursor /doktor yok"
+grep -q 'doctor.sh' "$ROOT/.opencode/command/doktor.md" || die "OpenCode /doktor yok"
+rm -rf "$D78"
+echo "    doctor teşhis+apply · FIX-BRIEF · skill/komut ✓"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

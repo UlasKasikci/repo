@@ -11,12 +11,12 @@ projesinin aynı denetim kapılarından geçmesi, eksik modül/güvenlik boşluk
 |---|---|
 | Fabrika deposu | [`github.com/UlasKasikci/repo`](https://github.com/UlasKasikci/repo) |
 | Stack | PHP 8.1+ (framework’süz MVC) · MySQL 8 / MariaDB · HTML/CSS/JS · FTP/`Yukleme/` |
-| Doğrulama | self-test **78/78** · `preflight.sh` · `guard.sh` (ops + **git-push**) · 14 kanallı QA |
-| Sürüm | **v1.3** · Şerit A (`/kesfet`) · Decision Layer · müşteri GitHub kilidi |
+| Doğrulama | self-test **79/79** · `preflight` · `guard` · **doctor** (hata→düzelt) · 14 kanallı QA |
+| Sürüm | **v1.3** · Şerit A · Decision Layer · git-push kilidi · Error Doctor |
 
 [![CI](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml/badge.svg)](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![self-test](https://img.shields.io/badge/self--test-78%2F78%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
+[![self-test](https://img.shields.io/badge/self--test-79%2F79%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
 
 > **Fabrika** (`role=webrail-factory`): tek remote `origin` → `UlasKasikci/repo`.  
 > **Müşteri / ürün** (`bootstrap` → `role=customer-app`): asla fabrika remote’una bağlanmaz;
@@ -35,6 +35,7 @@ projesinin aynı denetim kapılarından geçmesi, eksik modül/güvenlik boşluk
 | Token israfı (aynı blokları yeniden üretmek) | **Decision Layer** (`decide.sh`): modül önce, bağlam allowlist |
 | IDE / personel değişimi | `RUN-STATUS.md` + `.factory/*` — sohbet hafızasına güvenilmez |
 | Ajan yanlışlıkla fabrika GitHub’ına push | `workspace-role` + `guard.sh git-push` DENY (müşteri ağacı) |
+| QA FAIL → “ne bozuk / nasıl düzeltilir?” | **`doctor.sh`**: tarif eşle → safe apply → `FIX-BRIEF.md` (token-ucuz) |
 | Dağıtıma hazır olmayan çıktı | P5: staging → smoke → `Yukleme/` + sha256 manifest |
 
 **Ücretli JEV yok.** JEV’in “karar ucuz / üretim pahalı” mantığı açık kaynak
@@ -72,7 +73,7 @@ git clone https://github.com/UlasKasikci/repo.git ~/webrail
 cd ~/webrail
 
 composer global require phpstan/phpstan phpunit/phpunit
-bash scripts/web/self-test.sh    # 78/78
+bash scripts/web/self-test.sh    # 79/79
 bash scripts/web/preflight.sh    # READY
 
 # Tek giriş — fabrika köküne YAZMA; hedef customer-app olur
@@ -83,6 +84,7 @@ bash scripts/web/status.sh .
 bash scripts/web/guard.sh matrix .   # git-push → DENY
 
 # P1 → decide → modül kopya → hybrid P2 → QA → paket
+# QA FAIL olursa: /doktor  veya  bash scripts/web/doctor.sh . --loop
 # /web-baslat · module-apply.sh · P2_HUMAN_ASSIST=true orchestrate.sh --auto
 ```
 
@@ -107,7 +109,7 @@ webrail/   (= fabrika: UlasKasikci/repo)
 │   ├── workspace-role.customer.json  # bootstrap şablonu → customer-app
 │   ├── web-state-graph.json # faz makinesi
 │   └── meta.json
-├── scripts/web/             # webrail, guard, status, mode, module-apply, qa-gate…
+├── scripts/web/             # webrail, guard, doctor, status, mode, module-apply, qa-gate…
 ├── docs/                    # WEB-EDITION, CUSTOMER-START, MASTER-PROMPT
 ├── tests/fixtures/
 ├── CLAUDE.md · antigravity.yaml · .cursorrules
@@ -123,7 +125,7 @@ webrail/   (= fabrika: UlasKasikci/repo)
 | **v1.0** | envanter-app | Kalite: 4s 48dk, QA PASS, DONE |
 | **v1.1** | randevu-app | Hız (benzer domain): **27 dk**, pattern reuse |
 | **v1.2** | helpdesk-app + çift AI denetimi | CSRF OOP + `/register` + CONTRACTS sandbox |
-| **v1.3** | Decision Layer + skills + guard | JEV-mantık · Şerit A · modüller · `guard.sh` · **git-push kilidi** · self-test 78/78 |
+| **v1.3** | Decision + guard + doctor | Şerit A · modüller · git-push kilidi · **Error Doctor** · self-test 79/79 |
 
 Release: [v1.2](https://github.com/UlasKasikci/repo/releases/tag/v1.2) · [v1.3](https://github.com/UlasKasikci/repo/releases/tag/v1.3)
 
@@ -150,6 +152,16 @@ Release: [v1.2](https://github.com/UlasKasikci/repo/releases/tag/v1.2) · [v1.3]
 | `P2_HUMAN_ASSIST=true` | P2 hybrid (iskeleti insan, P3–P5 otomatik) |
 | `WEBRAIL_ALLOW_GIT_PUSH=1` | Yalnız kullanıcı açıkça “push” dediğinde; önce `guard.sh git-push` |
 
+### Error Doctor (özgün)
+
+```bash
+bash scripts/web/doctor.sh . --qa-first   # teşhis + FIX-BRIEF.md
+bash scripts/web/doctor.sh . --loop       # güvenli tarifleri uygula → qa yeniden (max 3)
+```
+
+IDE: `/doktor` (Cursor + OpenCode). Kanıt: `doctor-report.json`.  
+Katalog skill sitelerinden fark: metin playbook değil — **qa-report → script tarif**.
+
 ---
 
 ## Müşteri öncesi kapanış
@@ -170,7 +182,7 @@ Yeni QA kontrolü yalnız somut bug ile eklenir (K6).
 ## Katkı (yalnız fabrika deposu)
 
 1. Bu depoda çalışın: `https://github.com/UlasKasikci/repo` — müşteri ağacından buraya push **yasak**
-2. PR / push öncesi: `preflight.sh` READY + `self-test.sh` → **78/78** + `guard.sh git-push` ALLOW
+2. PR / push öncesi: `preflight.sh` READY + `self-test.sh` → **79/79** + `guard.sh git-push` ALLOW
 3. Push yalnız açık kullanıcı komutu + `WEBRAIL_ALLOW_GIT_PUSH=1`
 4. Doküman güncellemesi kanıttan türer (K5)
 

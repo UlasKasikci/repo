@@ -68,9 +68,13 @@ for f in scripts/web/decide.sh scripts/web/decision.py scripts/web/run-status.sh
          scripts/web/qa-gate.sh scripts/web/state.sh scripts/web/mode.sh \
          scripts/web/measure.sh scripts/web/webrail.sh scripts/web/status.sh \
          scripts/web/module-apply.sh scripts/web/p2-checklist.sh scripts/web/guard.sh \
+         scripts/web/doctor.sh \
          .factory/workspace-role.json \
          .factory/workspace-role.customer.json \
+         .factory/contracts/doctor-recipes.json \
          .factory/contracts/decision.schema.json \
+         .opencode/skills/error-doctor/SKILL.md \
+         .cursor/commands/doktor.md .opencode/command/doktor.md \
          .factory/modules/catalog.json \
          .factory/modules/auth-rbac/manifest.json \
          .factory/modules/kvkk/manifest.json \
@@ -118,7 +122,7 @@ for s in scripts/web/decide.sh scripts/web/run-status.sh scripts/web/preflight.s
          scripts/web/state.sh scripts/web/orchestrate.sh scripts/web/bootstrap-project.sh \
          scripts/web/mode.sh scripts/web/measure.sh scripts/web/webrail.sh \
          scripts/web/status.sh scripts/web/module-apply.sh scripts/web/p2-checklist.sh \
-         scripts/web/guard.sh; do
+         scripts/web/guard.sh scripts/web/doctor.sh; do
   bash -n "$s" || bad "bash -n FAIL: $s"
 done
 python3 -m py_compile scripts/web/decision.py || bad "decision.py compile FAIL"

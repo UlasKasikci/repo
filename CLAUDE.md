@@ -12,12 +12,14 @@
 `.factory/web-state.json` → `domain-report` → `decision.json`.  
 Customer protocol: `docs/CUSTOMER-START.md`.
 **Decision layer:** `bash scripts/web/decide.sh` (open-source JEV-logic; no paid JEV).
-**Operation gate:** before write-code / package / claim-pass / git-push →
+**Operation gate:** before write-code / package / claim-pass / git-push / doctor →
 `bash scripts/web/guard.sh <op> .` (DENY = stop; follow printed `fix:`).
 Audit: `.factory/guard-log.jsonl`.
 **Git push:** default DENY. Never `git push` unless the user explicitly asks. Then
 `WEBRAIL_ALLOW_GIT_PUSH=1` and `guard.sh git-push` must ALLOW. Customer-app must never
 push to `UlasKasikci/repo`.
+**Error Doctor:** on QA FAIL run `bash scripts/web/doctor.sh . --loop` then apply only
+`FIX-BRIEF.md` (do not paste full `qa-report.json` into the model — token waste).
 
 ## Workflow (State Graph — 5 phases)
 

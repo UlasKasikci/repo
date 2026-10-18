@@ -117,10 +117,11 @@ Talep → /webrail [--brief] (veya /kesfet → promote)
 1. `mode=discovery` iken `state start` / `orchestrate` / `decide` **RED**.
 2. Riskli işlem öncesi: `bash scripts/web/guard.sh <op> .` (DENY → fix yolunu izle).
 3. `git push` öncesi: `guard.sh git-push` — kullanıcı komutu yoksa **asla** push.
-4. Her oturum: `bash scripts/web/status.sh` veya `guard.sh matrix .`.
-5. P2’de önce `module-apply.sh`; geniş auto yasak (dar-auto / hybrid).
-6. QA PASS iddiası yalnız `guard.sh claim-pass` / `qa-report.json` kanıtıyla.
-7. Kayıt: `qa-report.json`, `debug_report.json`, `guard-log.jsonl`, `packaging-report.json`.
+4. QA FAIL → `/doktor` veya `doctor.sh --loop`; LLM yalnız `FIX-BRIEF.md` (qa dump yasak).
+5. Her oturum: `bash scripts/web/status.sh` veya `guard.sh matrix .`.
+6. P2’de önce `module-apply.sh`; geniş auto yasak (dar-auto / hybrid).
+7. QA PASS iddiası yalnız `guard.sh claim-pass` / `qa-report.json` kanıtıyla.
+8. Kayıt: `qa-report.json`, `doctor-report.json`, `guard-log.jsonl`, `packaging-report.json`.
 
 ## IDE/CLI matrisi
 

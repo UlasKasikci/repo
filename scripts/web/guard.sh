@@ -7,18 +7,19 @@ set -euo pipefail
 #   bash scripts/web/guard.sh matrix [proje]
 #
 # Ops: write-code | promote | decide | advance | module-apply | qa | package |
-#      claim-pass | orchestrate | git-push
+#      claim-pass | orchestrate | git-push | doctor
 # Exit: 0 ALLOW · 1 DENY/hata
 #
 # git-push: varsayılan DENY. Yalnız WEBRAIL_ALLOW_GIT_PUSH=1 (kullanıcı açıkça
 # istediğinde). customer-app asla UlasKasikci/repo'ya push edemez.
+# doctor: QA FAIL / debug sonrası hata dedektörü (diagnose her zaman; apply factory).
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 OP="${1:-}"
 PROJECT="${2:-.}"
 
 usage() {
-  echo "kullanım: guard.sh <write-code|promote|decide|advance|module-apply|qa|package|claim-pass|orchestrate|git-push|matrix> [proje]" >&2
+  echo "kullanım: guard.sh <write-code|promote|decide|advance|module-apply|qa|package|claim-pass|orchestrate|git-push|doctor|matrix> [proje]" >&2
   exit 1
 }
 
@@ -43,7 +44,8 @@ fac = project / ".factory"
 
 OPS = {
     "write-code", "promote", "decide", "advance", "module-apply",
-    "qa", "package", "claim-pass", "orchestrate", "git-push", "matrix",
+    "qa", "package", "claim-pass", "orchestrate", "git-push", "doctor",
+    "matrix",
 }
 if op not in OPS:
     print(f"guard: bilinmeyen op: {op}", file=sys.stderr)
@@ -271,6 +273,20 @@ def eval_op(name: str) -> dict:
             "git push  # kullanıcı onaylı",
         )
 
+    if name == "doctor":
+        # Teşhis her zaman; --apply/--loop yalnız factory (keşifte kod/iskelet yazılmaz)
+        if mode != "factory":
+            return row(
+                name, False,
+                "mode≠factory — doctor apply kapalı (teşhis için promote)",
+                "bash scripts/web/mode.sh promote .  # sonra doctor.sh --qa-first",
+            )
+        return row(
+            name, True,
+            "Error Doctor hazır",
+            "bash scripts/web/doctor.sh . --qa-first   # veya --loop",
+        )
+
     return row(name, False, "op tanımsız", "guard.sh matrix .")
 
 
@@ -284,7 +300,7 @@ def log_entry(r: dict) -> None:
 
 NAMES = (
     "write-code", "promote", "decide", "advance", "module-apply",
-    "qa", "package", "claim-pass", "orchestrate", "git-push",
+    "qa", "package", "claim-pass", "orchestrate", "git-push", "doctor",
 )
 
 if op == "matrix":

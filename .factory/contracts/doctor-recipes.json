@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "description": "Webrail Error Doctor — qa-gate hata önekleri → deterministik tarif. Kör skill kataloğu değil; her tarif script veya FIX-BRIEF satırına bağlanır.",
+  "recipes": [
+    {
+      "id": "sql_dump_drift",
+      "match": ["sql: SQL/veritabani.sql SQL/migrations ile senkron değil", "sql: sql-dump.sh başarısız"],
+      "safe_apply": true,
+      "action": "sql_dump",
+      "fix": "bash scripts/web/sql-dump.sh <proje>",
+      "tokens_note": "LLM yok — dump script"
+    },
+    {
+      "id": "missing_sql_dump",
+      "match": ["sql: SQL/veritabani.sql bulunamadı"],
+      "safe_apply": true,
+      "action": "sql_dump_or_brief",
+      "fix": "migrations varsa sql-dump; yoksa P2 SQL üret",
+      "tokens_note": "migrations varsa script"
+    },
+    {
+      "id": "missing_phpstan",
+      "match": ["statik: phpstan yapılandırması yok"],
+      "safe_apply": true,
+      "action": "copy_fixture",
+      "files": ["phpstan.neon.dist"],
+      "fix": "fixture phpstan.neon.dist kopyala",
+      "tokens_note": "LLM yok"
+    },
+    {
+      "id": "missing_phpunit",
+      "match": ["test: phpunit yapılandırması yok"],
+      "safe_apply": true,
+      "action": "copy_fixture",
+      "files": ["phpunit.xml", "tests/Unit/ExampleTest.php"],
+      "fix": "fixture phpunit + ExampleTest",
+      "tokens_note": "LLM yok"
+    },
+    {
+      "id": "missing_mvc_skeleton",
+      "match": ["yapı: index.php eksik", "yapı: .htaccess eksik", "yapı: core/ dizini eksik", "yapı: views/ dizini eksik"],
+      "safe_apply": true,
+      "action": "copy_mvc_skeleton",
+      "fix": "web-sample iskelet (ezmeden)",
+      "tokens_note": "LLM yok"
+    },
+    {
+      "id": "rbac_gap",
+      "match": ["rbac:", "role_id/permissions"],
+      "safe_apply": true,
+      "action": "module_apply",
+      "module": "auth-rbac",
+      "fix": "module-apply --module auth-rbac (veya paket kopya)",
+      "tokens_note": "~16 dosya kopya; LLM yazmaz"
+    },
+    {
+      "id": "kvkk_gap",
+      "match": ["kvkk:"],
+      "safe_apply": true,
+      "action": "module_apply",
+      "module": "kvkk",
+      "fix": "module-apply --module kvkk",
+      "tokens_note": "paket kopya"
+    },
+    {
+      "id": "seo_gap",
+      "match": ["yapı: robots.txt eksik", "yapı: sitemap.xml eksik"],
+      "safe_apply": true,
+      "action": "module_apply",
+      "module": "seo",
+      "fix": "module-apply --module seo veya fixture robots/sitemap",
+      "tokens_note": "paket kopya"
+    },
+    {
+      "id": "cart_gap",
+      "match": ["eksik modül: ürün/katalog", "sipariş/sepet/teklif"],
+      "safe_apply": false,
+      "action": "brief",
+      "fix": "sepet/sipariş ekle VEYA qa-gate --allow-no-cart (açık onay)",
+      "tokens_note": "LLM veya onaylı istisna"
+    },
+    {
+      "id": "csrf_gap",
+      "match": ["güvenlik: POST endpoint'te CSRF"],
+      "safe_apply": false,
+      "action": "brief",
+      "fix": "dosyada Csrf::requireValid / guardPost ekle",
+      "tokens_note": "dar LLM yama"
+    },
+    {
+      "id": "security_sql",
+      "match": ["güvenlik: superglobal", "güvenlik: ->query()"],
+      "safe_apply": false,
+      "action": "brief",
+      "fix": "PDO prepared statement'a çevir",
+      "tokens_note": "dar LLM yama"
+    },
+    {
+      "id": "session_cookie",
+      "match": ["session_set_cookie_params", "session_start()"],
+      "safe_apply": false,
+      "action": "brief",
+      "fix": "HttpOnly+Secure+SameSite — session_start öncesi",
+      "tokens_note": "dar LLM yama"
+    },
+    {
+      "id": "password_policy",
+      "match": ["password_hash/password_verify"],
+      "safe_apply": true,
+      "action": "module_apply",
+      "module": "auth-rbac",
+      "fix": "auth-rbac paketi (Auth.php)",
+      "tokens_note": "paket kopya"
+    },
+    {
+      "id": "domain_report",
+      "match": ["domain_report:"],
+      "safe_apply": false,
+      "action": "brief",
+      "fix": "P1 domain-report düzelt — /web-baslat",
+      "tokens_note": "P1 ajan; kod yok"
+    },
+    {
+      "id": "php_syntax",
+      "match": ["php: sözdizimi hatası"],
+      "safe_apply": false,
+      "action": "brief",
+      "fix": "php -l ile işaretli dosyayı düzelt",
+      "tokens_note": "tek dosya LLM"
+    },
+    {
+      "id": "static_fail",
+      "match": ["statik: phpstan Level", "statik: eslint hatası", "test: phpunit birim", "garantici çekirdek"],
+      "safe_apply": false,
+      "action": "brief",
+      "fix": "araç çıktısına göre dar düzeltme",
+      "tokens_note": "LLM + log satırı"
+    },
+    {
+      "id": "unknown",
+      "match": [],
+      "safe_apply": false,
+      "action": "brief",
+      "fix": "qa-report.json satırını oku; /yama veya P4",
+      "tokens_note": "fallback"
+    }
+  ]
+}

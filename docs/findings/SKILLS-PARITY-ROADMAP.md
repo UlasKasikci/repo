@@ -3,7 +3,7 @@
 **Kaynak inceleme:** [developersglobal.github.io/ai-agent-skills](https://developersglobal.github.io/ai-agent-skills/)  
 **Repo:** [DevelopersGlobal/ai-agent-skills](https://github.com/DevelopersGlobal/ai-agent-skills) (30 skill · 8 kategori · MIT)  
 **Hedef:** Cursor · OpenCode · Claude Code · Antigravity — **aynı kalite**  
-**Tarih:** 2026-10-18 · **Durum:** baş mimar kesiti uygulandı (guard); skill tiyatrosu ertelendi
+**Tarih:** 2026-10-19 · **Durum:** guard + **Error Doctor** (`doctor.sh`) uygulandı; katalog skill tiyatrosu hâlâ erteli
 
 ---
 
@@ -15,6 +15,7 @@
 |------|--------|
 | `scripts/web/guard.sh` | Yanlış işlemi **DENY** + **fix komutu** + `guard-log.jsonl` audit |
 | `guard.sh matrix` + `status.sh` guard satırı | “Ne yapabilirim?” tek ekran — IDE fark etmez |
+| `scripts/web/doctor.sh` + `doctor-recipes.json` | QA FAIL → tarif → safe apply → `FIX-BRIEF` (token) |
 | Mevcut script kapıları (mode/state/qa/package) | Zaten gerçek denetim; guard bunları **sorgulanabilir** kılar |
 
 **İlke:** Kalite = metin skill sayısı değil; **yanlış adımın kapalı kalması + düzeltme yolunun görünmesi**.
