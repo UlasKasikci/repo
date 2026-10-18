@@ -9,17 +9,19 @@ projesinin aynı denetim kapılarından geçmesi, eksik modül/güvenlik boşluk
 
 | | |
 |---|---|
-| Kanonik depo | [`github.com/UlasKasikci/repo`](https://github.com/UlasKasikci/repo) |
+| Fabrika deposu | [`github.com/UlasKasikci/repo`](https://github.com/UlasKasikci/repo) |
 | Stack | PHP 8.1+ (framework’süz MVC) · MySQL 8 / MariaDB · HTML/CSS/JS · FTP/`Yukleme/` |
-| Doğrulama | self-test **78/78** · `preflight.sh` · `guard.sh` · 14 kanallı QA gate |
-| Sürüm | **v1.3** (+ Şerit A keşif kilidi: `/kesfet` → promote → fabrika) |
+| Doğrulama | self-test **78/78** · `preflight.sh` · `guard.sh` (ops + **git-push**) · 14 kanallı QA |
+| Sürüm | **v1.3** · Şerit A (`/kesfet`) · Decision Layer · müşteri GitHub kilidi |
 
 [![CI](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml/badge.svg)](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![self-test](https://img.shields.io/badge/self--test-78%2F78%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
 
-> Bu depo kendi kendine yeterlidir. Tek remote: `origin` → `UlasKasikci/repo`.
-> Başka bir GitHub org/repo’ya bağımlılık veya push yolu yoktur.
+> **Fabrika** (`role=webrail-factory`): tek remote `origin` → `UlasKasikci/repo`.  
+> **Müşteri / ürün** (`bootstrap` → `role=customer-app`): asla fabrika remote’una bağlanmaz;
+> `git push` varsayılan **yasak** — yalnız kullanıcı açıkça isterse
+> (`WEBRAIL_ALLOW_GIT_PUSH=1` + `guard.sh git-push`). Dağıtım = `Yukleme/` → FTP.
 
 ---
 
@@ -28,10 +30,11 @@ projesinin aynı denetim kapılarından geçmesi, eksik modül/güvenlik boşluk
 | Problem | Webrail cevabı |
 |---------|----------------|
 | Farklı AI araçlarında dağınık süreç | Ortak `.factory/` state + IDE-agnostik kontratlar |
-| Eksik RBAC / KVKK / sepet / SEO | P1 proaktif domain denetimi (`module_matrix`) |
+| Eksik RBAC / KVKK / sepet / SEO | P1 proaktif domain denetimi (`module_matrix`) + `module-apply` |
 | “Yeşil görünen” güvensiz kod | P3: 14 kontrol, **0 Error / 0 Warning** olmadan paket yok |
-| Token israfı (aynı blokları yeniden üretmek) | **Decision Layer** (`decide.sh`): modül önce, bağlam allowlist, ucuz/pahalı model ayrımı |
+| Token israfı (aynı blokları yeniden üretmek) | **Decision Layer** (`decide.sh`): modül önce, bağlam allowlist |
 | IDE / personel değişimi | `RUN-STATUS.md` + `.factory/*` — sohbet hafızasına güvenilmez |
+| Ajan yanlışlıkla fabrika GitHub’ına push | `workspace-role` + `guard.sh git-push` DENY (müşteri ağacı) |
 | Dağıtıma hazır olmayan çıktı | P5: staging → smoke → `Yukleme/` + sha256 manifest |
 
 **Ücretli JEV yok.** JEV’in “karar ucuz / üretim pahalı” mantığı açık kaynak
@@ -65,25 +68,28 @@ Strateji / K1–K8: [`docs/MASTER-PROMPT-V2.md`](docs/MASTER-PROMPT-V2.md)
 ## Hızlı başlangıç
 
 ```bash
-git clone https://github.com/UlasKasikci/repo.git
-cd repo
+git clone https://github.com/UlasKasikci/repo.git ~/webrail
+cd ~/webrail
 
 composer global require phpstan/phpstan phpunit/phpunit
-bash scripts/web/self-test.sh
-bash scripts/web/preflight.sh
+bash scripts/web/self-test.sh    # 78/78
+bash scripts/web/preflight.sh    # READY
 
-# Tek giriş (fabrika köküne YAZMA) — brief = hızlı keşif + promote + P1
+# Tek giriş — fabrika köküne YAZMA; hedef customer-app olur
 bash scripts/web/webrail.sh ../musteri-projesi --yes \
   --brief "Demo: auth + admin + KVKK panel"
 cd ../musteri-projesi
 bash scripts/web/status.sh .
+bash scripts/web/guard.sh matrix .   # git-push → DENY
 
 # P1 → decide → modül kopya → hybrid P2 → QA → paket
-# /web-baslat · bash scripts/web/module-apply.sh . ·
-# P2_HUMAN_ASSIST=true bash scripts/web/orchestrate.sh . --auto
+# /web-baslat · module-apply.sh · P2_HUMAN_ASSIST=true orchestrate.sh --auto
 ```
 
-İleri seviye: `/kesfet`, `mode.sh promote`, `/yama`. Demo/toy için saf IDE; teslim için Webrail.  
+Müşteri ağacında GitHub’a yükleme **yok** (varsayılan). Bak: `WEBRAIL-CUSTOMER.md`,
+[`docs/CUSTOMER-START.md`](docs/CUSTOMER-START.md) §6.
+
+İleri seviye: `/kesfet`, `mode.sh promote`, `/yama`. Demo için saf IDE; teslim için Webrail.  
 Çıkış: `0` OK · `1` FAIL · `2` HALT · `3` bekleme.
 
 ---
@@ -91,19 +97,21 @@ bash scripts/web/status.sh .
 ## Depo yapısı
 
 ```text
-webrail/   (= bu repo: UlasKasikci/repo)
-├── .cursor/                 # Cursor kuralları, ajanlar, komutlar
-├── .opencode/               # OpenCode ajan/komut/skill
+webrail/   (= fabrika: UlasKasikci/repo)
+├── .cursor/                 # kurallar, ajanlar, komutlar (+ bootstrap’ta skills mount)
+├── .opencode/               # ajan / komut / domain skills
 ├── .factory/
 │   ├── contracts/           # P1 / P3 / P5 / decision şemaları
-│   ├── modules/             # katalog + kopyalanabilir paketler (auth/kvkk/…)
-│   ├── web-state-graph.json # Faz makinesi
-│   └── meta.json            # Ürün kimliği
-├── scripts/web/             # webrail, status, mode, module-apply, state, qa-gate…
+│   ├── modules/             # katalog + paketler (auth-rbac, kvkk, admin-crud, seo)
+│   ├── workspace-role.json  # fabrika: webrail-factory
+│   ├── workspace-role.customer.json  # bootstrap şablonu → customer-app
+│   ├── web-state-graph.json # faz makinesi
+│   └── meta.json
+├── scripts/web/             # webrail, guard, status, mode, module-apply, qa-gate…
 ├── docs/                    # WEB-EDITION, CUSTOMER-START, MASTER-PROMPT
-├── tests/fixtures/          # Pozitif/negatif QA fixture’ları
+├── tests/fixtures/
 ├── CLAUDE.md · antigravity.yaml · .cursorrules
-└── RUN-STATUS.md            # (müşteri projesinde üretilir — handoff)
+└── (müşteri ağacında) WEBRAIL-CUSTOMER.md · RUN-STATUS.md
 ```
 
 ---
@@ -115,9 +123,9 @@ webrail/   (= bu repo: UlasKasikci/repo)
 | **v1.0** | envanter-app | Kalite: 4s 48dk, QA PASS, DONE |
 | **v1.1** | randevu-app | Hız (benzer domain): **27 dk**, pattern reuse |
 | **v1.2** | helpdesk-app + çift AI denetimi | CSRF OOP + `/register` + CONTRACTS sandbox |
-| **v1.3** | Decision Layer + skills READY | JEV-mantık + Şerit A + modüller + `guard.sh`; self-test 78/78 |
+| **v1.3** | Decision Layer + skills + guard | JEV-mantık · Şerit A · modüller · `guard.sh` · **git-push kilidi** · self-test 78/78 |
 
-Release: [v1.2](https://github.com/UlasKasikci/repo/releases/tag/v1.2) · [v1.3](https://github.com/UlasKasikci/repo/releases/tag/v1.3) (bu tur)
+Release: [v1.2](https://github.com/UlasKasikci/repo/releases/tag/v1.2) · [v1.3](https://github.com/UlasKasikci/repo/releases/tag/v1.3)
 
 ---
 
@@ -140,6 +148,7 @@ Release: [v1.2](https://github.com/UlasKasikci/repo/releases/tag/v1.2) · [v1.3]
 | `STRICT_*` | `--strict` token/duvar bütçesi |
 | `QA_GATE_EXTRA` | örn. `--allow-no-cart` (onaylı istisna) |
 | `P2_HUMAN_ASSIST=true` | P2 hybrid (iskeleti insan, P3–P5 otomatik) |
+| `WEBRAIL_ALLOW_GIT_PUSH=1` | Yalnız kullanıcı açıkça “push” dediğinde; önce `guard.sh git-push` |
 
 ---
 
@@ -147,21 +156,23 @@ Release: [v1.2](https://github.com/UlasKasikci/repo/releases/tag/v1.2) · [v1.3]
 
 Fabrika tarafı hazır kabul edilir:
 
-- `bash scripts/web/preflight.sh` → **READY**
+- `bash scripts/web/preflight.sh` → **READY** (`role=webrail-factory`)
 - Skills: auth-rbac · admin-crud · kvkk-compliance · seo-basics (**READY**)
-- Decision Layer + RUN-STATUS + CUSTOMER-START + `/kesfet` (discovery→factory)
+- Decision Layer + RUN-STATUS + CUSTOMER-START + `/kesfet` + `guard.sh`
+- Bootstrap müşteriye `customer-app` + `WEBRAIL-CUSTOMER.md` yazar; fabrika GitHub’ı korunur
 
-Saha ölçümü (P1 fail oranı, P4 yazma) **ilk müşteri koşusunda** toplanır — fabrika açık uç değil.
+Saha ölçümü (P1 fail oranı, P4 yazma) **ilk müşteri koşusunda** toplanır.
 
 Yeni QA kontrolü yalnız somut bug ile eklenir (K6).
 
 ---
 
-## Katkı
+## Katkı (yalnız fabrika deposu)
 
-1. Yalnız bu depoda çalışın: `https://github.com/UlasKasikci/repo`
-2. PR öncesi: `preflight.sh` READY + `self-test.sh` → **78/78 PASS** + CI yeşil
-3. Doküman güncellemesi kanıttan türer (K5)
+1. Bu depoda çalışın: `https://github.com/UlasKasikci/repo` — müşteri ağacından buraya push **yasak**
+2. PR / push öncesi: `preflight.sh` READY + `self-test.sh` → **78/78** + `guard.sh git-push` ALLOW
+3. Push yalnız açık kullanıcı komutu + `WEBRAIL_ALLOW_GIT_PUSH=1`
+4. Doküman güncellemesi kanıttan türer (K5)
 
 ## Lisans
 
