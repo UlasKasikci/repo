@@ -30,6 +30,7 @@ bash scripts/web/webrail.sh ../musteri-adi --yes \
 
 cd ../musteri-adi
 bash scripts/web/status.sh .
+bash scripts/web/guard.sh matrix .   # neye izin var / fix yolu
 ```
 
 Brief yoksa `mode=discovery` kalır → IDE `/kesfet` veya elle `DISCOVERY.md`, sonra:

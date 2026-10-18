@@ -106,10 +106,11 @@ Talep → /webrail [--brief] (veya /kesfet → promote)
 ```
 
 1. `mode=discovery` iken `state start` / `orchestrate` / `decide` **RED**.
-2. Her işlem öncesi `bash scripts/web/status.sh` (veya `state.sh status`).
-3. P2’de önce `module-apply.sh`; geniş auto yasak (dar-auto / hybrid).
-4. QA PASS olmadan "bitti" deme, paketleme çağırma.
-5. Kayıt: `qa-report.json`, `debug_report.json`, `packaging-report.json` kanıttır.
+2. Riskli işlem öncesi: `bash scripts/web/guard.sh <op> .` (DENY → fix yolunu izle).
+3. Her oturum: `bash scripts/web/status.sh` veya `guard.sh matrix .`.
+4. P2’de önce `module-apply.sh`; geniş auto yasak (dar-auto / hybrid).
+5. QA PASS iddiası yalnız `guard.sh claim-pass` / `qa-report.json` kanıtıyla.
+6. Kayıt: `qa-report.json`, `debug_report.json`, `guard-log.jsonl`, `packaging-report.json`.
 
 ## IDE/CLI matrisi
 

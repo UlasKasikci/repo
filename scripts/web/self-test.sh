@@ -125,7 +125,7 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 step "0) bash -n söz dizimi + python söz dizimi"
-for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh bootstrap-project.sh smoke-test.sh frontmatter-check.sh mode.sh decide.sh measure.sh preflight.sh run-status.sh webrail.sh status.sh module-apply.sh p2-checklist.sh; do
+for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh bootstrap-project.sh smoke-test.sh frontmatter-check.sh mode.sh decide.sh measure.sh preflight.sh run-status.sh webrail.sh status.sh module-apply.sh p2-checklist.sh guard.sh; do
   bash -n "$ROOT/scripts/web/$s" || die "bash -n: $s"
   echo "    OK: $s"
 done
@@ -2745,6 +2745,31 @@ grep -q 'dar-auto RED\|module-apply\|P2_HUMAN_ASSIST' <<<"$OUT75" \
   || die "dar-auto yönlendirme mesajı yok"
 rm -rf "$D75"
 echo "    P2_AUTO_NARROW=true → exit 3 + hybrid/module-apply ipucu ✓"
+
+step "76) guard.sh: discovery write-code DENY + claim-pass kanıtsız DENY + matrix"
+G76="$TMP/guard76"
+mkdir -p "$G76"
+bash "$ROOT/scripts/web/mode.sh" init "$G76" >/dev/null
+rc="$(run_rc bash "$ROOT/scripts/web/guard.sh" write-code "$G76")"
+[[ "$rc" == "1" ]] || die "discovery write-code DENY=1 beklenir, gelen $rc"
+grep -q 'guard-log.jsonl' <<<"$(ls "$G76/.factory/")" || die "guard-log yazılmadı"
+rc="$(run_rc bash "$ROOT/scripts/web/guard.sh" claim-pass "$G76")"
+[[ "$rc" == "1" ]] || die "kanıtsız claim-pass DENY=1 beklenir, gelen $rc"
+# factory + fake PASS raporu
+bash "$ROOT/scripts/web/mode.sh" from-brief "$G76" "Guard76 test projesi auth" >/dev/null
+bash "$STATE" start "$G76" >/dev/null
+# P1'de write-code hâlâ DENY
+rc="$(run_rc bash "$ROOT/scripts/web/guard.sh" write-code "$G76")"
+[[ "$rc" == "1" ]] || die "P1 write-code DENY beklenir, gelen $rc"
+printf '{"result":"PASS","error_count":0,"warning_count":0}\n' > "$G76/qa-report.json"
+rc="$(run_rc bash "$ROOT/scripts/web/guard.sh" claim-pass "$G76")"
+[[ "$rc" == "0" ]] || die "kanıtlı claim-pass ALLOW beklenir, gelen $rc"
+OUT76="$(bash "$ROOT/scripts/web/guard.sh" matrix "$G76")"
+grep -q 'ALLOW\|DENY' <<<"$OUT76" || die "matrix özeti yok"
+grep -q 'guard.sh' "$ROOT/CLAUDE.md" || die "CLAUDE.md guard anmaz"
+grep -q 'guard.sh' "$ROOT/antigravity.yaml" || die "antigravity.yaml guard anmaz"
+rm -rf "$G76"
+echo "    guard DENY/ALLOW · audit log · IDE anayasaları ✓"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

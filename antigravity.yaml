@@ -6,6 +6,7 @@ canonical_repository: "https://github.com/UlasKasikci/repo"
 customer_start: "docs/CUSTOMER-START.md"
 directives:
   - "Read RUN-STATUS.md and .factory/web-state.json before any generation."
+  - "Before write-code/package/claim-pass: bash scripts/web/guard.sh <op> . — DENY means stop and follow fix."
   - "Run bash scripts/web/decide.sh after P1 (open-source decision layer; no paid JEV)."
   - "Scan missing dependencies and missing business features automatically."
   - "Run local linter and PHP syntax checks before build step."
@@ -15,6 +16,7 @@ directives:
   - "QA gate must return 0 Error, 0 Warning before packaging is allowed."
   - "Halt after max_retries: 3 QA failures (4th failure) and emit debug_report.json."
   - "Prefer .factory/modules catalog skills before free-form LLM generation."
+  - "Never claim PASS without bash scripts/web/guard.sh claim-pass ."
 pipeline:
   phases:
     - id: P1

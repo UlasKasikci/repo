@@ -15,6 +15,13 @@ Target stack: **plain PHP 8.1+ MVC + MySQL 8** — mobile/native code is forbidd
 Run `/kesfet` + fill `DISCOVERY.md` + `mode.sh promote` first. Produce
 `core/` / `views/` / `SQL/` / `index.php` only in `factory` mode.
 
+## Guard (mandatory)
+
+```bash
+bash scripts/web/guard.sh write-code .
+# DENY → follow fix; do not ignore. Audit: .factory/guard-log.jsonl
+```
+
 ## Modules first
 
 Before LLM writes in P2:

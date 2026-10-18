@@ -170,6 +170,7 @@ PRUNE_FILES = {
     "debug_report.json",
     "packaging-report.json",
     "module-apply-report.json",
+    "guard-log.jsonl",
     "project.json",
     "bootstrap_manifest.json",
     "sync.json",

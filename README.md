@@ -11,12 +11,12 @@ projesinin aynı denetim kapılarından geçmesi, eksik modül/güvenlik boşluk
 |---|---|
 | Kanonik depo | [`github.com/UlasKasikci/repo`](https://github.com/UlasKasikci/repo) |
 | Stack | PHP 8.1+ (framework’süz MVC) · MySQL 8 / MariaDB · HTML/CSS/JS · FTP/`Yukleme/` |
-| Doğrulama | self-test **76/76** · `preflight.sh` · CI · 14 kanallı QA gate |
+| Doğrulama | self-test **77/77** · `preflight.sh` · `guard.sh` · 14 kanallı QA gate |
 | Sürüm | **v1.3** (+ Şerit A keşif kilidi: `/kesfet` → promote → fabrika) |
 
 [![CI](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml/badge.svg)](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![self-test](https://img.shields.io/badge/self--test-76%2F76%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
+[![self-test](https://img.shields.io/badge/self--test-77%2F77%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
 
 > Bu depo kendi kendine yeterlidir. Tek remote: `origin` → `UlasKasikci/repo`.
 > Başka bir GitHub org/repo’ya bağımlılık veya push yolu yoktur.
@@ -115,7 +115,7 @@ webrail/   (= bu repo: UlasKasikci/repo)
 | **v1.0** | envanter-app | Kalite: 4s 48dk, QA PASS, DONE |
 | **v1.1** | randevu-app | Hız (benzer domain): **27 dk**, pattern reuse |
 | **v1.2** | helpdesk-app + çift AI denetimi | CSRF OOP + `/register` + CONTRACTS sandbox |
-| **v1.3** | Decision Layer + skills READY | JEV-mantık + Şerit A + `/webrail` + modül paketleri; self-test 76/76 |
+| **v1.3** | Decision Layer + skills READY | JEV-mantık + Şerit A + modüller + `guard.sh`; self-test 77/77 |
 
 Release: [v1.2](https://github.com/UlasKasikci/repo/releases/tag/v1.2) · [v1.3](https://github.com/UlasKasikci/repo/releases/tag/v1.3) (bu tur)
 
@@ -160,7 +160,7 @@ Yeni QA kontrolü yalnız somut bug ile eklenir (K6).
 ## Katkı
 
 1. Yalnız bu depoda çalışın: `https://github.com/UlasKasikci/repo`
-2. PR öncesi: `preflight.sh` READY + `self-test.sh` → **76/76 PASS** + CI yeşil
+2. PR öncesi: `preflight.sh` READY + `self-test.sh` → **77/77 PASS** + CI yeşil
 3. Doküman güncellemesi kanıttan türer (K5)
 
 ## Lisans

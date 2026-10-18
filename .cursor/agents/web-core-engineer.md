@@ -21,6 +21,15 @@ mobil/native kod yasak.
 Önce `/kesfet` + `DISCOVERY.md` + `mode.sh promote`. Yalnız `factory` modunda
 `core/` / `views/` / `SQL/` / `index.php` üret.
 
+## Guard (zorunlu)
+
+Kod yazmadan önce:
+
+```bash
+bash scripts/web/guard.sh write-code .
+# DENY → fix satırını uygula; yok sayma. Audit: .factory/guard-log.jsonl
+```
+
 ## Modül önce (zorunlu)
 
 P2’de LLM yazmadan önce:

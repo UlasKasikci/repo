@@ -42,7 +42,7 @@ for f in scripts/web/decide.sh scripts/web/decision.py scripts/web/run-status.sh
          scripts/web/bootstrap-project.sh scripts/web/orchestrate.sh \
          scripts/web/qa-gate.sh scripts/web/state.sh scripts/web/mode.sh \
          scripts/web/measure.sh scripts/web/webrail.sh scripts/web/status.sh \
-         scripts/web/module-apply.sh scripts/web/p2-checklist.sh \
+         scripts/web/module-apply.sh scripts/web/p2-checklist.sh scripts/web/guard.sh \
          .factory/contracts/decision.schema.json \
          .factory/modules/catalog.json \
          .factory/modules/auth-rbac/manifest.json \
@@ -90,7 +90,8 @@ ok "catalog skill yolları"
 for s in scripts/web/decide.sh scripts/web/run-status.sh scripts/web/preflight.sh \
          scripts/web/state.sh scripts/web/orchestrate.sh scripts/web/bootstrap-project.sh \
          scripts/web/mode.sh scripts/web/measure.sh scripts/web/webrail.sh \
-         scripts/web/status.sh scripts/web/module-apply.sh scripts/web/p2-checklist.sh; do
+         scripts/web/status.sh scripts/web/module-apply.sh scripts/web/p2-checklist.sh \
+         scripts/web/guard.sh; do
   bash -n "$s" || bad "bash -n FAIL: $s"
 done
 python3 -m py_compile scripts/web/decision.py || bad "decision.py compile FAIL"

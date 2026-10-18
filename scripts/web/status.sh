@@ -81,6 +81,20 @@ elif phase == "DONE":
 else:
     nxt = "bash scripts/web/state.sh status ."
 
+# Son guard DENY (audit)
+guard_last = "—"
+glog = fac / "guard-log.jsonl"
+if glog.is_file():
+    try:
+        lines = [ln for ln in glog.read_text(encoding="utf-8").splitlines() if ln.strip()]
+        for ln in reversed(lines):
+            g = json.loads(ln)
+            if g.get("allow") is False and g.get("op") != "matrix":
+                guard_last = f"DENY {g.get('op')}: {g.get('reason')} → {g.get('fix')}"
+                break
+    except Exception:
+        guard_last = "bozuk"
+
 print(f"==> Webrail status · {p.name}")
 print(f"  mode     : {mode}")
 print(f"  discovery: {disc}")
@@ -88,4 +102,6 @@ print(f"  phase    : {phase}  status={status}  retry={retry}")
 print(f"  qa       : {qa}")
 print(f"  decision : {decision}")
 print(f"  next     : {nxt}")
+print(f"  guard    : {guard_last}")
+print(f"  tip      : bash scripts/web/guard.sh matrix .   # işlem öncesi ALLOW/DENY")
 PY
