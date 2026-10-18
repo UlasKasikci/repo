@@ -75,6 +75,9 @@ for f in scripts/web/decide.sh scripts/web/decision.py scripts/web/run-status.sh
          .factory/contracts/decision.schema.json \
          .opencode/skills/error-doctor/SKILL.md \
          .cursor/commands/doktor.md .opencode/command/doktor.md \
+         .opencode/command/web-faz.md \
+         .cursor/skills/auth-rbac/SKILL.md \
+         .cursor/skills/error-doctor/SKILL.md \
          .factory/modules/catalog.json \
          .factory/modules/auth-rbac/manifest.json \
          .factory/modules/kvkk/manifest.json \
@@ -99,7 +102,24 @@ for s in .opencode/skills/*/SKILL.md; do
   fi
   grep -q '\*\*Durum:\*\* READY' "$s" || bad "skill READY değil: $s"
 done
-[[ "$SKILL_OPEN" -eq 0 ]] && ok "skills READY (kvkk/auth/admin/seo)"
+[[ "$SKILL_OPEN" -eq 0 ]] && ok "skills READY (kvkk/auth/admin/seo/error-doctor)"
+# AppleDouble (exFAT/Finder): commit’te olmamalı. Yerel oluşum FAIL değil (flaky);
+# tracked ise FAIL. Push öncesi: find . -name '._*' -not -path './.git/*' -delete
+AD_TRACKED="$(git ls-files | grep -c '/\._\|^\._' || true)"
+if [[ "${AD_TRACKED:-0}" -gt 0 ]]; then
+  bad "AppleDouble ._ git’te tracked ($AD_TRACKED) — untrack + sil"
+else
+  ok "AppleDouble ._ tracked=0"
+fi
+AD_N="$(find . -name '._*' -not -path './.git/*' -not -path './.opencode/node_modules/*' 2>/dev/null | wc -l | tr -d ' ')"
+if [[ "${AD_N:-0}" -gt 0 ]]; then
+  echo "  WARN AppleDouble yerel ($AD_N) — push öncesi sil (gate FAIL değil)"
+fi
+# meta sayaç = self-test step
+META_N="$(python3 -c "import json;print(json.load(open('.factory/meta.json')).get('self_test_scenarios') or 0)" 2>/dev/null || echo 0)"
+STEP_N="$(grep -c '^step "' scripts/web/self-test.sh)"
+[[ "$META_N" == "$STEP_N" ]] || bad "meta self_test_scenarios=$META_N != self-test steps=$STEP_N"
+ok "meta senaryo ($META_N) = self-test"
 
 # 6) catalog → skill yolları çözülür
 python3 - <<'PY' || bad "catalog skill yolları kırık"

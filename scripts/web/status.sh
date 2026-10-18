@@ -71,15 +71,19 @@ elif phase == "P1":
 elif phase == "P2":
     nxt = "P2_HUMAN_ASSIST=true … veya module-apply + state advance"
 elif phase == "P3":
-    nxt = "bash scripts/web/qa-gate.sh .   # /web-denetle"
+    nxt = "bash scripts/web/qa-gate.sh .   # /web-denetle · FAIL → doctor.sh --loop"
 elif phase == "P4":
-    nxt = "düzelt → qa-gate → state qa-pass/fail"
+    nxt = "bash scripts/web/doctor.sh . --loop → FIX-BRIEF → qa-gate → state qa-pass/fail"
 elif phase == "P5":
     nxt = "bash scripts/web/package-yukleme.sh .   # /web-yukle"
 elif phase == "DONE":
     nxt = "/yama (küçük düzeltme) veya yeni brief"
 else:
     nxt = "bash scripts/web/state.sh status ."
+
+# QA FAIL ise doctor öner
+if isinstance(qa, str) and qa.upper().startswith("FAIL"):
+    nxt = "bash scripts/web/doctor.sh . --loop   # /doktor → sonra qa-gate"
 
 # Son guard DENY (audit)
 guard_last = "—"
@@ -95,12 +99,27 @@ if glog.is_file():
     except Exception:
         guard_last = "bozuk"
 
+doctor = "—"
+dr = p / "doctor-report.json"
+if not dr.is_file():
+    dr = fac / "doctor-report.json"
+if dr.is_file():
+    try:
+        d = json.loads(dr.read_text(encoding="utf-8"))
+        rem = d.get("remaining_errors") or []
+        doctor = f"{d.get('result', '?')} · kalan={len(rem)}"
+        if (p / "FIX-BRIEF.md").is_file():
+            doctor += " · FIX-BRIEF.md"
+    except Exception:
+        doctor = "bozuk"
+
 print(f"==> Webrail status · {p.name}")
 print(f"  mode     : {mode}")
 print(f"  discovery: {disc}")
 print(f"  phase    : {phase}  status={status}  retry={retry}")
 print(f"  qa       : {qa}")
 print(f"  decision : {decision}")
+print(f"  doctor   : {doctor}")
 print(f"  next     : {nxt}")
 print(f"  guard    : {guard_last}")
 print(f"  tip      : bash scripts/web/guard.sh matrix .   # işlem öncesi ALLOW/DENY")

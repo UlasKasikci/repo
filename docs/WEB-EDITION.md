@@ -1,8 +1,9 @@
 # Webrail — Teknik Spesifikasyon
 
-**Sürüm:** 1.2.0 · **Mod:** deterministic · **Stack:** Sade PHP 8.1+ MVC + MySQL 8.0+/MariaDB
-**Kapsam:** Yalnızca Web. Mobil (Flutter, Compose, React Native, Gradle, APK) kod üretimi yasaktır.
-**Kanonik depo:** `https://github.com/UlasKasikci/repo` — tek remote; başka org/repo yolu yok.
+**Sürüm:** 1.3.0 · **Mod:** deterministic · **Stack:** Sade PHP 8.1+ MVC + MySQL 8.0+/MariaDB  
+**Kapsam:** Yalnızca Web. Mobil (Flutter, Compose, React Native, Gradle, APK) kod üretimi yasaktır.  
+**Fabrika deposu:** `https://github.com/UlasKasikci/repo` (`role=webrail-factory`).  
+**Müşteri ağacı:** bootstrap → `role=customer-app` — fabrika remote’una push yasak.
 
 Bu dosya Webrail'in **kanonik** spesifikasyonudur. Tüm IDE/CLI konfigürasyonları
 (`.cursorrules`, `CLAUDE.md`, `opencode.json`, `antigravity.yaml`) bu dosyaya bağlanır; çelişen
@@ -50,6 +51,19 @@ START → P1 (Domain & Scope) → P2 (Code Gen) → P3 (QA Pool) ──PASS─�
    durur, sonsuz döngü yoktur.
 6. **P5 → DONE:** `packaging-report.json` `result=PASS` iken `state.sh advance` ile kapanır
    (`condition: yukleme-verified`).
+
+### İşlem kapısı (guard) + Error Doctor
+
+```bash
+bash scripts/web/guard.sh matrix .          # ALLOW/DENY + fix yolu
+bash scripts/web/guard.sh git-push .        # varsayılan DENY; WEBRAIL_ALLOW_GIT_PUSH=1 şart
+bash scripts/web/doctor.sh . --qa-first     # QA FAIL teşhis + FIX-BRIEF.md
+bash scripts/web/doctor.sh . --loop         # güvenli tarif uygula → qa yeniden (max 3)
+```
+
+`doctor-recipes.json` hata öneklerini tarife bağlar. Safe apply (sql-dump, fixture,
+modül kopya) LLM kullanmaz; kalan yalnız `FIX-BRIEF.md` (token-ucuz). Kanıt:
+`doctor-report.json`. Skill tiyatrosu değil — script kapısı.
 
 ### Orkestratör (faz sürücüsü)
 
@@ -309,14 +323,17 @@ Metrik: `metrics.jsonl` → `model_used` (reporter-only).
 
 | İşlem | Cursor | Claude Code | opencode |
 |-------|--------|-------------|----------|
-| Başlat (P1 + intent) | `/web-baslat` | `bash scripts/web/state.sh start` | `/web-baslat` |
-| Orkestratör (faz sürücüsü) | `/web-baslat` | `bash scripts/web/orchestrate.sh .` | `/web-baslat` |
-| — (`--auto` metrikleri) | — | `<proje>/.factory/metrics.jsonl` (reporter-only) | — |
-| QA kapısı | `/web-denetle` | `bash scripts/web/qa-gate.sh .` | `/web-denetle` |
-| Paketle | `/web-yukle` | `bash scripts/web/package-yukleme.sh .` | `/web-yukle` |
-| Faz durumu | `/web-faz` | `bash scripts/web/state.sh status` | `/web-faz` |
-| Canlı doğrulama (Lighthouse) | — | `bash scripts/web/lighthouse-verify.sh .` | — |
-| Temiz bootstrap (yeni proje) | — | `bash scripts/web/bootstrap-project.sh <hedef> [--yes] [--force]` | — |
+| Tek giriş | `/webrail` | `webrail.sh` | `/webrail` |
+| Keşif | `/kesfet` | `mode.sh from-brief` | `/kesfet` |
+| Başlat (P1) | `/web-baslat` | `state.sh start` + orchestrate | `/web-baslat` |
+| QA kapısı | `/web-denetle` | `qa-gate.sh` | `/web-denetle` |
+| Error Doctor | `/doktor` | `doctor.sh --loop` | `/doktor` |
+| Paketle | `/web-yukle` | `package-yukleme.sh` | `/web-yukle` |
+| Faz / status | `/web-faz` · `status.sh` | `state.sh status` · `status.sh` | `/web-faz` |
+| Yama | `/yama` | `qa-gate` + düzelt | `/yama` |
+| Guard matrix | `guard.sh matrix` | aynı | aynı |
+| Git push | `guard.sh git-push` (DENY default) | aynı | aynı |
+| Bootstrap | — | `bootstrap-project.sh <hedef> --yes` | — |
 
 **Lighthouse faz yerleşimi (v1 kararı):** P5 **sonrası bağımsız, raporlayıcı** bir fazdır —
 state graph'a girmez, `qa-gate.sh`'yi ağırlaştırmaz (çalışan sunucu + Chrome gerekir;
@@ -335,21 +352,18 @@ ve `debug config` öncesi `find . -name '._*' -delete` ile temizle.
 ## 11. Referanslar
 
 - State kontratı: `.factory/web-state-graph.json`
-- Artefakt şemaları: `.factory/contracts/{p1-domain-report,p3-qa-report,p5-packaging-report}.schema.json`
-- Örnek state: `.factory/web-state.example.json`
+- Artefakt şemaları: `.factory/contracts/{p1-domain-report,p3-qa-report,p5-packaging-report,decision}.schema.json`
+- Doctor tarifleri: `.factory/contracts/doctor-recipes.json`
+- Workspace rolü: `.factory/workspace-role.json` · müşteri şablon: `workspace-role.customer.json`
+- Guard: `bash scripts/web/guard.sh <op|matrix> .` · audit: `.factory/guard-log.jsonl`
+- Error Doctor: `bash scripts/web/doctor.sh . [--qa-first|--apply|--loop]` · `FIX-BRIEF.md` · `doctor-report.json`
 - Orkestratör: `bash scripts/web/orchestrate.sh <proje> [--auto] [--strict]`
-- Agent metrikleri: `<proje>/.factory/metrics.jsonl` (`--auto` reporter-only; parse
-  edilemezse `parse_error: true` — gate/exit kodu değişmez; satırda `model_used` alanı — §9)
-- Model routing (manuel, §9): `MODEL_P1`/`MODEL_P2`/`MODEL_P4` env override; hardcoded
-  map `scripts/web/orchestrate.sh` içinde (`MODEL_MAP_*` + `resolve_model`)
-- E2E bulguları: `docs/findings/` (kalıcı). Ham koşu çıktıları `.factory/e2e-runs/`
-  altında yalnız yerelde tutulur; commit ve bootstrap kopyasına girmez.
-- SQL dump üretici: `bash scripts/web/sql-dump.sh <proje> [--output <path>]`
-- Lighthouse (raporlayıcı): `bash scripts/web/lighthouse-verify.sh <proje> [--serve] [--strict]`
-- Temiz bootstrap: `bash scripts/web/bootstrap-project.sh <hedef> [--yes] [--force]`
-  (dry-run default; kopya/hariç listesi betiğin baş yorumunda; ilk commit
-  `bootstrap from webrail@<12-hex>` — fabrika sürümü izlenebilir)
-- Smoke test: `bash scripts/web/smoke-test.sh <dizin> | --url <canlı> [--strict]`
-  (`SMOKE_PORT`/`SMOKE_PATHS`/`SMOKE_REPORT` env; paketleme içinde otomatik çağrılır)
-- Öz-test: `bash scripts/web/self-test.sh` (CI ile aynı sahne; phpstan+phpunit+eslint gerektirir)
-- CI: `.github/workflows/validate.yml`
+- Decision Layer: `bash scripts/web/decide.sh` · `module-apply.sh` (LLM öncesi paket)
+- Status: `bash scripts/web/status.sh .` · tek giriş: `webrail.sh`
+- SQL dump: `bash scripts/web/sql-dump.sh <proje>`
+- Lighthouse: `bash scripts/web/lighthouse-verify.sh <proje> [--serve] [--strict]`
+- Bootstrap: `bash scripts/web/bootstrap-project.sh <hedef> [--yes] [--force]`
+- Smoke: `bash scripts/web/smoke-test.sh`
+- Öz-test: `bash scripts/web/self-test.sh` (79 senaryo) · preflight: `preflight.sh`
+- Bulgular: `docs/findings/` · CI: `.github/workflows/validate.yml`
+- AppleDouble: `find . -name '._*' -delete` (exFAT; paketleme/IDE listesini bozar)

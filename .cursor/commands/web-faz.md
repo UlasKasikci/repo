@@ -1,29 +1,24 @@
-# /web-faz — State Graph Durumu
+# /web-faz — State Graph + status panosu
 
-Aktif fazı ve kanıt dosyalarını okur — salt okunur, durumu değiştirmez.
-
-## Komut
+Aktif fazı ve kanıt dosyalarını okur — salt okunur.
 
 ```bash
-bash scripts/web/state.sh status
+bash scripts/web/status.sh $ARGUMENTS
+bash scripts/web/state.sh status $ARGUMENTS
+bash scripts/web/guard.sh matrix $ARGUMENTS
 ```
 
-## Kanıt taraması
+QA FAIL / P4:
 
 ```bash
-grep '"result"' qa-report.json 2>/dev/null || echo "qa-report yok"
-grep '"result"' packaging-report.json 2>/dev/null || echo "packaging-report yok"
-ls debug_report.json 2>/dev/null && echo "debug_report VAR (HALT/FAIL kanıtı)"
+bash scripts/web/doctor.sh $ARGUMENTS --loop   # /doktor
 ```
-
-## Çıktı tablosu
 
 | Alan | Değer |
 |------|-------|
 | Faz | P1–P5 / HALT |
-| Retry | n / max_retries: 3 (4. fail HALT) |
-| QA | PASS / FAIL / yok |
-| Paketleme | PASS / yok |
-| Sonraki adım | `/web-baslat` · kod · `/web-denetle` · `/web-yukle` |
+| Retry | n / 3 (4. fail HALT) |
+| QA / doctor | qa-report · doctor-report · FIX-BRIEF |
+| Sonraki | `/web-baslat` · `/doktor` · `/web-denetle` · `/web-yukle` |
 
-Aktif faz bitmeden alt faza geçme; `debug_report.json` varsa önce kök nedeni çöz.
+`debug_report.json` varsa önce kök neden; kanıtsız PASS yok.

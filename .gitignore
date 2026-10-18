@@ -114,10 +114,16 @@ qa-report.json
 debug_report.json
 packaging-report.json
 smoke-report.json
+doctor-report.json
+FIX-BRIEF.md
 metrics.jsonl
 .factory/guard-log.jsonl
+.factory/doctor-report.json
 .factory/lighthouse-report.json
 .factory/hybrid-p2-start
+# AppleDouble (exFAT/Finder) — asla commit etme
+._*
+**/._*
 
 # Webrail — yerel koşu artefaktları (asla commit edilmez).
 # Kalıcı bulgular: docs/findings/. Bootstrap bu dizinleri kopyalamaz.

@@ -5,6 +5,13 @@ canonical_spec: "docs/WEB-EDITION.md"
 factory_repository: "https://github.com/UlasKasikci/repo"
 workspace_role: ".factory/workspace-role.json"
 customer_start: "docs/CUSTOMER-START.md"
+skills_root: ".opencode/skills"
+skills_prefer:
+  - error-doctor
+  - auth-rbac
+  - admin-crud
+  - kvkk-compliance
+  - seo-basics
 directives:
   - "Read RUN-STATUS.md and .factory/web-state.json before any generation."
   - "Before write-code/package/claim-pass/git-push/doctor: bash scripts/web/guard.sh <op> . — DENY means stop and follow fix."

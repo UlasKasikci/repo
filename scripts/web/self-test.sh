@@ -2809,12 +2809,11 @@ grep -q 'git-push\|GitHub' "$ROOT/docs/CUSTOMER-START.md" \
 rm -rf "$G77"
 echo "    git-push DENY · customer fabrika-remote RED · allow+kendi-remote OK ✓"
 
-step "78) doctor.sh: teşhis + safe apply (phpstan/phpunit) + FIX-BRIEF"
+step "78) doctor.sh: teşhis + safe apply + --loop PASS + FIX-BRIEF"
 D78="$TMP/doctor78"
 mkdir -p "$D78"
 cp -a "$FIX/." "$D78/"
 rm -f "$D78/phpstan.neon.dist" "$D78/phpunit.xml"
-# qa FAIL üret
 bash "$QA" "$D78" >/dev/null 2>&1 || true
 [[ -f "$D78/qa-report.json" ]] || die "doctor78 qa-report yok"
 rc="$(run_rc bash "$ROOT/scripts/web/doctor.sh" "$D78" --apply)"
@@ -2824,12 +2823,24 @@ rc="$(run_rc bash "$ROOT/scripts/web/doctor.sh" "$D78" --apply)"
 [[ -f "$D78/phpunit.xml" ]] || die "doctor safe apply phpunit kopyalamadı"
 grep -q 'missing_phpstan\|missing_phpunit' "$D78/doctor-report.json" \
   || die "doctor-report tarif eşlemedi"
+# --loop: kırık iskelet → PASS
+D78b="$TMP/doctor78loop"
+mkdir -p "$D78b"
+cp -a "$FIX/." "$D78b/"
+rm -f "$D78b/phpstan.neon.dist" "$D78b/phpunit.xml"
+rc="$(run_rc bash "$ROOT/scripts/web/doctor.sh" "$D78b" --loop --qa-first)"
+[[ "$rc" == "0" ]] || die "doctor --loop PASS=0 beklenir, gelen $rc"
+grep -q '"result": "PASS"' "$D78b/doctor-report.json" || die "doctor-report result PASS değil"
 [[ -f "$ROOT/.factory/contracts/doctor-recipes.json" ]] || die "doctor-recipes.json yok"
 [[ -f "$ROOT/.opencode/skills/error-doctor/SKILL.md" ]] || die "error-doctor skill yok"
+[[ -d "$ROOT/.cursor/skills/auth-rbac" ]] || die "Cursor domain skill mount eksik: auth-rbac"
 grep -q 'doctor.sh' "$ROOT/.cursor/commands/doktor.md" || die "Cursor /doktor yok"
 grep -q 'doctor.sh' "$ROOT/.opencode/command/doktor.md" || die "OpenCode /doktor yok"
-rm -rf "$D78"
-echo "    doctor teşhis+apply · FIX-BRIEF · skill/komut ✓"
+grep -q 'web-faz\|status.sh' "$ROOT/.opencode/command/web-faz.md" || die "OpenCode /web-faz yok"
+META_N="$(python3 -c "import json;print(json.load(open('$ROOT/.factory/meta.json'))['self_test_scenarios'])")"
+[[ "$META_N" == "$TOTAL_STEPS" ]] || die "meta self_test_scenarios ($META_N) != TOTAL_STEPS ($TOTAL_STEPS)"
+rm -rf "$D78" "$D78b"
+echo "    doctor apply+loop PASS · Cursor skill mount · meta sayaç ✓"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"
