@@ -76,6 +76,7 @@ for f in scripts/web/decide.sh scripts/web/decision.py scripts/web/run-status.sh
          scripts/web/debt-scan.sh \
          docs/templates/PLAN.md \
          docs/templates/AGENT-CONTRACT.md \
+         docs/PROJECT-ARCHETYPES.md \
          docs/V1.4-ROADMAP.md \
          .factory/auto-hooks.json \
          .cursor/commands/denetle.md \

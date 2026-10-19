@@ -2878,31 +2878,45 @@ grep -q 'denetle.sh' "$ROOT/.opencode/command/denetle.md" || die "OpenCode /dene
 V14="$TMP/v14plan"
 mkdir -p "$V14/.factory"
 bash "$ROOT/scripts/web/mode.sh" init "$V14" >/dev/null
-# e-ticaret brief → PLAN + catalog sinyali + sepet BLOCKER (SQL yok)
-rc="$(run_rc bash "$ROOT/scripts/web/plan-from-brief.sh" "$V14" $'E-ticaret mağaza\nÜrün katalogu ve kullanıcı girişi')"
+# e-ticaret brief → sepet BLOCKER
+rc="$(run_rc bash "$ROOT/scripts/web/plan-from-brief.sh" "$V14" $'E-ticaret mağaza\nSepet ve ürün satışı')"
 [[ "$rc" == "0" ]] || die "plan-from-brief rc=$rc"
 [[ -f "$V14/PLAN.md" ]] || die "PLAN.md yazılmadı"
-grep -q 'Proaktif uyarılar\|cart\|Sepet\|sepet' "$V14/PLAN.md" || die "PLAN proaktif uyarı yok"
 bash "$ROOT/scripts/web/gap-scan.sh" "$V14" >/dev/null
-[[ -f "$V14/gap-report.json" ]] || die "gap-report.json yok"
-python3 - <<PY || die "e-ticaret brief'te cart_missing blocker beklenir"
+python3 - <<PY || die "e-ticaret: archetype=ecommerce + cart_missing"
 import json
 r=json.load(open("$V14/gap-report.json"))
+assert r.get("archetype")=="ecommerce", r
 ids={f["id"] for f in r["findings"]}
 assert "cart_missing" in ids, ids
 assert r["blocker_count"] >= 1
 PY
 rc="$(run_rc bash "$ROOT/scripts/web/denetle.sh" "$V14")"
 [[ "$rc" == "1" ]] || die "denetle blocker exit 1 beklenir, gelen $rc"
-[[ -f "$V14/DENETIM.md" ]] || die "DENETIM.md yok"
+# ürün tanıtım (showcase) → sepet/ödeme ZORLANMAZ
+V14s="$TMP/v14show"
+mkdir -p "$V14s/.factory"
+bash "$ROOT/scripts/web/mode.sh" init "$V14s" >/dev/null
+bash "$ROOT/scripts/web/plan-from-brief.sh" "$V14s" $'Ürün tanıtım sitesi\nVitrin ve hizmet kartları — satış yok' >/dev/null
+bash "$ROOT/scripts/web/gap-scan.sh" "$V14s" >/dev/null
+python3 - <<PY || die "showcase: cart/payment zorlanmamalı"
+import json
+r=json.load(open("$V14s/gap-report.json"))
+assert r.get("archetype")=="showcase", r
+ids={f["id"] for f in r["findings"]}
+assert "cart_missing" not in ids, ids
+assert "payment_missing" not in ids, ids
+assert r.get("blocker_count",0)==0, r
+PY
 # web-sample: sepet+rbac var → denetle OK
 V14b="$TMP/v14ok"
 mkdir -p "$V14b"
 cp -a "$FIX/." "$V14b/"
 rc="$(run_rc bash "$ROOT/scripts/web/denetle.sh" "$V14b")"
 [[ "$rc" == "0" ]] || die "web-sample denetle OK=0 beklenir, gelen $rc"
-rm -rf "$V14" "$V14b"
-echo "    plan-from-brief · gap BLOCKER · denetle · auto-hooks ✓"
+[[ -f "$ROOT/docs/PROJECT-ARCHETYPES.md" ]] || die "PROJECT-ARCHETYPES.md yok"
+rm -rf "$V14" "$V14b" "$V14s"
+echo "    archetype ecommerce vs showcase · gap · denetle ✓"
 
 step "81) v1.4 S1: AGENT-CONTRACT + plan-sync + debt-scan"
 [[ -f "$ROOT/docs/templates/AGENT-CONTRACT.md" ]] || die "AGENT-CONTRACT şablon yok"

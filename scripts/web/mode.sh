@@ -134,7 +134,11 @@ name = name[:80]
 lower = brief.lower()
 want_rbac = any(k in lower for k in ("kullanıcı", "user", "login", "auth", "rol", "admin"))
 want_admin = "admin" in lower or "yönetim" in lower or "panel" in lower
-want_cart = any(k in lower for k in ("sepet", "sipariş", "siparis", "e-ticaret", "ürün", "urun", "katalog"))
+# ürün/katalog tek başına sepet demek değil (vitrin/tanıtım); e-ticaret fiilleri gerekir
+want_cart = any(k in lower for k in (
+    "sepet", "sipariş", "siparis", "e-ticaret", "eticaret", "satın al", "satin al",
+    "checkout", "shop", "mağaza", "magaza",
+))
 want_kvkk = any(k in lower for k in ("kvkk", "gdpr", "kişisel", "kisisel", "rıza", "riza"))
 # varsayılan: web teslim → seo evet; kvkk TR işleri için varsayılan öner
 if "kvkk" not in lower and "gdpr" not in lower:

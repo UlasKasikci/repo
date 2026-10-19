@@ -43,13 +43,35 @@ def add(cond, sid, msg, sev="warn"):
     if cond:
         signals.append((sid, msg, sev))
 
-catalog = any(k in lower for k in ("ürün", "urun", "katalog", "e-ticaret", "eticaret", "shop", "mağaza", "magaza"))
-add(catalog, "cart", "Katalog/e-ticaret sinyali — sepet/sipariş planlanmalı", "blocker")
-add(catalog, "payment", "E-ticaret sinyali — kart/ödeme veya kapıda ödeme kararı gerekli", "warn")
-add(catalog or "ürün" in lower or "urun" in lower, "reviews", "Ürün sayfası muhtemel — yorum/oylama alanı önerilir", "warn")
-add(any(k in lower for k in ("kullanıcı", "user", "üye", "uye", "login")), "rbac", "Kullanıcı/auth — RBAC zorunlu", "blocker")
+def any_kw(*keys):
+    return any(k in lower for k in keys)
+
+# Arketip (docs/PROJECT-ARCHETYPES.md) — ürün ≠ e-ticaret
+if any_kw("e-ticaret", "eticaret", "sepet", "satın al", "satin al", "checkout", "shop", "mağaza", "magaza"):
+    arch = "ecommerce"
+elif any_kw("teklif", "rfq", "sipariş talebi", "siparis talebi"):
+    arch = "catalog_rfq"
+elif any_kw("onepage", "one-page", "tek sayfa", "landing"):
+    arch = "onepage"
+elif any_kw("tanıtım", "tanitim", "vitrin", "portfolio", "portföy", "showcase") or (
+    any_kw("ürün", "urun", "katalog") and not any_kw("sepet", "ödeme", "odeme", "satın")
+):
+    arch = "showcase"
+elif any_kw("admin", "panel", "saas", "dashboard", "crud"):
+    arch = "webapp"
+else:
+    arch = "brochure"
+
+signals.append(("archetype", f"Algılanan arketip: `{arch}` (esnek ağaç — uymuyorsa P1'de düzelt)", "info"))
+add(arch == "ecommerce", "cart", "E-ticaret — sepet/sipariş planlanmalı", "blocker")
+add(arch == "ecommerce", "payment", "E-ticaret — ödeme kararı (kart/kapıda/havale)", "warn")
+add(arch == "ecommerce", "reviews", "Mağaza — yorum/oylama önerilir", "warn")
+add(arch == "catalog_rfq", "rfq", "Katalog+RFQ — teklif/sipariş talebi formu", "warn")
+add(arch == "showcase", "showcase_ok", "Vitrin/tanıtım — sepet/ödeme zorlanmaz", "info")
+add(any_kw("kullanıcı", "user", "üye", "uye", "login") or arch in ("ecommerce", "webapp"),
+    "rbac", "Auth/üyelik — RBAC", "blocker" if arch in ("ecommerce", "webapp") else "warn")
 add(True, "seo", "SEO (robots/sitemap/meta) varsayılan", "warn")
-add(any(k in lower for k in ("kvkk", "gdpr", "kişisel", "kisisel")) or True, "kvkk", "KVKK/aydınlatma/çerez — TR varsayılan öneri", "warn")
+add(arch != "onepage", "kvkk", "KVKK/aydınlatma/çerez — TR öneri", "warn")
 
 rows = "\n".join(f"| `{i}` | {m} | {s} | P1 karar |" for i, m, s in signals) or "| — | — | — | — |"
 
@@ -72,7 +94,7 @@ text = re.sub(r'\*\*Durum:\*\*.*', f'**Durum:** taslak · {date.today().isoforma
 
 out = project / "PLAN.md"
 out.write_text(text, encoding="utf-8")
-print(f"plan: yazıldı → {out} (proje={name}, uyarı={len(signals)})")
+print(f"plan: yazıldı → {out} (proje={name}, archetype={arch}, sinyal={len(signals)})")
 PY
 
 # DISCOVERY ile hizala (varsa mode from-brief ayrı çağrılır)

@@ -73,7 +73,8 @@ flowchart TB
 | P3 | QA Gatekeeper (`readonly`) | `qa-gate.sh` → **0E / 0W** |
 | P5 | Deploy Packager | `packaging-report.json` → `Yukleme/` |
 
-Tek ajan onayı yok. Kanon: [`docs/WEB-EDITION.md`](docs/WEB-EDITION.md) · Yol haritası: [`docs/V1.4-ROADMAP.md`](docs/V1.4-ROADMAP.md)
+Tek ajan onayı yok. Kanon: [`docs/WEB-EDITION.md`](docs/WEB-EDITION.md) ·  
+Arketipler: [`docs/PROJECT-ARCHETYPES.md`](docs/PROJECT-ARCHETYPES.md) · Yol haritası: [`docs/V1.4-ROADMAP.md`](docs/V1.4-ROADMAP.md)
 
 ---
 
@@ -82,7 +83,7 @@ Tek ajan onayı yok. Kanon: [`docs/WEB-EDITION.md`](docs/WEB-EDITION.md) · Yol 
 | Problem | Webrail |
 |---------|---------|
 | Dağınık AI süreçleri | Ortak `.factory/` state + IDE-agnostik scriptler |
-| Brief’te unutulan sepet / ödeme / yorum | `gap-scan` → BLOCKER / WARN → `DENETIM.md` |
+| Brief’te unutulan sepet / ödeme / yorum | `gap-scan` **arketip-duyarlı** (vitrin≠mağaza) → `DENETIM.md` |
 | “Yeşil görünen” güvensiz kod | 14 kanallı QA; PASS olmadan paket yok |
 | Token israfı | Decision Layer + `module-apply` (katalog önce) |
 | Komut zamanlamasını unutma | `orchestrate` auto-hooks (`.factory/auto-hooks.json`) |

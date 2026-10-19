@@ -1,12 +1,22 @@
 {
   "schema_version": 1,
   "workspace_role": "factory-template",
-  "platform": "none",
-  "stack": "none",
+  "platform": "web",
+  "stack": "php-mysql",
   "project_name": null,
   "package_name": null,
+  "project_type": null,
+  "project_type_enum": [
+    "onepage",
+    "brochure",
+    "showcase",
+    "catalog_rfq",
+    "ecommerce",
+    "webapp"
+  ],
+  "project_type_note": "Boşsa gap-scan brief'ten çıkarır. Ürün tanıtım = showcase (sepet/ödeme yok). Satış = ecommerce. docs/PROJECT-ARCHETYPES.md",
   "confirmed_by": "user",
-  "confirmed_at": "2026-07-02T00:00:00Z",
+  "confirmed_at": null,
   "source": "explicit-user-confirmation",
   "compliance": null,
   "notes": "Old conversation context must not be treated as active project intent."
