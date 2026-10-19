@@ -1,69 +1,93 @@
 # Webrail
 
-**Çoklu yapay zekâ için web denetim ve tüketim kontrol düzlemi.**
+**Deterministik web teslim kontrol düzlemi** — çoklu AI, tek kontrat.
 
-Webrail; Cursor, OpenCode ve Claude Code üzerinde aynı kontratları okuyan
-deterministik bir faz hattıdır. Amaç hız vaadi değil: her PHP/MySQL web
-projesinin aynı denetim kapılarından geçmesi, eksik modül/güvenlik boşluklarının
-üretimden önce yakalanması ve tekrarlayan işlerde token tüketiminin düşürülmesi.
+PHP 8.1+ MVC · MySQL 8 · HTML/CSS/JS · FTP/`Yukleme/`  
+Cursor · OpenCode · Claude Code · Antigravity
 
 | | |
 |---|---|
-| Fabrika deposu | [`github.com/UlasKasikci/repo`](https://github.com/UlasKasikci/repo) |
-| Stack | PHP 8.1+ (framework’süz MVC) · MySQL 8 / MariaDB · HTML/CSS/JS · FTP/`Yukleme/` |
-| Doğrulama | self-test **81/81** · web-only · `guard` · **doctor** · **denetle/gap-scan** · IDE-HANDOFF |
-| Sürüm | **v1.3.1** (v1.4 S0) · PLAN.md · auto-hooks · Decision · git-push kilidi |
+| **System Architect** | **Ulaş Kaşıkcı** |
+| Fabrika | [`github.com/UlasKasikci/repo`](https://github.com/UlasKasikci/repo) |
+| Sürüm | **v1.3.2** (v1.4 S0+S1 çekirdek) |
+| Doğrulama | self-test **82/82** · preflight READY · 14 kanallı QA |
 
 [![CI](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml/badge.svg)](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![self-test](https://img.shields.io/badge/self--test-81%2F81%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
+[![self-test](https://img.shields.io/badge/self--test-82%2F82%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
+[![web-only](https://img.shields.io/badge/stack-PHP%20MVC%20%7C%20MySQL-blue.svg)](docs/WEB-EDITION.md)
 
-> **Fabrika** (`role=webrail-factory`): tek remote `origin` → `UlasKasikci/repo`.  
-> **Müşteri / ürün** (`bootstrap` → `role=customer-app`): asla fabrika remote’una bağlanmaz;
-> `git push` varsayılan **yasak** — yalnız kullanıcı açıkça isterse
-> (`WEBRAIL_ALLOW_GIT_PUSH=1` + `guard.sh git-push`). Dağıtım = `Yukleme/` → FTP.
-
----
-
-## Ne işe yarar?
-
-| Problem | Webrail cevabı |
-|---------|----------------|
-| Farklı AI araçlarında dağınık süreç | Ortak `.factory/` state + IDE-agnostik kontratlar |
-| Eksik RBAC / KVKK / sepet / SEO | P1 proaktif domain denetimi (`module_matrix`) + `module-apply` |
-| “Yeşil görünen” güvensiz kod | P3: 14 kontrol, **0 Error / 0 Warning** olmadan paket yok |
-| Token israfı (aynı blokları yeniden üretmek) | **Decision Layer** (`decide.sh`): modül önce, bağlam allowlist |
-| IDE / personel değişimi | `RUN-STATUS.md` + `.factory/*` — sohbet hafızasına güvenilmez |
-| Ajan yanlışlıkla fabrika GitHub’ına push | `workspace-role` + `guard.sh git-push` DENY (müşteri ağacı) |
-| QA FAIL → “ne bozuk / nasıl düzeltilir?” | **`doctor.sh`**: tarif eşle → safe apply → `FIX-BRIEF.md` (token-ucuz) |
-| Dağıtıma hazır olmayan çıktı | P5: staging → smoke → `Yukleme/` + sha256 manifest |
-
-**Ücretli JEV yok.** JEV’in “karar ucuz / üretim pahalı” mantığı açık kaynak
-`scripts/web/decide.sh` ile uygulanır. Müşteri açılışı: [`docs/CUSTOMER-START.md`](docs/CUSTOMER-START.md).
+> **Fabrika** (`webrail-factory`): `origin` → `UlasKasikci/repo`.  
+> **Müşteri** (`customer-app`): fabrika remote’una bağlanmaz; `git push` varsayılan **DENY**. Dağıtım = `Yukleme/` → FTP.
 
 ---
 
-## Nasıl çalışır?
+## System Architect
 
-```text
-brief|/kesfet → PLAN.md + gap-scan → P1 Domain → P2 Code → P3 QA ──PASS──→ P5 → DONE
-         (auto: plan-from-brief · denetle)              (auto: doctor+denetle)  (auto: denetle)
-                                              │
-                                              ├─ FAIL (retry 1–3) → P4 → P3
-                                              └─ 4. FAIL → HALT + debug_report.json
+**Ulaş Kaşıkcı** — Webrail mimarisi, State Graph (P1–P5), Decision Layer, Error Doctor, gap/denetle auto-hooks ve çoklu-IDE denetim anayasasının tasarımı.
+
+---
+
+## Mimari akış
+
+```mermaid
+flowchart TB
+  subgraph intake["Giriş"]
+    B[Brief / DISCOVERY]
+    P[plan-from-brief → PLAN.md]
+    G[gap-scan WARN/BLOCKER]
+    B --> P --> G
+  end
+
+  subgraph graph["State Graph"]
+    P1[P1 Domain Architect]
+    P2[P2 Core Engineer]
+    P3[P3 QA Gatekeeper]
+    P4[P4 Revision]
+    P5[P5 Packager]
+    DONE([DONE · Yukleme/])
+    HALT([HALT · debug_report])
+    P1 -->|decide + module-apply| P2
+    P2 --> P3
+    P3 -->|PASS| P5
+    P3 -->|FAIL 1–3| P4
+    P4 --> P3
+    P3 -->|4. FAIL| HALT
+    P5 --> DONE
+  end
+
+  subgraph auto["Auto-hooks — komut unutulmaz"]
+    H1[denetle · doctor · plan-sync · debt-scan]
+  end
+
+  G --> P1
+  P1 -.-> H1
+  P3 -.-> H1
+  P5 -.-> H1
 ```
 
-| Faz | Ajan | Kapı |
-|-----|------|------|
-| P1 | Domain Architect | `domain-report.json` (şema doğruluğu) |
-| P2 / P4 | Core Engineer (+ Frontend) | Yapısal iskelet; asıl kapı P3 |
-| P3 | QA Gatekeeper (`readonly`) | `qa-gate.sh` exit 0 |
+| Faz | Ajan | Kapı / kanıt |
+|-----|------|----------------|
+| P1 | Domain Architect | `domain-report.json` + `decide.sh` |
+| P2 / P4 | Core Engineer (+ Frontend) | MVC iskelet · `FIX-BRIEF.md` |
+| P3 | QA Gatekeeper (`readonly`) | `qa-gate.sh` → **0E / 0W** |
 | P5 | Deploy Packager | `packaging-report.json` → `Yukleme/` |
 
-Tek ajan onayı yok: P1→P2 yalnız domain raporuyla, P3→P5 yalnız QA PASS ile.
+Tek ajan onayı yok. Kanon: [`docs/WEB-EDITION.md`](docs/WEB-EDITION.md) · Yol haritası: [`docs/V1.4-ROADMAP.md`](docs/V1.4-ROADMAP.md)
 
-Kanonik spesifikasyon: [`docs/WEB-EDITION.md`](docs/WEB-EDITION.md) ·
-Strateji / K1–K8: [`docs/MASTER-PROMPT-V2.md`](docs/MASTER-PROMPT-V2.md)
+---
+
+## Ne çözer?
+
+| Problem | Webrail |
+|---------|---------|
+| Dağınık AI süreçleri | Ortak `.factory/` state + IDE-agnostik scriptler |
+| Brief’te unutulan sepet / ödeme / yorum | `gap-scan` → BLOCKER / WARN → `DENETIM.md` |
+| “Yeşil görünen” güvensiz kod | 14 kanallı QA; PASS olmadan paket yok |
+| Token israfı | Decision Layer + `module-apply` (katalog önce) |
+| Komut zamanlamasını unutma | `orchestrate` auto-hooks (`.factory/auto-hooks.json`) |
+| QA FAIL körlüğü | `doctor.sh` → tarif → `FIX-BRIEF.md` |
+| Yanlışlıkla fabrika GitHub push | `guard.sh git-push` + `workspace-role` |
 
 ---
 
@@ -74,129 +98,99 @@ git clone https://github.com/UlasKasikci/repo.git ~/webrail
 cd ~/webrail
 
 composer global require phpstan/phpstan phpunit/phpunit
-bash scripts/web/self-test.sh    # 81/81bash scripts/web/preflight.sh    # READY
+bash scripts/web/preflight.sh    # READY
+bash scripts/web/self-test.sh    # 82/82
 
-# Tek giriş — fabrika köküne YAZMA; hedef customer-app olur
+# Müşteri ağacı — fabrika köküne yazma
 bash scripts/web/webrail.sh ../musteri-projesi --yes \
-  --brief "Demo: auth + admin + KVKK panel"
+  --brief "E-ticaret: ürün katalogu, üye girişi, KVKK"
 cd ../musteri-projesi
 bash scripts/web/status.sh .
-bash scripts/web/guard.sh matrix .   # git-push → DENY
-
-# P1 → decide → modül kopya → hybrid P2 → QA → paket
-# QA FAIL olursa: /doktor  veya  bash scripts/web/doctor.sh . --loop
-# /web-baslat · module-apply.sh · P2_HUMAN_ASSIST=true orchestrate.sh --auto
+bash scripts/web/guard.sh matrix .
 ```
 
-Müşteri ağacında GitHub’a yükleme **yok** (varsayılan). Bak: `WEBRAIL-CUSTOMER.md`,
-[`docs/CUSTOMER-START.md`](docs/CUSTOMER-START.md) §6.
+| Komut | Ne yapar |
+|-------|----------|
+| `/kesfet` · `mode from-brief` | DISCOVERY + **PLAN.md** |
+| `/denetle` · `denetle.sh` | gap + debt + DENETIM (P1/P3/P5’te **otomatik**) |
+| `/doktor` · `doctor.sh --loop` | QA FAIL teşhis / safe apply |
+| `/web-baslat` → `/web-faz` → `/web-yukle` | P1 → P2 → P5 |
 
-İleri seviye: `/kesfet`, `mode.sh promote`, `/yama`. Demo için saf IDE; teslim için Webrail.  
-Çıkış: `0` OK · `1` FAIL · `2` HALT · `3` bekleme.
+Çıkış kodları: `0` OK · `1` FAIL · `2` HALT · `3` bekleme (LLM).
+
+Müşteri protokolü: [`docs/CUSTOMER-START.md`](docs/CUSTOMER-START.md)
 
 ---
 
-## Depo yapısı
+## Depo haritası
 
 ```text
-webrail/   (= fabrika: UlasKasikci/repo)
-├── .cursor/                 # kurallar, ajanlar, komutlar (+ bootstrap’ta skills mount)
-├── .opencode/               # ajan / komut / domain skills
+webrail/                          # fabrika = UlasKasikci/repo
+├── .cursor/ · .opencode/         # kurallar, ajanlar, komutlar, skills
 ├── .factory/
-│   ├── contracts/           # P1 / P3 / P5 / decision şemaları
-│   ├── modules/             # katalog + paketler (auth-rbac, kvkk, admin-crud, seo)
-│   ├── workspace-role.json  # fabrika: webrail-factory
-│   ├── workspace-role.customer.json  # bootstrap şablonu → customer-app
-│   ├── web-state-graph.json # faz makinesi
-│   └── meta.json
-├── scripts/web/             # webrail, guard, doctor, status, mode, module-apply, qa-gate…
-├── docs/                    # WEB-EDITION, CUSTOMER-START, MASTER-PROMPT
+│   ├── contracts/ · modules/     # şemalar + auth/kvkk/admin/seo paketleri
+│   ├── auto-hooks.json           # denetle/doctor/plan-sync zamanlayıcı
+│   ├── web-state-graph.json      # P1–P5 makinesi
+│   └── workspace-role*.json      # factory vs customer-app
+├── scripts/web/                  # status · guard · doctor · denetle · gap-scan ·
+│                                 # plan-from-brief · plan-sync · debt-scan ·
+│                                 # orchestrate · qa-gate · package-yukleme …
+├── docs/                         # WEB-EDITION · V1.4-ROADMAP · templates/PLAN.md
 ├── tests/fixtures/
 ├── CLAUDE.md · antigravity.yaml · .cursorrules
-└── (müşteri ağacında) WEBRAIL-CUSTOMER.md · RUN-STATUS.md
+└── (müşteri) WEBRAIL-CUSTOMER.md · RUN-STATUS.md · PLAN.md · Yukleme/
 ```
 
 ---
 
-## Kanıtlanmış saha
+## Güvenlik (değişmez)
+
+- SQL: PDO prepared only  
+- XSS: `htmlspecialchars(..., ENT_QUOTES, 'UTF-8')`  
+- CSRF: her POST (`guardPost` / `Csrf::*`)  
+- Parola: Argon2id veya Bcrypt (≥12)  
+- Oturum: HttpOnly · Secure · SameSite  
+- KVKK/GDPR: compliance açıkken aydınlatma + çerez rızası zorunlu  
+
+---
+
+## Saha kanıtı
 
 | Sürüm | Kanıt | Özet |
 |-------|-------|------|
-| **v1.0** | envanter-app | Kalite: 4s 48dk, QA PASS, DONE |
-| **v1.1** | randevu-app | Hız (benzer domain): **27 dk**, pattern reuse |
-| **v1.2** | helpdesk-app + çift AI denetimi | CSRF OOP + `/register` + CONTRACTS sandbox |
-| **v1.3** | Decision + guard + doctor + web-only | Android purge · IDE-HANDOFF · self-test 80/80 |
-| **v1.3.1** | v1.4 S0: PLAN + gap-scan + denetle auto-hooks | brief→PLAN · orchestrate otomatik `/denetle` · 81/81 |
+| v1.0 | envanter-app | QA PASS, DONE |
+| v1.1 | randevu-app | ~27 dk, pattern reuse |
+| v1.2 | helpdesk-app | CSRF OOP · CONTRACTS sandbox |
+| v1.3 | Decision + doctor + web-only | Android purge · IDE-HANDOFF |
+| v1.3.1–1.3.2 | PLAN · gap · denetle · plan-sync · debt | self-test 82/82 |
 
-Release: [v1.2](https://github.com/UlasKasikci/repo/releases/tag/v1.2) · [v1.3](https://github.com/UlasKasikci/repo/releases/tag/v1.3)  
-Yol haritası: [`docs/V1.4-ROADMAP.md`](docs/V1.4-ROADMAP.md)
-
----
-
-## Güvenlik ve denetim (özet)
-
-- SQL: yalnız PDO prepared statement
-- XSS: `htmlspecialchars(..., ENT_QUOTES, 'UTF-8')`
-- CSRF: her POST’ta `guardPost()` / `Csrf::requireValid()` / `Csrf::verify()` (gate OOP desenini tanır)
-- Parola: `PASSWORD_ARGON2ID` veya `PASSWORD_BCRYPT` (cost ≥ 12)
-- Oturum: HttpOnly · Secure · SameSite
-- KVKK/GDPR: aydınlatma + çerez rızası (compliance açıkken zorunlu)
+Release: [v1.2](https://github.com/UlasKasikci/repo/releases/tag/v1.2) · [v1.3](https://github.com/UlasKasikci/repo/releases/tag/v1.3)
 
 ---
 
-## Ortam değişkenleri (sık kullanılan)
+## Ortam değişkenleri
 
 | Değişken | Rol |
 |----------|-----|
-| `MODEL_P1` / `MODEL_P2` / `MODEL_P4` | Faz bazlı model routing |
-| `STRICT_*` | `--strict` token/duvar bütçesi |
-| `QA_GATE_EXTRA` | örn. `--allow-no-cart` (onaylı istisna) |
-| `P2_HUMAN_ASSIST=true` | P2 hybrid (iskeleti insan, P3–P5 otomatik) |
-| `WEBRAIL_ALLOW_GIT_PUSH=1` | Yalnız kullanıcı açıkça “push” dediğinde; önce `guard.sh git-push` |
-
-### Error Doctor (özgün)
-
-```bash
-bash scripts/web/doctor.sh . --qa-first   # teşhis + FIX-BRIEF.md
-bash scripts/web/doctor.sh . --loop       # güvenli tarifleri uygula → qa yeniden (max 3)
-```
-
-IDE: `/doktor` (Cursor + OpenCode). Kanıt: `doctor-report.json`.  
-Katalog skill sitelerinden fark: metin playbook değil — **qa-report → script tarif**.
-
-### Denetle + gap-scan (v1.4 S0)
-
-```bash
-bash scripts/web/plan-from-brief.sh . "E-ticaret …"   # → PLAN.md
-bash scripts/web/denetle.sh .                         # gap + DENETIM.md (auto: orchestrate)
-```
-
-IDE: `/denetle`. Unutsan bile `mode from-brief` / `orchestrate` P1·P3·P5’te çalışır (`.factory/auto-hooks.json`).
+| `MODEL_P1` / `MODEL_P2` / `MODEL_P4` | Faz model routing |
+| `STRICT_*` | `--strict` token / duvar bütçesi |
+| `QA_GATE_EXTRA` | örn. `--allow-no-cart` |
+| `P2_HUMAN_ASSIST=true` | Hybrid P2 |
+| `WEBRAIL_ALLOW_GIT_PUSH=1` | Yalnız açık “push” + `guard.sh git-push` ALLOW |
 
 ---
 
-## Müşteri öncesi kapanış
+## Katkı (yalnız fabrika)
 
-Fabrika tarafı hazır kabul edilir:
-
-- `bash scripts/web/preflight.sh` → **READY** (`role=webrail-factory`)
-- Skills: auth-rbac · admin-crud · kvkk-compliance · seo-basics (**READY**)
-- Decision Layer + RUN-STATUS + CUSTOMER-START + `/kesfet` + `guard.sh`
-- Bootstrap müşteriye `customer-app` + `WEBRAIL-CUSTOMER.md` yazar; fabrika GitHub’ı korunur
-
-Saha ölçümü (P1 fail oranı, P4 yazma) **ilk müşteri koşusunda** toplanır.
-
-Yeni QA kontrolü yalnız somut bug ile eklenir (K6).
+1. Remote: `https://github.com/UlasKasikci/repo` — müşteri ağacından buraya push **yasak**  
+2. Önkoşul: `preflight.sh` READY · `self-test.sh` **82/82** · `guard.sh git-push` ALLOW  
+3. Push: kullanıcı komutu + `WEBRAIL_ALLOW_GIT_PUSH=1`  
+4. Doküman kanıttan türer (K5)
 
 ---
-
-## Katkı (yalnız fabrika deposu)
-
-1. Bu depoda çalışın: `https://github.com/UlasKasikci/repo` — müşteri ağacından buraya push **yasak**
-2. PR / push öncesi: `preflight.sh` READY + `self-test.sh` → **81/81** + `guard.sh git-push` ALLOW
-3. Push yalnız açık kullanıcı komutu + `WEBRAIL_ALLOW_GIT_PUSH=1`
-4. Doküman güncellemesi kanıttan türer (K5)
 
 ## Lisans
 
-[MIT](LICENSE) © 2026 UlasKasikci
+[MIT](LICENSE) © 2026  
+
+**System Architect: Ulaş Kaşıkcı**

@@ -32,6 +32,18 @@
       "when": "orchestrate P5",
       "runs": ["denetle.sh"],
       "blocking": true
+    },
+    {
+      "id": "plan-sync",
+      "when": "denetle / P1 advance",
+      "runs": ["plan-sync.sh"],
+      "blocking": false
+    },
+    {
+      "id": "debt-scan",
+      "when": "denetle (kod varsa)",
+      "runs": ["debt-scan.sh"],
+      "blocking": false
     }
   ]
 }

@@ -3,6 +3,7 @@
 # CLAUDE CODE EXECUTION DIRECTIVES — Webrail
 
 **Role:** Senior Web Architect & Automator for the Webrail control plane.
+**System Architect:** Ulaş Kaşıkcı.
 **Factory source:** `https://github.com/UlasKasikci/repo` — only when
 `.factory/workspace-role.json` says `webrail-factory`. Customer/bootstrap trees are
 `customer-app` (see `WEBRAIL-CUSTOMER.md`); never point their `origin` at the factory.

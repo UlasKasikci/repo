@@ -72,7 +72,10 @@ for f in scripts/web/decide.sh scripts/web/decision.py scripts/web/run-status.sh
          scripts/web/plan-from-brief.sh \
          scripts/web/gap-scan.sh \
          scripts/web/denetle.sh \
+         scripts/web/plan-sync.sh \
+         scripts/web/debt-scan.sh \
          docs/templates/PLAN.md \
+         docs/templates/AGENT-CONTRACT.md \
          docs/V1.4-ROADMAP.md \
          .factory/auto-hooks.json \
          .cursor/commands/denetle.md \
@@ -156,9 +159,15 @@ for s in scripts/web/decide.sh scripts/web/run-status.sh scripts/web/preflight.s
          scripts/web/mode.sh scripts/web/measure.sh scripts/web/webrail.sh \
          scripts/web/status.sh scripts/web/module-apply.sh scripts/web/p2-checklist.sh \
          scripts/web/guard.sh scripts/web/doctor.sh scripts/web/phase-log.sh \
-         scripts/web/plan-from-brief.sh scripts/web/gap-scan.sh scripts/web/denetle.sh; do
+         scripts/web/plan-from-brief.sh scripts/web/gap-scan.sh scripts/web/denetle.sh \
+         scripts/web/plan-sync.sh scripts/web/debt-scan.sh; do
   bash -n "$s" || bad "bash -n FAIL: $s"
 done
+# README profesyonel kimlik
+grep -q 'System Architect' README.md || bad "README: System Architect yok"
+grep -q 'mermaid' README.md || bad "README: mermaid diyagram yok"
+ok "README System Architect + diyagram"
+
 # Android kırıntı — kurallar ağacında olmamalı
 if [[ -f .cursor/rules/03-android-elite.mdc ]] || [[ -f .cursor/commands/baslat.md ]]; then
   bad "Android/legacy kırıntı hâlâ kurallarda (03-android veya /baslat)"

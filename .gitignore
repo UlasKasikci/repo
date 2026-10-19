@@ -115,8 +115,20 @@ debug_report.json
 packaging-report.json
 smoke-report.json
 doctor-report.json
+gap-report.json
+debt-report.json
 FIX-BRIEF.md
+DENETIM.md
 metrics.jsonl
+# Fabrika kökünde yanlışlıkla oluşan ürün iskeleti
+/index.php
+/.htaccess
+/robots.txt
+/sitemap.xml
+/core/
+/views/
+/assets/
+/SQL/
 .factory/guard-log.jsonl
 .factory/doctor-report.json
 .factory/lighthouse-report.json

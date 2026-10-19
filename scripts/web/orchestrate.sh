@@ -963,6 +963,13 @@ while true; do
         echo "orkestratör: denetle BLOCKER — PLAN/domain-report'a sepet/RBAC vb. ekle" >&2
         exit 1
       }
+      # S1: PLAN ↔ state
+      [[ -f "$PROJECT/PLAN.md" ]] && bash "$ROOT/scripts/web/plan-sync.sh" "$PROJECT" || true
+      # Ajan sözleşmesi şablonu yoksa kopyala
+      if [[ ! -f "$PROJECT/.factory/AGENT-CONTRACT.md" && -f "$ROOT/docs/templates/AGENT-CONTRACT.md" ]]; then
+        cp "$ROOT/docs/templates/AGENT-CONTRACT.md" "$PROJECT/.factory/AGENT-CONTRACT.md"
+        echo "==> AGENT-CONTRACT.md kopyalandı (.factory/)"
+      fi
       echo "==> P1 → P2 (requirements-frozen + decision.json)"
       ;;
 

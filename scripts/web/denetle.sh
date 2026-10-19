@@ -24,6 +24,14 @@ PROJECT="$(cd "$PROJECT" && pwd)"
 echo "==> denetle · $(basename "$PROJECT")"
 bash "$ROOT/scripts/web/status.sh" "$PROJECT" || true
 bash "$ROOT/scripts/web/gap-scan.sh" "$PROJECT"
+# Kod varsa borç taraması (WARN; blocker üretmez — rapor birleşik bakış)
+if [[ -f "$PROJECT/index.php" || -d "$PROJECT/core" ]]; then
+  bash "$ROOT/scripts/web/debt-scan.sh" "$PROJECT" || true
+fi
+# PLAN varsa state ile senkron
+if [[ -f "$PROJECT/PLAN.md" && -f "$PROJECT/.factory/web-state.json" ]]; then
+  bash "$ROOT/scripts/web/plan-sync.sh" "$PROJECT" >/dev/null 2>&1 || true
+fi
 
 BLOCKERS=0
 if [[ -f "$PROJECT/gap-report.json" ]]; then

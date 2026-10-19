@@ -125,7 +125,7 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 step "0) bash -n söz dizimi + python söz dizimi"
-for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh bootstrap-project.sh smoke-test.sh frontmatter-check.sh mode.sh decide.sh measure.sh preflight.sh run-status.sh webrail.sh status.sh module-apply.sh p2-checklist.sh guard.sh doctor.sh phase-log.sh plan-from-brief.sh gap-scan.sh denetle.sh; do
+for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh bootstrap-project.sh smoke-test.sh frontmatter-check.sh mode.sh decide.sh measure.sh preflight.sh run-status.sh webrail.sh status.sh module-apply.sh p2-checklist.sh guard.sh doctor.sh phase-log.sh plan-from-brief.sh gap-scan.sh denetle.sh plan-sync.sh debt-scan.sh; do
   bash -n "$ROOT/scripts/web/$s" || die "bash -n: $s"
   echo "    OK: $s"
 done
@@ -2903,6 +2903,31 @@ rc="$(run_rc bash "$ROOT/scripts/web/denetle.sh" "$V14b")"
 [[ "$rc" == "0" ]] || die "web-sample denetle OK=0 beklenir, gelen $rc"
 rm -rf "$V14" "$V14b"
 echo "    plan-from-brief · gap BLOCKER · denetle · auto-hooks ✓"
+
+step "81) v1.4 S1: AGENT-CONTRACT + plan-sync + debt-scan"
+[[ -f "$ROOT/docs/templates/AGENT-CONTRACT.md" ]] || die "AGENT-CONTRACT şablon yok"
+[[ -f "$ROOT/scripts/web/plan-sync.sh" ]] || die "plan-sync.sh yok"
+[[ -f "$ROOT/scripts/web/debt-scan.sh" ]] || die "debt-scan.sh yok"
+grep -q 'plan-sync.sh' "$ROOT/scripts/web/orchestrate.sh" || die "orchestrate plan-sync kancası yok"
+grep -q 'debt-scan.sh' "$ROOT/scripts/web/denetle.sh" || die "denetle debt-scan kancası yok"
+grep -q 'System Architect' "$ROOT/README.md" || die "README System Architect yok"
+grep -q 'mermaid' "$ROOT/README.md" || die "README mermaid diyagram yok"
+PS="$TMP/plansync81"
+mkdir -p "$PS/.factory"
+cp "$ROOT/docs/templates/PLAN.md" "$PS/PLAN.md"
+printf '%s\n' '{"current_phase":"P3","status":"in_progress","retry_count":0}' > "$PS/.factory/web-state.json"
+rc="$(run_rc bash "$ROOT/scripts/web/plan-sync.sh" "$PS")"
+[[ "$rc" == "0" ]] || die "plan-sync rc=$rc"
+grep -q 'faz=P3' "$PS/PLAN.md" || die "plan-sync Durum satırı güncellenmedi"
+grep -q '\- \[x\]' "$PS/PLAN.md" || die "plan-sync P1/P2 checkbox işaretlemedi"
+# debt-scan web-sample üzerinde rapor üretir
+DS="$TMP/debt81"
+mkdir -p "$DS"
+cp -a "$FIX/." "$DS/"
+bash "$ROOT/scripts/web/debt-scan.sh" "$DS" >/dev/null
+[[ -f "$DS/debt-report.json" ]] || die "debt-report.json yok"
+rm -rf "$PS" "$DS"
+echo "    AGENT-CONTRACT · plan-sync · debt-scan · README architect/diagram ✓"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"
