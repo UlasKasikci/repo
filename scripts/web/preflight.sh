@@ -77,11 +77,18 @@ for f in scripts/web/decide.sh scripts/web/decision.py scripts/web/run-status.sh
          scripts/web/classify-fail.sh \
          scripts/web/reality-check.sh \
          scripts/web/adaptive-recover.sh \
+         scripts/web/gap-inject.sh \
+         scripts/web/orphan-commands.sh \
          .factory/contracts/failure-report.schema.json \
          docs/templates/PLAN.md \
          docs/templates/AGENT-CONTRACT.md \
          docs/PROJECT-ARCHETYPES.md \
+         docs/GAP-APPROVAL-MATRIX.md \
          docs/V1.4-ROADMAP.md \
+         .factory/modules/payment/manifest.json \
+         .factory/modules/reviews/manifest.json \
+         .opencode/skills/payment-basics/SKILL.md \
+         .opencode/skills/reviews-basics/SKILL.md \
          .factory/auto-hooks.json \
          .cursor/commands/denetle.md \
          .opencode/command/denetle.md \
@@ -166,9 +173,12 @@ for s in scripts/web/decide.sh scripts/web/run-status.sh scripts/web/preflight.s
          scripts/web/guard.sh scripts/web/doctor.sh scripts/web/phase-log.sh \
          scripts/web/plan-from-brief.sh scripts/web/gap-scan.sh scripts/web/denetle.sh \
          scripts/web/plan-sync.sh scripts/web/debt-scan.sh \
-         scripts/web/classify-fail.sh scripts/web/reality-check.sh scripts/web/adaptive-recover.sh; do
+         scripts/web/classify-fail.sh scripts/web/reality-check.sh scripts/web/adaptive-recover.sh \
+         scripts/web/gap-inject.sh scripts/web/orphan-commands.sh; do
   bash -n "$s" || bad "bash -n FAIL: $s"
 done
+# orphan command drift
+bash scripts/web/orphan-commands.sh . || bad "orphan-commands drift"
 # README profesyonel kimlik
 grep -q 'System Architect' README.md || bad "README: System Architect yok"
 grep -q 'mermaid' README.md || bad "README: mermaid diyagram yok"
@@ -190,10 +200,10 @@ python3 -m py_compile scripts/web/decision.py || bad "decision.py compile FAIL"
 ok "bash -n + decision.py"
 
 # paket files/ mevcut
-for pkg in auth-rbac kvkk admin-crud seo; do
+for pkg in auth-rbac kvkk admin-crud seo payment reviews; do
   [[ -d ".factory/modules/$pkg/files" ]] || bad "modül files yok: $pkg"
 done
-ok "modül paketleri (4)"
+ok "modül paketleri (6)"
 
 # 8) mode kilidi duman: discovery → start RED → promote → start OK
 TMPM="$(mktemp -d)"

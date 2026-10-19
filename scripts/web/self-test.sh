@@ -125,12 +125,13 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 step "0) bash -n söz dizimi + python söz dizimi"
-for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh bootstrap-project.sh smoke-test.sh frontmatter-check.sh mode.sh decide.sh measure.sh preflight.sh run-status.sh webrail.sh status.sh module-apply.sh p2-checklist.sh guard.sh doctor.sh phase-log.sh plan-from-brief.sh gap-scan.sh denetle.sh plan-sync.sh debt-scan.sh classify-fail.sh reality-check.sh adaptive-recover.sh; do
+for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh bootstrap-project.sh smoke-test.sh frontmatter-check.sh mode.sh decide.sh measure.sh preflight.sh run-status.sh webrail.sh status.sh module-apply.sh p2-checklist.sh guard.sh doctor.sh phase-log.sh plan-from-brief.sh gap-scan.sh denetle.sh plan-sync.sh debt-scan.sh classify-fail.sh reality-check.sh adaptive-recover.sh gap-inject.sh orphan-commands.sh; do
   bash -n "$ROOT/scripts/web/$s" || die "bash -n: $s"
   echo "    OK: $s"
 done
 python3 -m py_compile "$ROOT/scripts/web/domain-check.py" || die "py_compile: domain-check.py"
-echo "    OK: domain-check.py"
+python3 -m py_compile "$ROOT/scripts/web/decision.py" || die "py_compile: decision.py"
+echo "    OK: domain-check.py · decision.py"
 
 # Frontmatter kontratı — qa-gate 14. kontrol ile AYNI tek doğruluk kaynağı
 # (scripts/web/frontmatter-check.sh): opencode/cursor YAML frontmatter dosyanın
@@ -2986,6 +2987,159 @@ rc="$(run_rc bash "$ROOT/scripts/web/adaptive-recover.sh" "$CF")"
 [[ -f "$CF/.factory/adaptive-plan.json" ]] || die "adaptive-plan.json yok"
 rm -rf "$CF" "$OK"
 echo "    classify-fail · reality-check · adaptive-recover ✓"
+
+step "83) v1.4 S2: gap-inject arketip-filtreli → domain-report proposed"
+[[ -f "$ROOT/scripts/web/gap-inject.sh" ]] || die "gap-inject.sh yok"
+[[ -f "$ROOT/docs/GAP-APPROVAL-MATRIX.md" ]] || die "GAP-APPROVAL-MATRIX.md yok"
+grep -q 'gap-inject.sh' "$ROOT/scripts/web/denetle.sh" || die "denetle gap-inject kancası yok"
+# ecommerce: cart/payment proposed
+GI="$TMP/gapinject83"
+mkdir -p "$GI/.factory"
+bash "$ROOT/scripts/web/mode.sh" init "$GI" >/dev/null
+# minimal domain-report (semantic enough for inject)
+python3 - <<PY
+import json
+from pathlib import Path
+p=Path("$GI")
+rep={
+  "schema_version":1,
+  "project":"gapinject83",
+  "result":"READY",
+  "compliance":"none",
+  "module_matrix":[
+    {"module":"seo","status":"present","evidence":"robots.txt:1","justification":"SEO temel — robots mevcut, sitemap kontrol edilecek."},
+    {"module":"rbac","status":"missing","evidence":"SQL/pending","justification":"RBAC henüz yok — users.role_id eklenecek."},
+    {"module":"auth","status":"missing","evidence":"core/pending","justification":"Auth henüz yok — login/register eklenecek."},
+    {"module":"kvkk","status":"proposed","evidence":"intent:none","justification":"KVKK önerildi — compliance none, kullanıcı onayı bekleniyor."},
+  ],
+  "file_manifest":["robots.txt","index.php","core/App.php","views/home.php"],
+}
+(p/".factory/domain-report.json").write_text(json.dumps(rep,indent=2),encoding="utf-8")
+(p/".factory/project-intent.json").write_text(json.dumps({"project_type":"ecommerce","compliance":"none"}),encoding="utf-8")
+(p/"BRIEF.md").write_text("E-ticaret mağaza sepet ödeme ürün satış\n",encoding="utf-8")
+PY
+bash "$ROOT/scripts/web/gap-scan.sh" "$GI" >/dev/null
+bash "$ROOT/scripts/web/gap-inject.sh" "$GI" >/dev/null
+python3 - <<PY || die "ecommerce inject payment/cart"
+import json
+r=json.load(open("$GI/.factory/domain-report.json"))
+mods={m["module"] for m in r["module_matrix"]}
+assert "cart" in mods or "payment" in mods, mods
+inj=r.get("gap_inject") or {}
+assert inj.get("archetype")=="ecommerce", inj
+assert inj.get("injected"), inj
+PY
+# showcase: payment/cart inject YOK
+GS="$TMP/gapinject83show"
+mkdir -p "$GS/.factory"
+bash "$ROOT/scripts/web/mode.sh" init "$GS" >/dev/null
+python3 - <<PY
+import json
+from pathlib import Path
+p=Path("$GS")
+rep={
+  "schema_version":1,
+  "project":"show83",
+  "result":"READY",
+  "compliance":"none",
+  "module_matrix":[
+    {"module":"seo","status":"present","evidence":"robots.txt:1","justification":"SEO temel — robots mevcut."},
+    {"module":"rbac","status":"proposed","evidence":"n/a","justification":"Public vitrin — RBAC bilinçli hariç tutulabilir."},
+    {"module":"auth","status":"proposed","evidence":"n/a","justification":"Public vitrin — auth bilinçli hariç."},
+    {"module":"kvkk","status":"proposed","evidence":"TR","justification":"KVKK çerez önerisi — kullanıcı onayı."},
+  ],
+  "file_manifest":["robots.txt","index.php","views/home.php","assets/css/app.css"],
+}
+(p/".factory/domain-report.json").write_text(json.dumps(rep,indent=2),encoding="utf-8")
+(p/".factory/project-intent.json").write_text(json.dumps({"project_type":"showcase"}),encoding="utf-8")
+(p/"BRIEF.md").write_text("Ürün tanıtım vitrin sitesi — satış yok\n",encoding="utf-8")
+PY
+bash "$ROOT/scripts/web/gap-scan.sh" "$GS" >/dev/null
+bash "$ROOT/scripts/web/gap-inject.sh" "$GS" >/dev/null
+python3 - <<PY || die "showcase inject payment/cart olmamalı"
+import json
+r=json.load(open("$GS/.factory/domain-report.json"))
+mods={m["module"] for m in r["module_matrix"]}
+assert "cart" not in mods, mods
+assert "payment" not in mods, mods
+assert "reviews" not in mods, mods
+inj=r.get("gap_inject") or {}
+assert inj.get("archetype")=="showcase", inj
+assert "payment" not in (inj.get("injected") or []), inj
+assert "cart" not in (inj.get("injected") or []), inj
+PY
+rm -rf "$GI" "$GS"
+echo "    gap-inject ecommerce vs showcase ✓"
+
+step "84) v1.4 S2/S3: payment+reviews modül + decide filtre + orphan-commands"
+[[ -f "$ROOT/.factory/modules/payment/manifest.json" ]] || die "payment modül yok"
+[[ -f "$ROOT/.factory/modules/reviews/manifest.json" ]] || die "reviews modül yok"
+[[ -f "$ROOT/.opencode/skills/payment-basics/SKILL.md" ]] || die "payment-basics skill yok"
+[[ -f "$ROOT/.opencode/skills/reviews-basics/SKILL.md" ]] || die "reviews-basics skill yok"
+[[ -f "$ROOT/.cursor/skills/payment-basics/SKILL.md" ]] || die "Cursor payment-basics mount yok"
+[[ -f "$ROOT/scripts/web/orphan-commands.sh" ]] || die "orphan-commands.sh yok"
+rc="$(run_rc bash "$ROOT/scripts/web/orphan-commands.sh" "$ROOT")"
+[[ "$rc" == "0" ]] || die "orphan-commands drift rc=$rc"
+# decide: ecommerce → payment apply; showcase → skip
+DEC="$TMP/decide84"
+mkdir -p "$DEC"
+cp -a "$FIX/." "$DEC/"
+# factory mode (mode.json yok = factory) — step 74 ile aynı
+seed_domain_report "$DEC"
+python3 - <<PY
+import json
+from pathlib import Path
+p=Path("$DEC")
+rep=json.loads((p/".factory/domain-report.json").read_text(encoding="utf-8"))
+rep["archetype"]="ecommerce"
+rep["compliance"]="none"
+mm=list(rep.get("module_matrix") or [])
+have={m.get("module") for m in mm if isinstance(m,dict)}
+for mod, just in (
+  ("payment","Ödeme stub önerildi — ecommerce arketipi için PSP hazırlığı."),
+  ("reviews","Yorum stub önerildi — ecommerce ürün oylaması."),
+):
+  if mod not in have:
+    mm.append({"module":mod,"status":"proposed","evidence":f"gap:{mod}.json","justification":just})
+rep["module_matrix"]=mm
+(p/".factory/domain-report.json").write_text(json.dumps(rep,ensure_ascii=False,indent=2),encoding="utf-8")
+(p/".factory/project-intent.json").write_text(json.dumps({"project_type":"ecommerce","compliance":"none"}),encoding="utf-8")
+PY
+bash "$ROOT/scripts/web/decide.sh" "$DEC" >/dev/null
+python3 - <<PY || die "decide ecommerce payment/reviews"
+import json
+d=json.load(open("$DEC/.factory/decision.json"))
+mods={m["module"] for m in d["modules_to_apply"]}
+assert "payment" in mods, mods
+assert "reviews" in mods, mods
+assert d.get("archetype")=="ecommerce", d
+PY
+# showcase skip
+printf '%s\n' '{"project_type":"showcase","compliance":"none"}' > "$DEC/.factory/project-intent.json"
+python3 - <<PY
+import json
+from pathlib import Path
+p=Path("$DEC/.factory/domain-report.json")
+r=json.loads(p.read_text(encoding="utf-8"))
+r["archetype"]="showcase"
+p.write_text(json.dumps(r,ensure_ascii=False,indent=2),encoding="utf-8")
+PY
+bash "$ROOT/scripts/web/decide.sh" "$DEC" >/dev/null
+python3 - <<PY || die "decide showcase payment skip"
+import json
+d=json.load(open("$DEC/.factory/decision.json"))
+mods={m["module"] for m in d["modules_to_apply"]}
+assert "payment" not in mods, mods
+assert "reviews" not in mods, mods
+sk=set(d.get("skipped_archetype") or [])
+assert "payment" in sk and "reviews" in sk, sk
+PY
+# module-apply payment package copies (direct --module)
+bash "$ROOT/scripts/web/module-apply.sh" "$DEC" --module payment --force >/dev/null
+[[ -f "$DEC/core/Payment.php" ]] || die "Payment.php kopyalanmadı"
+[[ -f "$DEC/SQL/migrations/schema/004_payment.sql" ]] || die "payment SQL kopyalanmadı"
+rm -rf "$DEC"
+echo "    payment/reviews · decide filtre · orphan-commands · module-apply ✓"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

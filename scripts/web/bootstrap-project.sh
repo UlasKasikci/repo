@@ -278,6 +278,7 @@ fi
 if [[ -d "$PROJECT/.opencode/skills" && -d "$PROJECT/.cursor" ]]; then
   mkdir -p "$PROJECT/.cursor/skills"
   for sk in auth-rbac admin-crud kvkk-compliance seo-basics error-doctor \
+            payment-basics reviews-basics \
             zero-hallucination hierarchical-audit after-action-review; do
     if [[ -d "$PROJECT/.opencode/skills/$sk" && ! -e "$PROJECT/.cursor/skills/$sk" ]]; then
       cp -a "$PROJECT/.opencode/skills/$sk" "$PROJECT/.cursor/skills/$sk"

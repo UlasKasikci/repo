@@ -57,6 +57,21 @@ def build_decision(project: Path, factory_root: Path) -> dict[str, Any]:
         or intent.get("compliance")
         or "none"
     )
+    # Arketip: intent > report > gap-report > brochure
+    archetype = (
+        (intent.get("project_type") or intent.get("archetype") or "")
+        or (report.get("project_type") or report.get("archetype") or "")
+        or ""
+    )
+    if not archetype:
+        gap = load_json(project / "gap-report.json") or {}
+        archetype = str(gap.get("archetype") or "")
+    archetype = str(archetype).strip().lower() or "brochure"
+
+    # ecommerce-only skill paketleri (showcase/onepage zorlanmaz)
+    ECOM_ONLY = {"payment", "payments", "odeme", "ödeme", "reviews", "review", "yorum"}
+    CART_OK = {"ecommerce", "catalog_rfq"}
+
     matrix = report.get("module_matrix") or []
     manifest = report.get("file_manifest") or []
     if isinstance(manifest, dict):
@@ -85,6 +100,7 @@ def build_decision(project: Path, factory_root: Path) -> dict[str, Any]:
     modules_to_apply: list[dict[str, Any]] = []
     has_catalog_like = False
     has_cart = False
+    skipped_archetype: list[str] = []
 
     for row in matrix:
         if not isinstance(row, dict):
@@ -111,6 +127,15 @@ def build_decision(project: Path, factory_root: Path) -> dict[str, Any]:
         ):
             apply = True
 
+        # Arketip filtresi
+        if mod in ECOM_ONLY and archetype != "ecommerce":
+            skipped_archetype.append(mod)
+            continue
+        if mod in ("cart", "order", "orders", "sepet") and archetype not in CART_OK:
+            if status in ("proposed", "missing", "injected"):
+                skipped_archetype.append(mod)
+                continue
+
         if not apply:
             continue
 
@@ -120,7 +145,10 @@ def build_decision(project: Path, factory_root: Path) -> dict[str, Any]:
             {
                 "module": mod,
                 "skill": skill,
-                "reason": f"module_matrix.status={status}; {entry.get('summary', '')}".strip(),
+                "reason": (
+                    f"module_matrix.status={status}; archetype={archetype}; "
+                    f"{entry.get('summary', '')}"
+                ).strip(),
             }
         )
 
@@ -172,8 +200,10 @@ def build_decision(project: Path, factory_root: Path) -> dict[str, Any]:
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "project": str(report.get("project") or project.name),
         "phase_hint": phase,
+        "archetype": archetype,
         "model_routing": model_routing,
         "modules_to_apply": modules_to_apply,
+        "skipped_archetype": skipped_archetype,
         "context_allowlist": context_allowlist[:80],
         "qa_gate_extra": qa_extra,
         "next_actions": next_actions,

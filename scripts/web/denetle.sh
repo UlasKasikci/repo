@@ -24,6 +24,10 @@ PROJECT="$(cd "$PROJECT" && pwd)"
 echo "==> denetle · $(basename "$PROJECT")"
 bash "$ROOT/scripts/web/status.sh" "$PROJECT" || true
 bash "$ROOT/scripts/web/gap-scan.sh" "$PROJECT"
+# S2: gap → domain-report proposed (arketip-filtreli; domain-report yoksa atlar)
+if [[ -f "$PROJECT/.factory/domain-report.json" ]]; then
+  bash "$ROOT/scripts/web/gap-inject.sh" "$PROJECT" || true
+fi
 # Kod varsa borç taraması (WARN; blocker üretmez — rapor birleşik bakış)
 if [[ -f "$PROJECT/index.php" || -d "$PROJECT/core" ]]; then
   bash "$ROOT/scripts/web/debt-scan.sh" "$PROJECT" || true

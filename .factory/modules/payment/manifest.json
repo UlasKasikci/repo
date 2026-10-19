@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "id": "payment",
+  "aliases": ["payment", "payments", "odeme", "ödeme"],
+  "summary": "Ödeme stub (ecommerce arketipi) — PSP entegrasyonu P2'de tamamlanır",
+  "archetypes": ["ecommerce"],
+  "tokens_avoided_est": 12000
+}

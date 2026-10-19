@@ -50,6 +50,18 @@
       "when": "denetle (kod varsa)",
       "runs": ["debt-scan.sh"],
       "blocking": false
+    },
+    {
+      "id": "gap-inject",
+      "when": "denetle (domain-report varsa)",
+      "runs": ["gap-inject.sh"],
+      "blocking": false
+    },
+    {
+      "id": "orphan-commands",
+      "when": "preflight / self-test",
+      "runs": ["orphan-commands.sh"],
+      "blocking": true
     }
   ]
 }

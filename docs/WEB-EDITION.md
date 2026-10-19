@@ -1,6 +1,6 @@
 # Webrail — Teknik Spesifikasyon
 
-**Sürüm:** 1.3.0 · **Mod:** deterministic · **Stack:** PHP 8.1+ MVC + MySQL 8 + HTML/CSS/JS (±jQuery) · PWA opsiyonel · FTP/`Yukleme/`  
+**Sürüm:** 1.4.0 · **Mod:** deterministic · **Stack:** PHP 8.1+ MVC + MySQL 8 + HTML/CSS/JS (±jQuery) · PWA opsiyonel · FTP/`Yukleme/`  
 **Kapsam:** Yalnızca Web. Mobil kod üretimi yasaktır (Flutter/Compose/RN/Gradle/APK).  
 **Fabrika:** `https://github.com/UlasKasikci/repo` (`webrail-factory`).  
 **Müşteri:** bootstrap → `customer-app` — fabrika remote’una push yasak.  
@@ -365,7 +365,7 @@ ve `debug config` öncesi `find . -name '._*' -delete` ile temizle.
 - Lighthouse: `bash scripts/web/lighthouse-verify.sh <proje> [--serve] [--strict]`
 - Bootstrap: `bash scripts/web/bootstrap-project.sh <hedef> [--yes] [--force]`
 - Smoke: `bash scripts/web/smoke-test.sh`
-- Öz-test: `bash scripts/web/self-test.sh` (80 senaryo) · preflight: `preflight.sh`
+- Öz-test: `bash scripts/web/self-test.sh` (85 senaryo) · preflight: `preflight.sh`
 - IDE handoff: `docs/IDE-HANDOFF.md` · `scripts/web/phase-log.sh`
 - Bulgular: `docs/findings/` · CI: `.github/workflows/validate.yml`
 - AppleDouble: `find . -name '._*' -delete` (exFAT; paketleme/IDE listesini bozar)

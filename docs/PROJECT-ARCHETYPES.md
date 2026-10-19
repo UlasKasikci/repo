@@ -34,7 +34,8 @@ ile **ne gerektiğini** seçer; olmayanı zorlamaz.
 - Denetim → `gap-scan.sh` arketipe göre severity  
 - İstisna → kullanıcı onayı (`--allow-no-cart`, PLAN “hariç” satırı)
 
-## S2 notu
+## S2 (v1.4.0) — uygulandı
 
 Ödeme/yorum **modül paketleri** yalnız `ecommerce` (veya açık kullanıcı isteği) için
-katalogda önerilir; `showcase` / `onepage` ağacına zorlanmaz.
+katalogda önerilir; `showcase` / `onepage` ağacına zorlanmaz.  
+Kapılar: `gap-inject.sh` · `decision.py` arketip filtresi · `docs/GAP-APPROVAL-MATRIX.md`.

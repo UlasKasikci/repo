@@ -41,6 +41,26 @@
       "skill": null,
       "package": null,
       "summary": "sepet/sipariş — domain-report module_matrix zorunlu; skill yoksa domain'e özel üret"
+    },
+    "payment": {
+      "skill": ".opencode/skills/payment-basics/SKILL.md",
+      "package": ".factory/modules/payment",
+      "summary": "ödeme stub — yalnız ecommerce arketipi"
+    },
+    "payments": {
+      "skill": ".opencode/skills/payment-basics/SKILL.md",
+      "package": ".factory/modules/payment",
+      "summary": "ödeme (payment alias)"
+    },
+    "reviews": {
+      "skill": ".opencode/skills/reviews-basics/SKILL.md",
+      "package": ".factory/modules/reviews",
+      "summary": "ürün yorum/oylama stub — yalnız ecommerce"
+    },
+    "review": {
+      "skill": ".opencode/skills/reviews-basics/SKILL.md",
+      "package": ".factory/modules/reviews",
+      "summary": "yorum (reviews alias)"
     }
   }
 }
