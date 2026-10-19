@@ -117,8 +117,15 @@ smoke-report.json
 doctor-report.json
 gap-report.json
 debt-report.json
+failure-report.json
+reality-check.json
 FIX-BRIEF.md
 DENETIM.md
+.factory/failure-log.jsonl
+.factory/adaptive-plan.json
+.factory/adaptive-hint.env
+.factory/reality-check.json
+.factory/candidates/
 metrics.jsonl
 # Fabrika kökünde yanlışlıkla oluşan ürün iskeleti
 /index.php

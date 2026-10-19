@@ -125,7 +125,7 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 step "0) bash -n söz dizimi + python söz dizimi"
-for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh bootstrap-project.sh smoke-test.sh frontmatter-check.sh mode.sh decide.sh measure.sh preflight.sh run-status.sh webrail.sh status.sh module-apply.sh p2-checklist.sh guard.sh doctor.sh phase-log.sh plan-from-brief.sh gap-scan.sh denetle.sh plan-sync.sh debt-scan.sh; do
+for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh bootstrap-project.sh smoke-test.sh frontmatter-check.sh mode.sh decide.sh measure.sh preflight.sh run-status.sh webrail.sh status.sh module-apply.sh p2-checklist.sh guard.sh doctor.sh phase-log.sh plan-from-brief.sh gap-scan.sh denetle.sh plan-sync.sh debt-scan.sh classify-fail.sh reality-check.sh adaptive-recover.sh; do
   bash -n "$ROOT/scripts/web/$s" || die "bash -n: $s"
   echo "    OK: $s"
 done
@@ -2942,6 +2942,50 @@ bash "$ROOT/scripts/web/debt-scan.sh" "$DS" >/dev/null
 [[ -f "$DS/debt-report.json" ]] || die "debt-report.json yok"
 rm -rf "$PS" "$DS"
 echo "    AGENT-CONTRACT · plan-sync · debt-scan · README architect/diagram ✓"
+
+step "82) Adaptive Recovery + Reality Checker (classify-fail · reality-check)"
+[[ -f "$ROOT/scripts/web/classify-fail.sh" ]] || die "classify-fail.sh yok"
+[[ -f "$ROOT/scripts/web/reality-check.sh" ]] || die "reality-check.sh yok"
+[[ -f "$ROOT/scripts/web/adaptive-recover.sh" ]] || die "adaptive-recover.sh yok"
+[[ -f "$ROOT/.factory/contracts/failure-report.schema.json" ]] || die "failure-report.schema yok"
+grep -q 'reality-check.sh' "$ROOT/scripts/web/orchestrate.sh" || die "orchestrate reality-check yok"
+grep -q 'adaptive-recover.sh' "$ROOT/scripts/web/orchestrate.sh" || die "orchestrate adaptive-recover yok"
+# classify: rbac fail fixture (step 6 ile aynı yöntem)
+CF="$TMP/classify82"
+cp -R "$FIX" "$CF"
+while IFS= read -r f; do
+  sed 's/`role_id`/`perm_level`/g' "$f" > "$f.new" && mv "$f.new" "$f"
+done < <(find "$CF/SQL/migrations" -type f -name '*.sql' 2>/dev/null || true)
+bash "$ROOT/scripts/web/sql-dump.sh" "$CF" >/dev/null
+bash "$QA" "$CF" >/dev/null 2>&1 || true
+[[ -f "$CF/qa-report.json" ]] || die "classify82 qa-report yok"
+grep -q '"result": "FAIL"' "$CF/qa-report.json" || die "classify82 QA FAIL beklenir"
+rc="$(run_rc bash "$ROOT/scripts/web/classify-fail.sh" "$CF")"
+[[ "$rc" == "0" ]] || die "classify-fail rc=$rc"
+python3 - <<PY || die "classify primary/signature"
+import json
+r=json.load(open("$CF/failure-report.json"))
+assert r["tool"]=="classify-fail"
+assert r.get("signature")
+assert r["primary_class"] in ("code","missing_req","bad_context","model","infra")
+assert r.get("strategy")
+print("class", r["primary_class"], "strategy", r["strategy"], "sig", r["signature"])
+PY
+# reality-check P3 FAIL on this broken proj
+rc="$(run_rc bash "$ROOT/scripts/web/reality-check.sh" "$CF" P3)"
+[[ "$rc" == "1" ]] || die "reality P3 FAIL=1 beklenir, gelen $rc"
+# reality P3 PASS on clean fixture copy
+OK="$TMP/reality82ok"
+mkdir -p "$OK"
+cp -a "$FIX/." "$OK/"
+bash "$QA" "$OK" >/dev/null 2>&1 || die "reality82ok qa fail"
+rc="$(run_rc bash "$ROOT/scripts/web/reality-check.sh" "$OK" P3)"
+[[ "$rc" == "0" ]] || die "reality P3 PASS=0 beklenir, gelen $rc"
+# adaptive dry: classify + recover fix_brief path
+rc="$(run_rc bash "$ROOT/scripts/web/adaptive-recover.sh" "$CF")"
+[[ -f "$CF/.factory/adaptive-plan.json" ]] || die "adaptive-plan.json yok"
+rm -rf "$CF" "$OK"
+echo "    classify-fail · reality-check · adaptive-recover ✓"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"

@@ -9,12 +9,12 @@ Cursor · OpenCode · Claude Code · Antigravity
 |---|---|
 | **System Architect** | **Ulaş Kaşıkcı** |
 | Fabrika | [`github.com/UlasKasikci/repo`](https://github.com/UlasKasikci/repo) |
-| Sürüm | **v1.3.2** (v1.4 S0+S1 çekirdek) |
-| Doğrulama | self-test **82/82** · preflight READY · 14 kanallı QA |
+| Sürüm | **v1.3.3** (Adaptive Recovery + Reality Checker) |
+| Doğrulama | self-test **83/83** · preflight READY · 14 kanallı QA |
 
 [![CI](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml/badge.svg)](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![self-test](https://img.shields.io/badge/self--test-82%2F82%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
+[![self-test](https://img.shields.io/badge/self--test-83%2F83%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
 [![web-only](https://img.shields.io/badge/stack-PHP%20MVC%20%7C%20MySQL-blue.svg)](docs/WEB-EDITION.md)
 
 > **Fabrika** (`webrail-factory`): `origin` → `UlasKasikci/repo`.  
@@ -87,7 +87,8 @@ Arketipler: [`docs/PROJECT-ARCHETYPES.md`](docs/PROJECT-ARCHETYPES.md) · Yol ha
 | “Yeşil görünen” güvensiz kod | 14 kanallı QA; PASS olmadan paket yok |
 | Token israfı | Decision Layer + `module-apply` (katalog önce) |
 | Komut zamanlamasını unutma | `orchestrate` auto-hooks (`.factory/auto-hooks.json`) |
-| QA FAIL körlüğü | `doctor.sh` → tarif → `FIX-BRIEF.md` |
+| QA FAIL körlüğü | `doctor.sh` + **Adaptive Recovery** (imza/sınıf/strateji) |
+| Kanıtsız “bitti” | **Reality Checker** (`reality-check.sh` P1/P3/P5) |
 | Yanlışlıkla fabrika GitHub push | `guard.sh git-push` + `workspace-role` |
 
 ---
@@ -100,7 +101,7 @@ cd ~/webrail
 
 composer global require phpstan/phpstan phpunit/phpunit
 bash scripts/web/preflight.sh    # READY
-bash scripts/web/self-test.sh    # 82/82
+bash scripts/web/self-test.sh    # 83/83
 
 # Müşteri ağacı — fabrika köküne yazma
 bash scripts/web/webrail.sh ../musteri-projesi --yes \
@@ -164,6 +165,7 @@ webrail/                          # fabrika = UlasKasikci/repo
 | v1.2 | helpdesk-app | CSRF OOP · CONTRACTS sandbox |
 | v1.3 | Decision + doctor + web-only | Android purge · IDE-HANDOFF |
 | v1.3.1–1.3.2 | PLAN · gap · denetle · plan-sync · debt | self-test 82/82 |
+| v1.3.3 | Adaptive Recovery · Reality Checker | classify-fail · 83/83 |
 
 Release: [v1.2](https://github.com/UlasKasikci/repo/releases/tag/v1.2) · [v1.3](https://github.com/UlasKasikci/repo/releases/tag/v1.3)
 
@@ -178,13 +180,14 @@ Release: [v1.2](https://github.com/UlasKasikci/repo/releases/tag/v1.2) · [v1.3]
 | `QA_GATE_EXTRA` | örn. `--allow-no-cart` |
 | `P2_HUMAN_ASSIST=true` | Hybrid P2 |
 | `WEBRAIL_ALLOW_GIT_PUSH=1` | Yalnız açık “push” + `guard.sh git-push` ALLOW |
+| `WEBRAIL_MULTI_CANDIDATE=1` | Adaptive: tekrarlayan FAIL’de 2–3 aday (varsayılan kapalı) |
 
 ---
 
 ## Katkı (yalnız fabrika)
 
 1. Remote: `https://github.com/UlasKasikci/repo` — müşteri ağacından buraya push **yasak**  
-2. Önkoşul: `preflight.sh` READY · `self-test.sh` **82/82** · `guard.sh git-push` ALLOW  
+2. Önkoşul: `preflight.sh` READY · `self-test.sh` **83/83** · `guard.sh git-push` ALLOW  
 3. Push: kullanıcı komutu + `WEBRAIL_ALLOW_GIT_PUSH=1`  
 4. Doküman kanıttan türer (K5)
 

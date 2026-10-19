@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://webrail.local/contracts/failure-report.schema.json",
+  "title": "Webrail Failure Classification",
+  "description": "QA FAIL imza + sınıf + önerilen onarım stratejisi (Adaptive Recovery)",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "tool",
+    "signature",
+    "primary_class",
+    "strategy",
+    "at"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": { "const": 1 },
+    "tool": { "const": "classify-fail" },
+    "signature": { "type": "string", "minLength": 8 },
+    "primary_class": {
+      "enum": ["code", "missing_req", "bad_context", "model", "infra"]
+    },
+    "classes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["class", "error"],
+        "properties": {
+          "class": { "type": "string" },
+          "error": { "type": "string" }
+        }
+      }
+    },
+    "strategy": {
+      "enum": [
+        "doctor_loop",
+        "fix_brief_p4",
+        "expand_context",
+        "alt_model",
+        "multi_candidate",
+        "halt_infra",
+        "module_apply"
+      ]
+    },
+    "strategy_reason": { "type": "string" },
+    "repeat_count": { "type": "integer", "minimum": 0 },
+    "prior_strategies": { "type": "array", "items": { "type": "string" } },
+    "at": { "type": "string" }
+  }
+}

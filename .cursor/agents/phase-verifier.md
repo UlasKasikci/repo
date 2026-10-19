@@ -1,22 +1,22 @@
 ---
 name: phase-verifier
 description: >-
-  L1 — P1–P5 faz kapanış doğrulayıcı (Webrail). readonly. QA/package iddiasını
-  script kapılarına bağlar.
+  Webrail L1 phase verifier / Reality Checker. P1–P5 evidence gates via
+  reality-check.sh; readonly — ajan “bitti” iddiasını kanıtsız kabul etme.
 model: inherit
 readonly: true
 ---
 
 > Bu ajan docs/MASTER-PROMPT-V2.md'deki K1-K8 kurallarına tabidir.
 
-# Phase Verifier (Webrail L1)
+# Phase Verifier / Reality Checker (Webrail L1)
 
-| Faz | Kanıt |
-|-----|--------|
-| P1 | `domain-report.json` şema + domain-check |
-| P2 | iskelet / module-apply raporu; asıl kapı P3 |
-| P3 | `qa-gate` PASS |
-| P4 | doctor/FIX-BRIEF sonrası yeniden qa PASS |
-| P5 | `packaging-report.json` PASS + `Yukleme/` |
+Ajan “bitti” demez. Kanıt:
 
-DENY → ilgili `guard.sh` fix.
+```bash
+bash scripts/web/reality-check.sh . P1   # domain-report + decision
+bash scripts/web/reality-check.sh . P3   # qa-report PASS
+bash scripts/web/reality-check.sh . P5   # packaging + Yukleme/
+```
+
+Orchestrate bu kapıları otomatik çağırır. FAIL → ilerleme yok.

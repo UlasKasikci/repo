@@ -74,6 +74,10 @@ for f in scripts/web/decide.sh scripts/web/decision.py scripts/web/run-status.sh
          scripts/web/denetle.sh \
          scripts/web/plan-sync.sh \
          scripts/web/debt-scan.sh \
+         scripts/web/classify-fail.sh \
+         scripts/web/reality-check.sh \
+         scripts/web/adaptive-recover.sh \
+         .factory/contracts/failure-report.schema.json \
          docs/templates/PLAN.md \
          docs/templates/AGENT-CONTRACT.md \
          docs/PROJECT-ARCHETYPES.md \
@@ -161,7 +165,8 @@ for s in scripts/web/decide.sh scripts/web/run-status.sh scripts/web/preflight.s
          scripts/web/status.sh scripts/web/module-apply.sh scripts/web/p2-checklist.sh \
          scripts/web/guard.sh scripts/web/doctor.sh scripts/web/phase-log.sh \
          scripts/web/plan-from-brief.sh scripts/web/gap-scan.sh scripts/web/denetle.sh \
-         scripts/web/plan-sync.sh scripts/web/debt-scan.sh; do
+         scripts/web/plan-sync.sh scripts/web/debt-scan.sh \
+         scripts/web/classify-fail.sh scripts/web/reality-check.sh scripts/web/adaptive-recover.sh; do
   bash -n "$s" || bad "bash -n FAIL: $s"
 done
 # README profesyonel kimlik

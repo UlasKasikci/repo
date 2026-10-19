@@ -957,6 +957,12 @@ while true; do
         _QE="$(python3 -c "import json;print(json.load(open('$PROJECT/.factory/decision.json',encoding='utf-8')).get('qa_gate_extra') or '')")"
         [[ -n "$_QE" ]] && export QA_GATE_EXTRA="$_QE" && echo "==> Decision: QA_GATE_EXTRA=$_QE"
       fi
+      # Reality Checker (L1): domain-report + decision kanıtı olmadan P2 yok
+      echo "==> reality-check P1"
+      bash "$ROOT/scripts/web/reality-check.sh" "$PROJECT" P1 || {
+        echo "orkestratör: reality-check P1 FAIL — kanıtsız ilerleme yok" >&2
+        exit 1
+      }
       # v1.4 auto-hook: P1 sonrası gap/denetle (kullanıcı /denetle unutsa bile)
       echo "==> auto-hook: denetle (P1 soft)"
       bash "$ROOT/scripts/web/denetle.sh" "$PROJECT" || {
@@ -1071,6 +1077,11 @@ PY
       case "$rc" in
         0)
           echo "==> QA PASS $PHASE → P5"
+          echo "==> reality-check P3"
+          bash "$ROOT/scripts/web/reality-check.sh" "$PROJECT" P3 || {
+            echo "orkestratör: reality-check P3 FAIL — PASS iddiası kanıtsız" >&2
+            exit 1
+          }
           # v1.4 auto-hook: QA PASS sonrası doctor teşhis + soft denetle
           echo "==> auto-hook: doctor teşhis + denetle (P3)"
           bash "$ROOT/scripts/web/doctor.sh" "$PROJECT" >/dev/null 2>&1 || true
@@ -1081,13 +1092,22 @@ PY
           ;;
         2) echo "orkestratör: HALT — 4. QA başarısızlığı, debug_report.json" >&2; exit 2 ;;
         1)
-          # v1.4 auto-hook: QA FAIL → doctor teşhis + FIX-BRIEF (loop = P4 ajan/kullanıcı)
-          echo "==> auto-hook: doctor teşhis (QA FAIL → FIX-BRIEF.md)"
-          bash "$ROOT/scripts/web/doctor.sh" "$PROJECT" --qa-first >/dev/null 2>&1 || true
+          # Adaptive Recovery: imza + sınıf → strateji (aynı fix'i kör tekrarlama)
+          echo "==> adaptive-recover (QA FAIL)"
+          bash "$ROOT/scripts/web/classify-fail.sh" "$PROJECT" || true
+          arc=0
+          bash "$ROOT/scripts/web/adaptive-recover.sh" "$PROJECT" || arc=$?
+          if [[ "$arc" -ne 0 ]]; then
+            echo "orkestratör: adaptive-recover exit $arc (halt_infra veya multi kapalı)" >&2
+            if [[ "$AUTO" -eq 1 ]]; then
+              continue
+            fi
+            wait_for "QA FAIL + adaptive halt — failure-report.json / FIX-BRIEF.md"
+          fi
           if [[ "$AUTO" -eq 1 ]]; then
             continue
           fi
-          wait_for "QA FAIL (retry $(get_retry)/3) — FIX-BRIEF.md · doctor.sh --loop"
+          wait_for "QA FAIL (retry $(get_retry)/3) — failure-report.json · adaptive · FIX-BRIEF"
           ;;
         *) echo "orkestratör: qa-gate beklenmeyen çıkış: $rc" >&2; exit 1 ;;
       esac
@@ -1106,11 +1126,16 @@ PY
         echo "orkestratör: paketleme başarısız (exit $rc)" >&2
         exit "$rc"
       fi
+      echo "==> reality-check P5"
+      bash "$ROOT/scripts/web/reality-check.sh" "$PROJECT" P5 || {
+        echo "orkestratör: reality-check P5 FAIL — Yukleme kanıtı yok" >&2
+        exit 1
+      }
       if [[ "$(state_phase)" == "P5" ]]; then
         bash "$STATE_SH" advance "$PROJECT" >/dev/null
       fi
       echo "==> ORCHESTRATE: DONE — $PROJECT"
-      echo "    qa-report.json + packaging-report.json + Yukleme/ üretildi"
+      echo "    qa-report.json + packaging-report.json + Yukleme/ + reality-check üretildi"
       exit 0
       ;;
 
