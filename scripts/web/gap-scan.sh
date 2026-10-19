@@ -128,6 +128,9 @@ has_pay = bool(re.search(r'create table.*(payments|odemeler|transactions)', sql_
 has_review = bool(re.search(r'create table.*(reviews|yorum|ratings)', sql_l, re.I)) \
     or any_kw(views_l, ("review", "yorum", "rating", "oylama")) \
     or module_yes(disc_raw, "yorum", "oylama", "review", "rating")
+has_notify = bool(re.search(r'create table.*(bildirimler|notifications)', sql_l, re.I)) \
+    or module_yes(disc_raw, "bildirim", "notification", "notifications") \
+    or any_kw(php_l, ("notification", "bildirim"))
 has_rbac = "role_id" in sql_l or bool(re.search(r'create table.*roles', sql_l, re.I)) \
     or module_yes(disc_raw, "rbac", "auth / rbac", "rol")
 has_users = bool(re.search(r'create table.*`?users`?', sql_l, re.I)) \
@@ -194,6 +197,13 @@ if archetype == "ecommerce":
     if not has_review:
         add("reviews_missing", "Ürün yorum/oylama yok",
             "Mağaza ürün sayfası için yorum/rating önerilir (zorunlu değil)", "warn")
+    if not has_notify:
+        add("notifications_missing", "Bildirim stub yok",
+            "Sipariş/ödeme durumu için bildirimler tablosu önerilir", "warn")
+elif archetype == "webapp":
+    if not has_notify and any_kw(intent_blob, ("bildirim", "notification", "alert", "uyarı", "uyari")):
+        add("notifications_missing", "Bildirim stub yok",
+            "Brief’te bildirim sinyali var; bildirimler tablosu önerilir", "warn")
 elif archetype == "catalog_rfq":
     if not has_cart and not module_yes(disc_raw, "teklif") and not any_kw(intent_blob, rfq_kw):
         add("rfq_missing", "Teklif/sipariş talebi belirsiz",

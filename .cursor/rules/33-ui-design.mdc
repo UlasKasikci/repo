@@ -1,0 +1,16 @@
+---
+description: UI — Figma kalitesi, AI klişe yasak, ikonlar yalnız SVG (emoji yok)
+alwaysApply: false
+globs: ["views/**", "assets/css/**", "assets/js/**", "assets/icons/**"]
+---
+
+# UI tasarım (Webrail)
+
+Kanon: `docs/UI-DESIGN-STANDARDS.md`
+
+- Figma kalitesi; neon/cyberpunk/glow/tek-kenar AI kart klişesi **yasak**
+- Dashboard/UI chrome ikonları **yalnız SVG** — emoji ikon **yasak**
+- Kart yalnız etkileşim gerektiğinde; hero’da kart/badge yığını yok
+- `htmlspecialchars` çıktı; formlarda CSRF
+
+QA: `qa-gate` → `ui_icons`

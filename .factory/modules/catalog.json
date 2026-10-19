@@ -40,7 +40,7 @@
     "cart": {
       "skill": ".opencode/skills/cart-basics/SKILL.md",
       "package": ".factory/modules/cart",
-      "summary": "sepet/sipariş stub — ecommerce ve catalog_rfq"
+      "summary": "sepet/sipariş stub — siparisler (TR-ASCII); ecommerce/catalog_rfq"
     },
     "order": {
       "skill": ".opencode/skills/cart-basics/SKILL.md",
@@ -70,7 +70,7 @@
     "payment": {
       "skill": ".opencode/skills/payment-basics/SKILL.md",
       "package": ".factory/modules/payment",
-      "summary": "ödeme stub — yalnız ecommerce arketipi"
+      "summary": "ödeme stub — odemeler (TR-ASCII); yalnız ecommerce"
     },
     "payments": {
       "skill": ".opencode/skills/payment-basics/SKILL.md",
@@ -80,12 +80,42 @@
     "reviews": {
       "skill": ".opencode/skills/reviews-basics/SKILL.md",
       "package": ".factory/modules/reviews",
-      "summary": "ürün yorum/oylama stub — yalnız ecommerce"
+      "summary": "ürün yorum stub — yorumlar (TR-ASCII); yalnız ecommerce"
     },
     "review": {
       "skill": ".opencode/skills/reviews-basics/SKILL.md",
       "package": ".factory/modules/reviews",
       "summary": "yorum (reviews alias)"
+    },
+    "yorum": {
+      "skill": ".opencode/skills/reviews-basics/SKILL.md",
+      "package": ".factory/modules/reviews",
+      "summary": "yorum (reviews alias)"
+    },
+    "odeme": {
+      "skill": ".opencode/skills/payment-basics/SKILL.md",
+      "package": ".factory/modules/payment",
+      "summary": "ödeme (payment alias)"
+    },
+    "notifications": {
+      "skill": ".opencode/skills/notifications-basics/SKILL.md",
+      "package": ".factory/modules/notifications",
+      "summary": "bildirim stub — bildirimler tablosu (TR-ASCII)"
+    },
+    "notification": {
+      "skill": ".opencode/skills/notifications-basics/SKILL.md",
+      "package": ".factory/modules/notifications",
+      "summary": "bildirim (notifications alias)"
+    },
+    "bildirim": {
+      "skill": ".opencode/skills/notifications-basics/SKILL.md",
+      "package": ".factory/modules/notifications",
+      "summary": "bildirim (notifications alias)"
+    },
+    "bildirimler": {
+      "skill": ".opencode/skills/notifications-basics/SKILL.md",
+      "package": ".factory/modules/notifications",
+      "summary": "bildirimler (notifications alias)"
     }
   }
 }

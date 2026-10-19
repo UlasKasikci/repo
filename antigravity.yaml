@@ -1,6 +1,6 @@
 engine: "Multi-Agent-State-Graph"
 context: "Web-Only-Production"
-version: "1.4.2"
+version: "1.4.3"
 system_architect: "Ulaş Kaşıkcı"
 canonical_spec: "docs/WEB-EDITION.md"
 factory_repository: "https://github.com/UlasKasikci/repo"
@@ -17,6 +17,8 @@ skills_prefer:
   - seo-basics
   - payment-basics
   - reviews-basics
+  - cart-basics
+  - notifications-basics
 directives:
   - "Web-only: never Android/Flutter/Gradle/YAPILACAKLAR. PHP MVC + MySQL + HTML/CSS/JS only."
   - "Read RUN-STATUS.md, PHASE-LOG.md, and .factory/web-state.json before any generation."
@@ -37,6 +39,8 @@ directives:
   - "QA gate must return 0 Error, 0 Warning before packaging is allowed."
   - "Halt after max_retries: 3 QA failures (4th failure) and emit debug_report.json."
   - "payment/reviews modules only for ecommerce (or explicit brief)."
+  - "UI: docs/UI-DESIGN-STANDARDS.md — SVG icons only; no emoji chrome; no neon/AI-cliché borders."
+  - "DB names: docs/DB-NAMING.md — Turkish meaning, ASCII spelling (urunler/siparisler); keep id/title/slug."
   - "CSRF: guardPost() / Csrf::requireValid; no query() with tainted $_GET temps."
   - "Prefer .factory/modules catalog skills before free-form LLM generation."
   - "Never claim PASS without bash scripts/web/guard.sh claim-pass ."

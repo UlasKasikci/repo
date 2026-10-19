@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "cart",
   "aliases": ["cart", "order", "orders", "sepet", "siparis", "sipariş"],
-  "summary": "Sepet/sipariş stub — ecommerce ve catalog_rfq; orders + Cart.php",
+  "summary": "Sepet/sipariş stub — ecommerce/catalog_rfq; siparisler + Cart.php (TR-ASCII)",
   "archetypes": ["ecommerce", "catalog_rfq"],
   "tokens_avoided_est": 14000
 }

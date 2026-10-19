@@ -1,0 +1,16 @@
+---
+description: DB — Türkçe anlam, ASCII yazım; global id/title/slug korunur
+alwaysApply: false
+globs: ["SQL/**", "**/*.sql"]
+---
+
+# Veritabanı adlandırma (Webrail)
+
+Kanon: `docs/DB-NAMING.md`
+
+- Tablo/sütun: Türkçe anlam + **ASCII** (`urunler`, `aciklama`, `siparisler`)
+- Diyakritik yasak: ğ ü ş ı ö ç → g u s i o c
+- Global koru: `id`, `title`, `description`, `slug`, `email`, `status`, `created_at`, …
+- Yeni paketler: `siparisler` / `odemeler` / `yorumlar` / `bildirimler`
+
+QA: `qa-gate` → `sql_ident_ascii`

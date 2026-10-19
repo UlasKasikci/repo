@@ -71,6 +71,9 @@ re_table() { # $1 = tablo adı deseni (alternatif grubu)
 USERS_RE="$(re_table 'users|kullanicilar|kullanıcılar|members|uyeler')"
 CATALOG_RE="$(re_table 'products|urunler|urun|catalog|katalog')"
 CART_RE="$(re_table 'orders|siparisler|siparis|sepet|cart|teklifler|quotes')"
+# Ödeme / yorum — İngilizce legacy + TR-ASCII
+PAY_RE="$(re_table 'payments|odemeler')"
+REV_RE="$(re_table 'reviews|yorumlar')"
 
 echo "==> QA Gate: $PROJECT"
 
@@ -162,6 +165,87 @@ if [[ -d "$PROJECT/SQL/migrations/schema" ]]; then
   fi
   rm -f "$DUMP_TMP"
   check_end sql_dump
+fi
+
+# --- 3c) SQL tanımlayıcı ASCII (Türkçe anlam OK; ğüşıöç yasak) — docs/DB-NAMING.md ---
+set_check sql_ident_ascii SKIPPED
+if [[ -n "${SQL_FILE:-}" && -f "$SQL_FILE" ]]; then
+  check_begin
+  export _QG_SQL="$SQL_FILE" _QG_REL="$(rel "$SQL_FILE")"
+  while IFS= read -r _id_line; do
+    [[ -z "$_id_line" ]] && continue
+    err "$_id_line"
+  done < <(python3 - <<'PY'
+import os, re
+path = os.environ["_QG_SQL"]
+rel = os.environ.get("_QG_REL") or path
+try:
+    sql = open(path, encoding="utf-8", errors="replace").read()
+except OSError:
+    raise SystemExit(0)
+TR = set("ğüşıöçĞÜŞİÖÇıİ")
+BT = chr(96)  # SQL identifier quote char (avoid raw backtick in this heredoc)
+pat = re.escape(BT) + r"([^" + re.escape(BT) + r"]+)" + re.escape(BT)
+for m in re.finditer(pat, sql):
+    name = m.group(1)
+    if any(c in TR for c in name):
+        line = sql.count("\n", 0, m.start()) + 1
+        print(
+            "sql: tanimlayicida Turkce diyakritik yasak (ASCII kullan - docs/DB-NAMING.md): "
+            + BT + name + BT + " @ " + rel + ":" + str(line)
+        )
+# CREATE TABLE bare name without quotes
+for m in re.finditer(
+    r"CREATE\s+TABLE(?:\s+IF\s+NOT\s+EXISTS)?\s+([A-Za-z_][\wğüşıöçĞÜŞİÖÇ]*)",
+    sql,
+    re.I,
+):
+    name = m.group(1)
+    if any(c in TR for c in name):
+        line = sql.count("\n", 0, m.start()) + 1
+        print("sql: tablo adinda diyakritik yasak: " + name + " @ " + rel + ":" + str(line))
+PY
+)
+  check_end sql_ident_ascii
+fi
+
+# --- 3d) UI ikonları — views içinde emoji chrome yasak (docs/UI-DESIGN-STANDARDS.md) ---
+set_check ui_icons SKIPPED
+if [[ -d "$PROJECT/views" ]]; then
+  check_begin
+  export _QG_VIEWS="$PROJECT/views"
+  while IFS= read -r _ui_line; do
+    [[ -z "$_ui_line" ]] && continue
+    err "$_ui_line"
+  done < <(python3 - <<'PY'
+import os, re
+from pathlib import Path
+root = Path(os.environ["_QG_VIEWS"])
+# Emotikons / emoji blocks (UI chrome); Türkçe harfler etkilenmez
+emoji_re = re.compile(
+    "["
+    "\U0001F300-\U0001FAFF"  # symbols & pictographs + extended
+    "\U00002600-\U000027BF"  # misc symbols
+    "\U0001F1E0-\U0001F1FF"  # flags
+    "\U000FE000-\U000FE0FF"  # variation selectors area (approx)
+    "]+"
+)
+for f in sorted(root.rglob("*.php")):
+    if f.name.startswith("._"):
+        continue
+    try:
+        text = f.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        continue
+    for i, line in enumerate(text.splitlines(), 1):
+        # yorum satırında bile chrome emoji istemiyoruz — UI şablonu
+        if emoji_re.search(line):
+            rel = f.relative_to(root.parent)
+            print(f"ui: emoji ikon yasak — SVG kullan (docs/UI-DESIGN-STANDARDS.md): {rel}:{i}")
+            break
+PY
+)
+  check_end ui_icons
 fi
 
 # --- 4) OWASP statik grep'leri ---

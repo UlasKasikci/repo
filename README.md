@@ -9,12 +9,12 @@ Cursor · OpenCode · Claude Code · Antigravity
 |---|---|
 | **System Architect** | **Ulaş Kaşıkcı** |
 | Fabrika | [`github.com/UlasKasikci/repo`](https://github.com/UlasKasikci/repo) |
-| Sürüm | **v1.4.2** (cart · doctor SAFE csrf/session · yaml CI fix) |
-| Doğrulama | self-test **88/88** · preflight READY · 14 kanallı QA |
+| Sürüm | **v1.4.3** (UI/DB standart · TR-ASCII · notifications) |
+| Doğrulama | self-test **90/90** · preflight READY · 16 kanallı QA |
 
 [![CI](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml/badge.svg)](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![self-test](https://img.shields.io/badge/self--test-88%2F88%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
+[![self-test](https://img.shields.io/badge/self--test-90%2F90%20PASS-brightgreen.svg)](scripts/web/self-test.sh)
 [![web-only](https://img.shields.io/badge/stack-PHP%20MVC%20%7C%20MySQL-blue.svg)](docs/WEB-EDITION.md)
 
 > **Fabrika** (`webrail-factory`): `origin` → `UlasKasikci/repo`.  
@@ -173,8 +173,9 @@ webrail/                          # fabrika = UlasKasikci/repo
 | v1.4.0 | gap-inject · payment/reviews · onay matrisi | self-test 85/85 |
 | v1.4.1 | guardPost CSRF · ara değişken SQLi taint | self-test 87/87 |
 | v1.4.2 | cart modül · doctor SAFE csrf/session · yaml fix | self-test 88/88 |
+| v1.4.3 | UI/DB standart · TR-ASCII · notifications · ui_icons | self-test 90/90 |
 
-Release: [v1.2](https://github.com/UlasKasikci/repo/releases/tag/v1.2) · [v1.3](https://github.com/UlasKasikci/repo/releases/tag/v1.3) · [v1.4.0](docs/releases/v1.4.0.md) · [v1.4.1](docs/releases/v1.4.1.md) · [v1.4.2](docs/releases/v1.4.2.md)
+Release: [v1.2](https://github.com/UlasKasikci/repo/releases/tag/v1.2) · [v1.3](https://github.com/UlasKasikci/repo/releases/tag/v1.3) · [v1.4.0](docs/releases/v1.4.0.md) · [v1.4.1](docs/releases/v1.4.1.md) · [v1.4.2](docs/releases/v1.4.2.md) · [v1.4.3](docs/releases/v1.4.3.md)
 
 ---
 
@@ -194,7 +195,7 @@ Release: [v1.2](https://github.com/UlasKasikci/repo/releases/tag/v1.2) · [v1.3]
 ## Katkı (yalnız fabrika)
 
 1. Remote: `https://github.com/UlasKasikci/repo` — müşteri ağacından buraya push **yasak**  
-2. Önkoşul: `preflight.sh` READY · `self-test.sh` **88/88** · `guard.sh git-push` ALLOW  
+2. Önkoşul: `preflight.sh` READY · `self-test.sh` **90/90** · `guard.sh git-push` ALLOW  
 3. Push: kullanıcı komutu + `WEBRAIL_ALLOW_GIT_PUSH=1`  
 4. Doküman kanıttan türer (K5) — obsolete plan/MD istekleri bırakılmaz  
 

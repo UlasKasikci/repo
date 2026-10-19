@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "reviews",
   "aliases": ["reviews", "review", "yorum", "rating", "oylama"],
-  "summary": "Ürün yorum/oylama stub — yalnız ecommerce (veya açık brief)",
+  "summary": "Ürün yorum stub — yorumlar tablosu TR-ASCII; yalnız ecommerce",
   "archetypes": ["ecommerce"],
   "tokens_avoided_est": 8000
 }

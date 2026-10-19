@@ -3243,6 +3243,94 @@ grep -q 'guardPost' "$DOC/core/App.php" || die "doctor guardPost enjekte etmedi"
 rm -rf "$BARE" "$DOC"
 echo "    cart paket · doctor SAFE csrf/session ✓"
 
+step "88) v1.4.3: UI/DB standart + sql_ident_ascii + ui_icons"
+[[ -f "$ROOT/docs/UI-DESIGN-STANDARDS.md" ]] || die "UI-DESIGN-STANDARDS.md yok"
+[[ -f "$ROOT/docs/DB-NAMING.md" ]] || die "DB-NAMING.md yok"
+[[ -f "$ROOT/.cursor/rules/33-ui-design.mdc" ]] || die "33-ui-design.mdc yok"
+[[ -f "$ROOT/.cursor/rules/34-db-naming.mdc" ]] || die "34-db-naming.mdc yok"
+grep -q 'sql_ident_ascii' "$ROOT/scripts/web/qa-gate.sh" || die "sql_ident_ascii kanalı yok"
+grep -q 'ui_icons' "$ROOT/scripts/web/qa-gate.sh" || die "ui_icons kanalı yok"
+DIAC="$TMP/diac88"
+mkdir -p "$DIAC/SQL" "$DIAC/views" "$DIAC/core"
+# FK+seed ile sql_schema geçsin; diyakritik + emoji kanalları FAIL etsin
+cat > "$DIAC/SQL/veritabani.sql" <<'SQL'
+CREATE TABLE IF NOT EXISTS `roller` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `name` VARCHAR(64) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS `ürünler` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `açıklama` TEXT NULL,
+  `role_id` INT UNSIGNED NULL,
+  CONSTRAINT `fk_urun_role` FOREIGN KEY (`role_id`) REFERENCES `roller` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+INSERT INTO `roller` (`id`, `name`) VALUES (1, 'admin');
+SQL
+cat > "$DIAC/index.php" <<'PHP'
+<?php echo "ok";
+PHP
+cat > "$DIAC/core/App.php" <<'PHP'
+<?php
+declare(strict_types=1);
+final class App { public function run(): void {} }
+PHP
+cat > "$DIAC/views/home.php" <<'PHP'
+<?php
+?><h1>Test 🛒</h1>
+PHP
+printf '%s\n' 'RewriteEngine On' > "$DIAC/.htaccess"
+printf '%s\n' 'User-agent: *' 'Disallow:' > "$DIAC/robots.txt"
+printf '%s\n' '<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>' > "$DIAC/sitemap.xml"
+rc="$(run_rc bash "$QA" "$DIAC" --allow-no-cart)"
+[[ "$rc" != "0" ]] || die "diyakritik+emoji fixture PASS olmamalı"
+python3 - <<PY || die "sql_ident_ascii / ui_icons FAIL beklenirdi"
+import json
+from pathlib import Path
+r = json.loads(Path("$DIAC/qa-report.json").read_text(encoding="utf-8"))
+checks = r.get("checks") or {}
+assert checks.get("sql_ident_ascii") == "FAIL", checks
+assert checks.get("ui_icons") == "FAIL", checks
+PY
+rm -rf "$DIAC"
+echo "    UI/DB docs · sql_ident_ascii · ui_icons FAIL ✓"
+
+step "89) v1.4.3: notifications modül + TR-ASCII siparisler/odemeler"
+[[ -f "$ROOT/.factory/modules/notifications/manifest.json" ]] || die "notifications modül yok"
+[[ -f "$ROOT/.opencode/skills/notifications-basics/SKILL.md" ]] || die "notifications-basics skill yok"
+[[ -f "$ROOT/.cursor/skills/notifications-basics/SKILL.md" ]] || die "Cursor notifications mount yok"
+grep -q 'siparisler' "$ROOT/.factory/modules/cart/files/SQL/migrations/schema/003_cart.sql" \
+  || die "cart SQL siparisler değil"
+grep -q 'odemeler' "$ROOT/.factory/modules/payment/files/SQL/migrations/schema/004_payment.sql" \
+  || die "payment SQL odemeler değil"
+grep -q 'yorumlar' "$ROOT/.factory/modules/reviews/files/SQL/migrations/schema/005_reviews.sql" \
+  || die "reviews SQL yorumlar değil"
+BARE89="$TMP/notif89"
+mkdir -p "$BARE89/.factory" "$BARE89/core"
+printf '%s\n' '{"mode":"factory"}' > "$BARE89/.factory/mode.json"
+python3 - <<PY
+import json
+from pathlib import Path
+p=Path("$BARE89")
+(p/".factory/decision.json").write_text(json.dumps({
+  "schema_version":1,"generated_at":"2026-01-01T00:00:00Z","project":"bare",
+  "phase_hint":"P2","model_routing":{"P1":"x","P2":"x","P4":"x","rationale":"t"},
+  "modules_to_apply":[{"module":"notifications","skill":"...","reason":"test"}],
+  "context_allowlist":["index.php"],"qa_gate_extra":"","next_actions":["x"],"result":"READY"
+}), encoding="utf-8")
+PY
+rc="$(run_rc bash "$ROOT/scripts/web/module-apply.sh" "$BARE89" --module notifications --force)"
+[[ "$rc" == "0" ]] || die "module-apply notifications rc=$rc"
+[[ -f "$BARE89/core/Notification.php" ]] || die "Notification.php yok"
+[[ -f "$BARE89/SQL/migrations/schema/006_notifications.sql" ]] || die "006_notifications.sql yok"
+grep -q 'bildirimler' "$BARE89/SQL/migrations/schema/006_notifications.sql" || die "bildirimler tablo yok"
+python3 - <<PY || die "bildirimler SQL diyakritik içeriyor"
+from pathlib import Path
+t = Path("$BARE89/SQL/migrations/schema/006_notifications.sql").read_text(encoding="utf-8")
+assert not any(c in t for c in "ğüşıöçĞÜŞİÖÇıİ"), t[:200]
+PY
+rm -rf "$BARE89"
+echo "    notifications · TR-ASCII modül SQL ✓"
+
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"
 exit 0

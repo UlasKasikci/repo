@@ -50,6 +50,9 @@ yeniden yazma; yalnızca kalan `file_manifest` boşluklarını doldur.
 - `core/` — App (routing), Database (PDO), yardımcılar; `declare(strict_types=1)`
 - `views/` — semantik HTML5 şablonları, yalnız `htmlspecialchars` ile çıktı
 - `SQL/veritabani.sql` — normalize şema: FK + cascade + B-Tree index + seed (UTF-8)
+- **DB adlandırma:** `docs/DB-NAMING.md` — anlam Türkçe, yazım **ASCII**
+  (`urunler`, `siparisler`, `odemeler`, `aciklama`); diyakritik (`ğüşıöç`) **yasak**.
+  Global sütunlar korunur: `id`, `title`, `description`, `slug`, `status`, `created_at`…
 - API: RESTful JSON, standart HTTP kodları; hata şeması:
   `{ "success": false, "error": { "code", "message", "details": [] } }`
 

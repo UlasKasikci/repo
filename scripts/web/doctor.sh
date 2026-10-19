@@ -321,7 +321,7 @@ def apply_recipe(r: dict, err: str) -> dict:
                 applied.append(f"...+{len(files)-5}")
             note = f"module={name} n={len(files)}"
             # cart/payment SQL sonrası dump senkronu
-            if name in ("cart", "payment", "reviews", "auth-rbac", "kvkk") and (
+            if name in ("cart", "payment", "reviews", "notifications", "auth-rbac", "kvkk") and (
                 project / "SQL" / "migrations"
             ).is_dir():
                 rc = subprocess.call(

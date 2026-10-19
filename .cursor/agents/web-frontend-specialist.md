@@ -15,12 +15,17 @@ Sen UI/UX & Frontend Specialist'sın. Hedef: Lighthouse 90+, mobil uyumlu, seman
 
 ## Standartlar
 
+Kanon: **`docs/UI-DESIGN-STANDARDS.md`** · kural: `.cursor/rules/33-ui-design.mdc`
+
 - Semantik etiketler (`header/main/nav/article/footer`), tek `h1`, doğru sıralama
 - Erişilebilirlik: kontrast, focus halkaları, `label`+`aria`, klavye navigasyonu
 - SEO: `meta description`, canonical, Open Graph, `sitemap.xml`/`robots.txt` senkronu
 - Performans: kritik CSS, defer/async JS, resim boyutu, lazy-load — **minify üretimde**
 - `views/` içinde yalnız `htmlspecialchars` ile çıktı; ham `$_GET`/`$_POST` basma
 - Kaynak: `.scss`/`.ts` yasak (derlenmiş çıktı girer); assets `Yukleme/assets/{css,js}` altına
+- **Figma kalitesi**; AI klişe yasak (neon/cyberpunk, tek kenarlı “AI kart” border, glow)
+- **İkonlar yalnız SVG** (`assets/icons/*.svg` veya inline `currentColor`) — emoji chrome **yasak**
+- Dashboard/panel UI’da emoji ikon asla; qa-gate `ui_icons` FAIL eder
 
 ## CSRF/güvenlik entegrasyonu
 

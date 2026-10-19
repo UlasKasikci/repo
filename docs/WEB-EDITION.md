@@ -1,6 +1,6 @@
 # Webrail — Teknik Spesifikasyon
 
-**Sürüm:** 1.4.2 · **Mod:** deterministic · **Stack:** PHP 8.1+ MVC + MySQL 8 + HTML/CSS/JS (±jQuery) · PWA opsiyonel · FTP/`Yukleme/`  
+**Sürüm:** 1.4.3 · **Mod:** deterministic · **Stack:** PHP 8.1+ MVC + MySQL 8 + HTML/CSS/JS (±jQuery) · PWA opsiyonel · FTP/`Yukleme/`  
 **Kapsam:** Yalnızca Web. Mobil kod üretimi yasaktır (Flutter/Compose/RN/Gradle/APK).  
 **Fabrika:** `https://github.com/UlasKasikci/repo` (`webrail-factory`).  
 **Müşteri:** bootstrap → `customer-app` — fabrika remote’una push yasak.  
@@ -18,7 +18,7 @@ talimat geçersizdir.
 |---|------|-------|------------|
 | 1 | Requirement & Domain Architect | `.cursor/agents/web-domain-architect.md` | İstek ayrıştırma; eksik gereksinim (RBAC, sepet, ödeme, bildirim, SEO, KVKK) proaktif enjeksiyonu |
 | 2 | Core Web & Database Engineer | `.cursor/agents/web-core-engineer.md` | PHP 8.1+ MVC çekirdek, PDO şema, FK/index'li normalize SQL |
-| 3 | UI/UX & Frontend Specialist | `.cursor/agents/web-frontend-specialist.md` | Semantik HTML5, erişilebilir, SEO dostu, Core Web Vitals 90+ arayüz |
+| 3 | UI/UX & Frontend Specialist | `.cursor/agents/web-frontend-specialist.md` | Semantik HTML5 + `docs/UI-DESIGN-STANDARDS.md` (SVG ikon, AI klişe yasak) |
 | 4 | QA & Security Gatekeeper | `.cursor/agents/web-qa-gatekeeper.md` | `qa-gate.sh` işletir; `Check: PASS` vermeden faz geçişi yok (`readonly`) |
 | 5 | Production Deployment & Packager | `.cursor/agents/web-deploy-packager.md` | Build isolation + `Yukleme/` üretimi |
 
@@ -155,6 +155,11 @@ doğrular.
 
 - **Backend:** Sade PHP 8.1+, MVC (`core/`, `views/`, `index.php` front-controller), stateless,
   `declare(strict_types=1)`.
+- **UI:** `docs/UI-DESIGN-STANDARDS.md` — Figma kalitesi; neon/cyberpunk/tek kenarlı AI
+  kart border yasak; ikonlar **yalnız SVG** (emoji chrome → `ui_icons` FAIL).
+- **DB adlandırma:** `docs/DB-NAMING.md` — anlam Türkçe, yazım ASCII (`urunler`,
+  `siparisler`, `odemeler`, `aciklama`); diyakritik tanımlayıcı → `sql_ident_ascii` FAIL.
+  Global sütunlar (`id`, `title`, `description`, `slug`, …) korunur.
 - **Veritabanı:** MySQL 8.0+/MariaDB; FK kısıtlamaları + cascade kuralları; B-Tree index;
   N+1 sorgu yasağı; seed verileri `SQL/veritabani.sql` içinde. Şema/seed kaynağı
   `SQL/migrations/{schema,seed}/*.sql` altında tutulur; `SQL/veritabani.sql`

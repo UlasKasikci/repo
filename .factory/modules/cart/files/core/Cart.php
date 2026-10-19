@@ -2,8 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Webrail Cart stub — ecommerce / catalog_rfq.
- * Sepet oturumu + orders kaydı; ödeme Payment.php ile bağlanır.
+ * Webrail Cart stub — siparisler / siparis_kalemleri (TR-ASCII).
  */
 final class Cart
 {
@@ -12,34 +11,34 @@ final class Cart
     }
 
     /** @return list<array<string, mixed>> */
-    public function linesForUser(int $userId): array
+    public function linesForUser(int $kullaniciId): array
     {
         $st = $this->pdo->prepare(
-            'SELECT oi.*, o.status, o.total AS order_total
-             FROM order_items oi
-             INNER JOIN orders o ON o.id = oi.order_id
-             WHERE o.user_id = ? AND o.status = ?
-             ORDER BY oi.id ASC'
+            'SELECT k.*, s.status, s.total AS order_total
+             FROM siparis_kalemleri k
+             INNER JOIN siparisler s ON s.id = k.siparis_id
+             WHERE s.kullanici_id = ? AND s.status = ?
+             ORDER BY k.id ASC'
         );
-        $st->execute([$userId, 'cart']);
+        $st->execute([$kullaniciId, 'cart']);
         $rows = $st->fetchAll(PDO::FETCH_ASSOC);
         return $rows === false ? [] : $rows;
     }
 
-    public function createPendingOrder(int $userId, float $total, string $currency = 'TRY'): int
+    public function createPendingOrder(int $kullaniciId, float $total, string $currency = 'TRY'): int
     {
         $st = $this->pdo->prepare(
-            'INSERT INTO orders (user_id, status, total, currency) VALUES (?, ?, ?, ?)'
+            'INSERT INTO siparisler (kullanici_id, status, total, currency) VALUES (?, ?, ?, ?)'
         );
-        $st->execute([$userId, 'pending', $total, $currency]);
+        $st->execute([$kullaniciId, 'pending', $total, $currency]);
         return (int) $this->pdo->lastInsertId();
     }
 
-    public function addItem(int $orderId, int $productId, int $qty, float $unitPrice): void
+    public function addItem(int $siparisId, int $urunId, int $qty, float $unitPrice): void
     {
         $st = $this->pdo->prepare(
-            'INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES (?, ?, ?, ?)'
+            'INSERT INTO siparis_kalemleri (siparis_id, urun_id, quantity, unit_price) VALUES (?, ?, ?, ?)'
         );
-        $st->execute([$orderId, $productId, $qty, $unitPrice]);
+        $st->execute([$siparisId, $urunId, $qty, $unitPrice]);
     }
 }

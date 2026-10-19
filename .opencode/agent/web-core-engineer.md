@@ -41,6 +41,7 @@ Do not rewrite copied package files; fill only remaining `file_manifest` gaps.
 - `core/` — App (routing), Database (PDO), helpers; `declare(strict_types=1)`
 - `views/` — semantic HTML5 templates, output only through `htmlspecialchars`
 - `SQL/veritabani.sql` — normalized schema: FK + cascade + B-Tree index + seed (UTF-8)
+- **DB naming:** `docs/DB-NAMING.md` — Turkish meaning, ASCII spelling (`urunler`, `siparisler`); no diacritics in identifiers; keep global columns (`id`, `title`, `slug`, …)
 - API: RESTful JSON, standard HTTP codes; error shape:
   `{ "success": false, "error": { "code", "message", "details": [] } }`
 

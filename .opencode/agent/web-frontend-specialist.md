@@ -11,12 +11,17 @@ Target: Lighthouse 90+, mobile-friendly, semantic HTML5.
 
 ## Standards
 
+Canonical: **`docs/UI-DESIGN-STANDARDS.md`** · rule: `.cursor/rules/33-ui-design.mdc`
+
 - Semantic tags (`header/main/nav/article/footer`), single `h1`, correct heading order
 - Accessibility: contrast, focus rings, `label`+`aria`, keyboard navigation
 - SEO: `meta description`, canonical, Open Graph, `sitemap.xml`/`robots.txt` sync
 - Performance: critical CSS, defer/async JS, image dimensions, lazy-load — **minify in production**
 - `views/` output only via `htmlspecialchars`; never echo raw `$_GET`/`$_POST`
 - Sources: `.scss`/`.ts` forbidden (compiled output only); assets go under `Yukleme/assets/{css,js}`
+- **Figma-quality**; ban AI clichés (neon/cyberpunk, one-sided “AI card” borders, glow)
+- **Icons: SVG only** (`assets/icons/*.svg` or inline `currentColor`) — emoji chrome **forbidden**
+- No emoji icons in dashboard/panel UI; qa-gate `ui_icons` FAILs them
 
 ## CSRF integration
 

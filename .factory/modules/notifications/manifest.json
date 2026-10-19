@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "id": "notifications",
+  "aliases": ["notifications", "notification", "bildirim", "bildirimler"],
+  "summary": "Bildirim stub — bildirimler tablosu (TR-ASCII); e-posta/PSP yok",
+  "archetypes": ["ecommerce", "webapp", "catalog_rfq"],
+  "tokens_avoided_est": 6000
+}

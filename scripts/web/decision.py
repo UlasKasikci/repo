@@ -70,6 +70,7 @@ def build_decision(project: Path, factory_root: Path) -> dict[str, Any]:
 
     # ecommerce-only skill paketleri (showcase/onepage zorlanmaz)
     ECOM_ONLY = {"payment", "payments", "odeme", "ödeme", "reviews", "review", "yorum"}
+    NOTIFY_OK = {"ecommerce", "webapp", "catalog_rfq"}
     CART_OK = {"ecommerce", "catalog_rfq"}
 
     matrix = report.get("module_matrix") or []
@@ -131,6 +132,10 @@ def build_decision(project: Path, factory_root: Path) -> dict[str, Any]:
         if mod in ECOM_ONLY and archetype != "ecommerce":
             skipped_archetype.append(mod)
             continue
+        if mod in ("notifications", "notification", "bildirim", "bildirimler") and archetype not in NOTIFY_OK:
+            if status in ("proposed", "missing", "injected"):
+                skipped_archetype.append(mod)
+                continue
         if mod in ("cart", "order", "orders", "sepet") and archetype not in CART_OK:
             if status in ("proposed", "missing", "injected"):
                 skipped_archetype.append(mod)

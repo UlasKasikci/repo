@@ -44,12 +44,12 @@ if pi.is_file():
 
 # Arketip → enjekte edilebilir modüller (showcase/onepage'e ödeme/yorum YOK)
 ALLOWED = {
-    "ecommerce": {"cart", "payment", "reviews", "rbac", "seo", "kvkk"},
+    "ecommerce": {"cart", "payment", "reviews", "notifications", "rbac", "seo", "kvkk"},
     "catalog_rfq": {"cart", "rbac", "seo", "kvkk"},  # payment yok
     "showcase": {"seo", "kvkk", "rbac"},
     "brochure": {"seo", "kvkk"},
     "onepage": {"seo"},
-    "webapp": {"rbac", "seo", "kvkk"},
+    "webapp": {"rbac", "seo", "kvkk", "notifications"},
 }
 allowed = ALLOWED.get(archetype, {"seo", "kvkk"})
 
@@ -57,6 +57,7 @@ ID_TO_MOD = {
     "cart_missing": "cart",
     "payment_missing": "payment",
     "reviews_missing": "reviews",
+    "notifications_missing": "notifications",
     "rbac_missing": "rbac",
     "seo_missing": "seo",
     "kvkk_missing": "kvkk",
