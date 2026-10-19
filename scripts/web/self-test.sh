@@ -3172,6 +3172,77 @@ PY
 rm -rf "$A86"
 echo "    taint \$q←\$_GET → query() FAIL ✓"
 
+step "87) v1.4.2: cart modül + doctor SAFE (csrf/session/cart)"
+[[ -f "$ROOT/.factory/modules/cart/manifest.json" ]] || die "cart modül yok"
+[[ -f "$ROOT/.opencode/skills/cart-basics/SKILL.md" ]] || die "cart-basics skill yok"
+[[ -f "$ROOT/.cursor/skills/cart-basics/SKILL.md" ]] || die "Cursor cart-basics mount yok"
+grep -q '"safe_apply": true' "$ROOT/.factory/contracts/doctor-recipes.json" \
+  || die "doctor-recipes safe_apply yok"
+python3 - <<PY || die "cart_gap/csrf/session SAFE değil"
+import json
+from pathlib import Path
+recs = {r["id"]: r for r in json.loads(Path("$ROOT/.factory/contracts/doctor-recipes.json").read_text())["recipes"]}
+assert recs["cart_gap"]["safe_apply"] is True and recs["cart_gap"]["module"] == "cart"
+assert recs["csrf_gap"]["safe_apply"] is True
+assert recs["session_cookie"]["safe_apply"] is True
+PY
+BARE="$TMP/cart87bare"
+mkdir -p "$BARE/.factory" "$BARE/core"
+printf '%s\n' '{"mode":"factory"}' > "$BARE/.factory/mode.json"
+python3 - <<PY
+import json
+from pathlib import Path
+p=Path("$BARE")
+(p/".factory/decision.json").write_text(json.dumps({
+  "schema_version":1,"generated_at":"2026-01-01T00:00:00Z","project":"bare",
+  "phase_hint":"P2","model_routing":{"P1":"x","P2":"x","P4":"x","rationale":"t"},
+  "modules_to_apply":[{"module":"cart","skill":"...","reason":"test"}],
+  "context_allowlist":["index.php"],"qa_gate_extra":"","next_actions":["x"],"result":"READY"
+}), encoding="utf-8")
+PY
+rc="$(run_rc bash "$ROOT/scripts/web/module-apply.sh" "$BARE" --module cart --force)"
+[[ "$rc" == "0" ]] || die "module-apply cart rc=$rc"
+[[ -f "$BARE/core/Cart.php" ]] || die "Cart.php kopyalanmadı"
+[[ -f "$BARE/SQL/migrations/schema/003_cart.sql" ]] || die "003_cart.sql yok"
+DOC="$TMP/doc87"
+mkdir -p "$DOC/core"
+cat > "$DOC/index.php" <<'PHP'
+<?php
+declare(strict_types=1);
+session_start();
+echo "x";
+PHP
+cat > "$DOC/core/App.php" <<'PHP'
+<?php
+declare(strict_types=1);
+final class App {
+    public function run(): void {
+        $email = $_POST['email'] ?? '';
+        echo $email;
+    }
+}
+PHP
+python3 - <<PY
+import json
+from pathlib import Path
+p=Path("$DOC")
+(p/"qa-report.json").write_text(json.dumps({
+  "schema_version":1,"tool":"qa-gate","result":"FAIL",
+  "errors":[
+    "güvenlik: session_start() var ama dosyada session_set_cookie_params() yok (ini_set('session.cookie_httponly') yetersiz): index.php",
+    "güvenlik: POST endpoint'te CSRF çağrısı yok: core/App.php:5 (\$_POST/\$_REQUEST var ama doğrulama yok)",
+  ],
+  "warnings":[],"checks":{"security_policy":"FAIL"}
+}), encoding="utf-8")
+PY
+rc="$(run_rc bash "$ROOT/scripts/web/doctor.sh" "$DOC" --apply)"
+[[ "$rc" == "0" || "$rc" == "1" ]] || die "doctor --apply rc beklenmez $rc"
+grep -q 'session_set_cookie_params' "$DOC/index.php" || die "doctor session yamadı"
+grep -q 'guardPost' "$DOC/core/App.php" || die "doctor guardPost enjekte etmedi"
+[[ -f "$DOC/core/Csrf.php" ]] || die "Csrf.php kopyalanmadı"
+rm -rf "$BARE" "$DOC"
+echo "    cart paket · doctor SAFE csrf/session ✓"
+
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"
 exit 0

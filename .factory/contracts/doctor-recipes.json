@@ -74,34 +74,35 @@
     {
       "id": "cart_gap",
       "match": ["eksik modül: ürün/katalog", "sipariş/sepet/teklif"],
-      "safe_apply": false,
-      "action": "brief",
-      "fix": "sepet/sipariş ekle VEYA qa-gate --allow-no-cart (açık onay)",
-      "tokens_note": "LLM veya onaylı istisna"
+      "safe_apply": true,
+      "action": "module_apply",
+      "module": "cart",
+      "fix": "module-apply --module cart (veya --allow-no-cart onaylı istisna)",
+      "tokens_note": "paket kopya; LLM yazmaz"
     },
     {
       "id": "csrf_gap",
       "match": ["güvenlik: POST endpoint'te CSRF"],
-      "safe_apply": false,
-      "action": "brief",
-      "fix": "dosyada Csrf::requireValid / guardPost ekle",
-      "tokens_note": "dar LLM yama"
+      "safe_apply": true,
+      "action": "inject_guard_post",
+      "fix": "Csrf.php + guardPost() çağrısı (dosya:satır)",
+      "tokens_note": "deterministik yama"
     },
     {
       "id": "security_sql",
-      "match": ["güvenlik: superglobal", "güvenlik: ->query()"],
+      "match": ["güvenlik: superglobal", "güvenlik: ->query()", "ara değişkenli SQL"],
       "safe_apply": false,
       "action": "brief",
-      "fix": "PDO prepared statement'a çevir",
+      "fix": "PDO prepare/execute — query() birleştirmeyi kaldır",
       "tokens_note": "dar LLM yama"
     },
     {
       "id": "session_cookie",
-      "match": ["session_set_cookie_params", "session_start()"],
-      "safe_apply": false,
-      "action": "brief",
+      "match": ["session_set_cookie_params", "session_start() var ama"],
+      "safe_apply": true,
+      "action": "fix_session_cookies",
       "fix": "HttpOnly+Secure+SameSite — session_start öncesi",
-      "tokens_note": "dar LLM yama"
+      "tokens_note": "deterministik yama"
     },
     {
       "id": "password_policy",

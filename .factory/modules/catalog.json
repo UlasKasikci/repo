@@ -38,9 +38,34 @@
       "summary": "robots.txt + sitemap.xml + meta"
     },
     "cart": {
-      "skill": null,
-      "package": null,
-      "summary": "sepet/sipariş — domain-report module_matrix zorunlu; skill yoksa domain'e özel üret"
+      "skill": ".opencode/skills/cart-basics/SKILL.md",
+      "package": ".factory/modules/cart",
+      "summary": "sepet/sipariş stub — ecommerce ve catalog_rfq"
+    },
+    "order": {
+      "skill": ".opencode/skills/cart-basics/SKILL.md",
+      "package": ".factory/modules/cart",
+      "summary": "sipariş (cart alias)"
+    },
+    "orders": {
+      "skill": ".opencode/skills/cart-basics/SKILL.md",
+      "package": ".factory/modules/cart",
+      "summary": "siparişler (cart alias)"
+    },
+    "sepet": {
+      "skill": ".opencode/skills/cart-basics/SKILL.md",
+      "package": ".factory/modules/cart",
+      "summary": "sepet (cart alias)"
+    },
+    "siparis": {
+      "skill": ".opencode/skills/cart-basics/SKILL.md",
+      "package": ".factory/modules/cart",
+      "summary": "siparis (cart alias)"
+    },
+    "sipariş": {
+      "skill": ".opencode/skills/cart-basics/SKILL.md",
+      "package": ".factory/modules/cart",
+      "summary": "sipariş (cart alias)"
     },
     "payment": {
       "skill": ".opencode/skills/payment-basics/SKILL.md",

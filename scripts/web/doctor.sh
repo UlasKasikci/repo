@@ -125,14 +125,41 @@ def copy_file(rel: str) -> bool:
     return True
 
 
+def resolve_module_dir(name: str) -> Path | None:
+    name = (name or "").strip().lower()
+    if not name:
+        return None
+    direct = mod_root / name
+    if (direct / "files").is_dir():
+        return direct
+    for pkg in mod_root.iterdir():
+        if not pkg.is_dir():
+            continue
+        man = pkg / "manifest.json"
+        if not man.is_file():
+            continue
+        try:
+            m = json.loads(man.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        pid = str(m.get("id") or pkg.name).lower()
+        aliases = [str(a).lower() for a in (m.get("aliases") or [])]
+        if name == pid or name in aliases or name == pkg.name.lower():
+            if (pkg / "files").is_dir():
+                return pkg
+    return None
+
+
 def apply_module(name: str) -> list[str]:
     done = []
-    pkg = mod_root / name
-    files = pkg / "files"
-    if not files.is_dir():
+    pkg = resolve_module_dir(name)
+    if pkg is None:
         return done
+    files = pkg / "files"
     for src in files.rglob("*"):
         if not src.is_file():
+            continue
+        if src.name.startswith("._"):
             continue
         rel = src.relative_to(files)
         dst = project / rel
@@ -141,6 +168,107 @@ def apply_module(name: str) -> list[str]:
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst)
         done.append(str(rel))
+    return done
+
+
+def extract_php_path(err: str) -> Path | None:
+    import re
+    matches = re.findall(r"([A-Za-z0-9_./-]+\.php)", err)
+    if not matches:
+        return None
+    rel = matches[-1]
+    p = project / rel
+    return p if p.is_file() else None
+
+
+def fix_session_cookies(err: str) -> list[str]:
+    import re
+    path = extract_php_path(err)
+    if path is None:
+        return []
+    text = path.read_text(encoding="utf-8")
+    block = (
+        "session_set_cookie_params([\n"
+        "    'lifetime' => 0,\n"
+        "    'path' => '/',\n"
+        "    'secure' => true,\n"
+        "    'httponly' => true,\n"
+        "    'samesite' => 'Strict',\n"
+        "]);\n"
+    )
+    low = text.lower()
+    if "session_set_cookie_params" in text and "httponly" in low and "samesite" in low and "secure" in low:
+        return []
+    if "session_set_cookie_params" in text:
+        new, n = re.subn(
+            r"session_set_cookie_params\s*\(.*?\)\s*;",
+            block.strip(),
+            text,
+            count=1,
+            flags=re.S,
+        )
+        if n == 0:
+            return []
+        path.write_text(new, encoding="utf-8")
+        return [str(path.relative_to(project))]
+    if "session_start" not in text:
+        return []
+    idx = text.find("session_start")
+    line_start = text.rfind("\n", 0, idx) + 1
+    indent = re.match(r"[ \t]*", text[line_start:]).group(0)
+    new = text[:line_start] + indent + block + text[line_start:]
+    path.write_text(new, encoding="utf-8")
+    return [str(path.relative_to(project))]
+
+
+def inject_guard_post(err: str) -> list[str]:
+    import re
+    done: list[str] = []
+    csrf_dst = project / "core" / "Csrf.php"
+    if not csrf_dst.is_file():
+        src = mod_root / "auth-rbac" / "files" / "core" / "Csrf.php"
+        if src.is_file():
+            csrf_dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, csrf_dst)
+            done.append("core/Csrf.php")
+    path = extract_php_path(err)
+    if path is None:
+        return done
+    text = path.read_text(encoding="utf-8")
+    if re.search(
+        r"(guardPost\s*\(|Csrf::requireValid\s*\(|Csrf::verify\s*\(|Csrf::check\s*\()",
+        text,
+    ):
+        return done
+    if not re.search(r"\$_(POST|REQUEST)", text):
+        return done
+    if "Csrf.php" not in text and "function guardPost" not in text:
+        try:
+            rel = path.relative_to(project)
+            depth = len(rel.parts) - 1
+            if rel.parts[0] == "core" and depth == 1:
+                req = "require_once __DIR__ . '/Csrf.php';\n"
+            else:
+                req = "require_once __DIR__ . '/" + ("../" * depth) + "core/Csrf.php';\n"
+        except ValueError:
+            req = "require_once __DIR__ . '/core/Csrf.php';\n"
+        dm = re.search(r"declare\s*\(\s*strict_types\s*=\s*1\s*\)\s*;\s*\n", text)
+        if dm:
+            text = text[: dm.end()] + req + text[dm.end() :]
+        else:
+            nl = text.find("\n")
+            if nl > 0:
+                text = text[: nl + 1] + req + text[nl + 1 :]
+    m = re.search(r"\$_(POST|REQUEST)", text)
+    if not m:
+        return done
+    idx = m.start()
+    line_start = text.rfind("\n", 0, idx) + 1
+    indent = re.match(r"[ \t]*", text[line_start:]).group(0)
+    insert = f"{indent}guardPost();\n"
+    new = text[:line_start] + insert + text[line_start:]
+    path.write_text(new, encoding="utf-8")
+    done.append(str(path.relative_to(project)))
     return done
 
 
@@ -192,9 +320,36 @@ def apply_recipe(r: dict, err: str) -> dict:
             if len(files) > 5:
                 applied.append(f"...+{len(files)-5}")
             note = f"module={name} n={len(files)}"
+            # cart/payment SQL sonrası dump senkronu
+            if name in ("cart", "payment", "reviews", "auth-rbac", "kvkk") and (
+                project / "SQL" / "migrations"
+            ).is_dir():
+                rc = subprocess.call(
+                    ["bash", sql_sh, str(project)],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+                if rc == 0:
+                    applied.append("sql-dump.sh")
         else:
             skipped.append(name or "module")
             note = "paket yok veya dosyalar mevcut"
+    elif action == "fix_session_cookies":
+        files = fix_session_cookies(err)
+        if files:
+            applied.extend(files)
+            note = "session cookie params"
+        else:
+            skipped.append("session")
+            note = "dosya bulunamadı veya zaten uygun"
+    elif action == "inject_guard_post":
+        files = inject_guard_post(err)
+        if files:
+            applied.extend(files)
+            note = "guardPost inject"
+        else:
+            skipped.append("csrf")
+            note = "dosya yok veya CSRF zaten var"
     else:
         skipped.append("brief-only")
         note = r.get("fix") or ""

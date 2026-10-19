@@ -89,8 +89,10 @@ for f in scripts/web/decide.sh scripts/web/decision.py scripts/web/run-status.sh
          docs/V1.4-ROADMAP.md \
          .factory/modules/payment/manifest.json \
          .factory/modules/reviews/manifest.json \
+         .factory/modules/cart/manifest.json \
          .opencode/skills/payment-basics/SKILL.md \
          .opencode/skills/reviews-basics/SKILL.md \
+         .opencode/skills/cart-basics/SKILL.md \
          .factory/auto-hooks.json \
          .cursor/commands/denetle.md \
          .opencode/command/denetle.md \
@@ -202,10 +204,10 @@ python3 -m py_compile scripts/web/decision.py || bad "decision.py compile FAIL"
 ok "bash -n + decision.py"
 
 # paket files/ mevcut
-for pkg in auth-rbac kvkk admin-crud seo payment reviews; do
+for pkg in auth-rbac kvkk admin-crud seo payment reviews cart; do
   [[ -d ".factory/modules/$pkg/files" ]] || bad "modül files yok: $pkg"
 done
-ok "modül paketleri (6)"
+ok "modül paketleri (7)"
 
 # 8) mode kilidi duman: discovery → start RED → promote → start OK
 TMPM="$(mktemp -d)"
