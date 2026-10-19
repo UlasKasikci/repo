@@ -1,22 +1,23 @@
 {
-  "schema": "factory-mcp-handoff-v1",
-  "agent": "01-product-cpo",
-  "task": "Play Store competitor scan",
+  "schema": "webrail-mcp-handoff-v1",
+  "agent": "web-domain-architect",
+  "task": "P1 brief / rakip veya doküman araştırması",
   "created_at": "2026-01-01T00:00:00Z",
   "sources": [
     {
-      "type": "mcp-browser",
-      "url": "https://play.google.com/store/apps/details?id=example",
-      "summary": "One-line evidence summary"
+      "type": "mcp-fetch",
+      "url": "https://example.com/docs",
+      "summary": "Tek satır kanıt özeti"
     }
   ],
   "findings": [
-    "Finding 1 with evidence",
-    "Finding 2 with evidence"
+    "Bulgu 1 + kanıt",
+    "Bulgu 2 + kanıt"
   ],
-  "next_agent": "02-architect",
-  "next_action": "Update MODULE_MAP.md with feature boundaries",
+  "next_agent": "web-core-engineer",
+  "next_action": "docs/IDE-HANDOFF.md + RUN-STATUS.md oku; bash scripts/web/decide.sh .",
   "artifacts_written": [
-    "docs/01-VISION/MARKET_ANALYSIS.md"
+    "RUN-STATUS.md",
+    ".factory/domain-report.json"
   ]
 }

@@ -161,8 +161,8 @@ Araştırma yasağı koymadan önce kontratların eksiksiz olduğunu doğrula.
 Eksik kontrat + yasak = sessizce yanlış üretim (daha kötü).
 
 ### K5 — Belge kanıttan türesin, iddiadan değil
-`yapilacaklar.md`'de [x] işareti qa-gate PASS olmadan KONULMAZ.
-Orkestratör günceller, ajan değil. Halüsinasyonu kalıcılaştırma.
+`PLAN.md` checkbox / “bitti” iddiası qa-gate PASS + `guard.sh claim-pass` olmadan KONULMAZ.
+Orkestratör / `plan-sync.sh` günceller, ajan tek başına değil. Halüsinasyonu kalıcılaştırma.
 
 ### K6 — Denetim donduruldu
 Yeni QA kontrolü YALNIZ somut bir bug için eklenir.

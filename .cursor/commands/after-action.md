@@ -2,30 +2,18 @@
 
 English alias for `/cevap`.
 
-This command evaluates a Cursor execution summary using the Webrail After Action Review contract.
+Webrail After Action Review — DIAGNOSTIC only.
 
 ## Mode
 
-**DIAGNOSTIC / AAR only.**
-
-It does **not**:
-
-- modify files
-- run remediation
-- scaffold projects
-- commit changes
-- advance phases
+**DIAGNOSTIC / AAR only.** Does **not** modify files, remediate, scaffold, commit, or advance phases.
 
 ## Contract
 
-Use:
-
-- `docs/CEVAP_REPORT_CONTRACT.md`
-- `.cursor/commands/cevap.md`
-- `.cursor/skills/after-action-review/SKILL.md`
+- [`docs/CEVAP_REPORT_CONTRACT.md`](../../docs/CEVAP_REPORT_CONTRACT.md)
+- [`.cursor/commands/cevap.md`](cevap.md)
+- [`.cursor/skills/after-action-review/SKILL.md`](../skills/after-action-review/SKILL.md)
 
 ## Output
 
-Produce the `/CEVAP REVIEW REPORT` format defined in `docs/CEVAP_REPORT_CONTRACT.md`.
-
-For Leo-specific multi-model/domain intelligence, use the Leo layer outside Webrail core.
+Produce the `/CEVAP REVIEW REPORT` format in `docs/CEVAP_REPORT_CONTRACT.md`.

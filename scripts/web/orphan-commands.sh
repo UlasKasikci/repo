@@ -31,7 +31,12 @@ allow_c = set((os.environ.get("_OC_ALLOW_C") or "").split())
 allow_o = set((os.environ.get("_OC_ALLOW_O") or "").split())
 
 def names(d: Path) -> set[str]:
-    return {p.stem for p in d.glob("*.md") if p.is_file()}
+    # AppleDouble (._*) ve gizli dosyalar komut sayılmaz
+    return {
+        p.stem
+        for p in d.glob("*.md")
+        if p.is_file() and not p.name.startswith("._") and not p.name.startswith(".")
+    }
 
 c_names = names(cur)
 o_names = names(oc)

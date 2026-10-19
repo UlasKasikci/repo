@@ -1,51 +1,42 @@
-# Cursor Snapshots — Ajan Handoff & Terminal Kanıt
+# Cursor Snapshots — Webrail handoff (geçici)
 
-Cursor Agent oturumları arasında **dosya tabanlı handoff** ve **terminal kanıtı** için geçici durak.
+IDE oturumları arasında **dosya tabanlı** kanıt; sohbet hafızasına güvenilmez.
 
-## Klasörler
+## Klasörler (gitignore — runtime)
 
 | Klasör | Üreten | İçerik |
 |--------|--------|--------|
-| `build/` | `scripts/gradle-build-loop.sh` | Gradle `--stacktrace` logları, `LATEST.gradle.log` |
-| `recovery/` | `scripts/state-recovery.sh` | Checkpoint meta, recovery handoff |
-| `maestro/` | `scripts/run-maestro.sh` | E2E test çıktıları, `LATEST.maestro.log` |
-| `mcp/` | MCP kullanan ajanlar | Browser/GitHub araştırma özeti (JSON/MD) |
+| `mcp/` | MCP kullanan ajan | Araştırma özeti JSON/MD |
+| `recovery/` | manuel / doctor notu | Kısa kurtarma handoff (opsiyonel) |
 
-## MCP handoff protokolü (ZORUNLU)
+Şablonlar (repoda):
 
-MCP (Browser, GitHub, Fetch) ile veri toplayan ajan **sohbet hafızasına güvenmez**. Çıktıyı dosyaya yazar:
+- [`HANDOFF.template.json`](HANDOFF.template.json) — MCP / araştırma handoff  
+- [`RECOVERY.template.json`](RECOVERY.template.json) — QA FAIL / yarım iş kurtarma  
 
-```
+## Zorunlu protokol
+
+MCP veya uzun araştırma çıktısı sohbette taşınmaz:
+
+```text
 .cursor/snapshots/mcp/{agent}-{YYYYMMDD-HHMMSS}.json
 ```
 
-Şablon: [`HANDOFF.template.json`](HANDOFF.template.json)
+Son işaret: `mcp/LATEST.handoff.json` (her yazımda güncellenir).  
+Sonraki ajan önce bunu veya `RUN-STATUS.md` + `PHASE-LOG.md` okur.
 
-Son handoff: `mcp/LATEST.handoff.json` (her yazımda güncellenir)
+## Webrail handoff (kanonik)
 
-**Sonraki ajan** devam etmeden önce `LATEST.handoff.json` veya ilgili snapshot'ı **okur**.
-
-## Gradle build kanıtı (F3+)
-
-Android kod değişikliğinden sonra:
+Gradle / Maestro / Android recovery **yok**. Kullan:
 
 ```bash
-./scripts/gradle-build-loop.sh
+bash scripts/web/status.sh .
+bash scripts/web/phase-log.sh . "özet" "sonraki" "cevap"
+# oku: RUN-STATUS.md · PHASE-LOG.md · docs/IDE-HANDOFF.md
 ```
 
-Başarısızsa Agent **`LATEST.gradle.log`** okur, düzeltir, tekrar çalıştırır.  
-F3+ faz satırı `tamamlandı` **yapılmaz** build PASS olmadan.
-
-## State recovery (truncation / yarım edit)
-
-```bash
-./scripts/state-recovery.sh --checkpoint
-./scripts/state-recovery.sh --recover
-./scripts/state-recovery.sh --status
-```
-
-Handoff: `recovery/LATEST.recovery.handoff.json` — bkz. [`docs/STATE_RECOVERY.md`](../../docs/STATE_RECOVERY.md)
+QA FAIL → `bash scripts/web/doctor.sh . --loop` → yalnız `FIX-BRIEF.md`.
 
 ## Git
 
-Runtime snapshot'lar `.gitignore` ile commit dışıdır. Yalnızca bu README ve şablonlar repoda kalır.
+Runtime snapshot dosyaları `.gitignore` dışındadır. Commit’te yalnız bu README + şablonlar kalır.

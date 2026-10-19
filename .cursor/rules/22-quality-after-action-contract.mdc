@@ -9,6 +9,6 @@ globs: [".cursor/commands/cevap.md", ".cursor/commands/after-action.md", ".curso
 DIAGNOSTIC. Dosya değiştirmez, faz ilerletmez, push yok.
 
 Okunacak: `RUN-STATUS.md`, `PHASE-LOG.md`, `qa-report.json` / `doctor-report.json`,
-`docs/CEVAP_REPORT_CONTRACT.md` (varsa), `.cursor/skills/after-action-review/SKILL.md`.
+`docs/CEVAP_REPORT_CONTRACT.md`, `.cursor/skills/after-action-review/SKILL.md`.
 
 Android / YAPILACAKLAR referansı yok — yalnız P1–P5 Webrail.

@@ -84,6 +84,8 @@ for f in scripts/web/decide.sh scripts/web/decision.py scripts/web/run-status.sh
          docs/templates/AGENT-CONTRACT.md \
          docs/PROJECT-ARCHETYPES.md \
          docs/GAP-APPROVAL-MATRIX.md \
+         docs/CEVAP_REPORT_CONTRACT.md \
+         docs/MCP_SETUP.md \
          docs/V1.4-ROADMAP.md \
          .factory/modules/payment/manifest.json \
          .factory/modules/reviews/manifest.json \

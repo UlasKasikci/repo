@@ -1,9 +1,12 @@
 # Webrail × AI Agent Skills — Parity & Yükseltme Yol Haritası
 
+> **ARŞİV (2026-10-19):** Tarihsel backlog. Aktif plan dili = `PLAN.md` + `docs/V1.4-ROADMAP.md`.  
+> `yapilacaklar-*` skill’leri **yok** — takip etme. Güncel skill listesi: `.factory/meta.json` → `skills_ready`.
+
 **Kaynak inceleme:** [developersglobal.github.io/ai-agent-skills](https://developersglobal.github.io/ai-agent-skills/)  
 **Repo:** [DevelopersGlobal/ai-agent-skills](https://github.com/DevelopersGlobal/ai-agent-skills) (30 skill · 8 kategori · MIT)  
 **Hedef:** Cursor · OpenCode · Claude Code · Antigravity — **aynı kalite**  
-**Tarih:** 2026-10-19 · **Durum:** guard + **Error Doctor** (`doctor.sh`) uygulandı; katalog skill tiyatrosu hâlâ erteli
+**Tarih:** 2026-10-19 · **Durum:** ARŞİV — guard + doctor + v1.4 modüller uygulandı
 
 ---
 

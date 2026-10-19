@@ -14,4 +14,4 @@ globs: [".cursor/mcp.json", ".cursor/mcp.json.example", ".cursor/mcp.required.js
 | CI / PR | GitHub (fabrika deposunda) |
 
 MCP çıktısı sohbette taşınmaz → `.cursor/snapshots/mcp/` veya `docs/findings/` yaz.
-Kurulum: `docs/MCP_SETUP.md` (varsa) / `.cursor/mcp.json.example`.
+Kurulum: `docs/MCP_SETUP.md` / `.cursor/mcp.json.example`.

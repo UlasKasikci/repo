@@ -9,7 +9,7 @@ Cursor · OpenCode · Claude Code · Antigravity
 |---|---|
 | **System Architect** | **Ulaş Kaşıkcı** |
 | Fabrika | [`github.com/UlasKasikci/repo`](https://github.com/UlasKasikci/repo) |
-| Sürüm | **v1.4.1** (guardPost CSRF · SQLi taint) |
+| Sürüm | **v1.4.1** (gap-inject · payment/reviews · guardPost CSRF · SQLi taint) |
 | Doğrulama | self-test **87/87** · preflight READY · 14 kanallı QA |
 
 [![CI](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml/badge.svg)](https://github.com/UlasKasikci/repo/actions/workflows/validate.yml)
@@ -24,7 +24,7 @@ Cursor · OpenCode · Claude Code · Antigravity
 
 ## System Architect
 
-**Ulaş Kaşıkcı** — Webrail mimarisi, State Graph (P1–P5), Decision Layer, Error Doctor, gap/denetle auto-hooks ve çoklu-IDE denetim anayasasının tasarımı.
+**Ulaş Kaşıkcı** — Webrail mimarisi, State Graph (P1–P5), Decision Layer, Error Doctor, Adaptive Recovery, Reality Checker, arketip-duyarlı gap/denetle ve çoklu-IDE denetim anayasası.
 
 ---
 
@@ -35,7 +35,7 @@ flowchart TB
   subgraph intake["Giriş"]
     B[Brief / DISCOVERY]
     P[plan-from-brief → PLAN.md]
-    G[gap-scan WARN/BLOCKER]
+    G[gap-scan + gap-inject]
     B --> P --> G
   end
 
@@ -56,8 +56,8 @@ flowchart TB
     P5 --> DONE
   end
 
-  subgraph auto["Auto-hooks — komut unutulmaz"]
-    H1[denetle · doctor · plan-sync · debt-scan]
+  subgraph auto["Auto-hooks"]
+    H1[denetle · doctor · plan-sync · debt · reality-check]
   end
 
   G --> P1
@@ -68,13 +68,13 @@ flowchart TB
 
 | Faz | Ajan | Kapı / kanıt |
 |-----|------|----------------|
-| P1 | Domain Architect | `domain-report.json` + `decide.sh` |
-| P2 / P4 | Core Engineer (+ Frontend) | MVC iskelet · `FIX-BRIEF.md` |
+| P1 | Domain Architect | `domain-report.json` + `decide.sh` + `gap-inject` |
+| P2 / P4 | Core Engineer (+ Frontend) | MVC · `module-apply` · `FIX-BRIEF.md` |
 | P3 | QA Gatekeeper (`readonly`) | `qa-gate.sh` → **0E / 0W** |
 | P5 | Deploy Packager | `packaging-report.json` → `Yukleme/` |
 
 Tek ajan onayı yok. Kanon: [`docs/WEB-EDITION.md`](docs/WEB-EDITION.md) ·  
-Arketipler: [`docs/PROJECT-ARCHETYPES.md`](docs/PROJECT-ARCHETYPES.md) · Yol haritası: [`docs/V1.4-ROADMAP.md`](docs/V1.4-ROADMAP.md)
+Arketipler: [`docs/PROJECT-ARCHETYPES.md`](docs/PROJECT-ARCHETYPES.md) · Onay matrisi: [`docs/GAP-APPROVAL-MATRIX.md`](docs/GAP-APPROVAL-MATRIX.md) · Yol haritası: [`docs/V1.4-ROADMAP.md`](docs/V1.4-ROADMAP.md)
 
 ---
 
@@ -83,13 +83,13 @@ Arketipler: [`docs/PROJECT-ARCHETYPES.md`](docs/PROJECT-ARCHETYPES.md) · Yol ha
 | Problem | Webrail |
 |---------|---------|
 | Dağınık AI süreçleri | Ortak `.factory/` state + IDE-agnostik scriptler |
-| Brief’te unutulan sepet / ödeme / yorum | `gap-scan` **arketip-duyarlı** (vitrin≠mağaza) → `DENETIM.md` |
-| “Yeşil görünen” güvensiz kod | 14 kanallı QA; PASS olmadan paket yok |
+| Brief’te unutulan sepet / ödeme / yorum | `gap-scan` **arketip-duyarlı** (vitrin≠mağaza) → `gap-inject` → `DENETIM.md` |
+| “Yeşil görünen” güvensiz kod | 14 kanallı QA (`guardPost` CSRF · SQLi taint dahil) |
 | Token israfı | Decision Layer + `module-apply` (katalog önce) |
-| Komut zamanlamasını unutma | `orchestrate` auto-hooks (`.factory/auto-hooks.json`) |
-| QA FAIL körlüğü | `doctor.sh` + **Adaptive Recovery** (imza/sınıf/strateji) |
-| Kanıtsız “bitti” | **Reality Checker** (`reality-check.sh` P1/P3/P5) |
-| Yanlışlıkla fabrika GitHub push | `guard.sh git-push` + `workspace-role` |
+| Komut unutma | `orchestrate` auto-hooks (`.factory/auto-hooks.json`) |
+| QA FAIL körlüğü | `doctor.sh` + **Adaptive Recovery** |
+| Kanıtsız “bitti” | **Reality Checker** (P1/P3/P5) |
+| Yanlışlıkla fabrika push | `guard.sh git-push` + `workspace-role` |
 
 ---
 
@@ -114,13 +114,14 @@ bash scripts/web/guard.sh matrix .
 | Komut | Ne yapar |
 |-------|----------|
 | `/kesfet` · `mode from-brief` | DISCOVERY + **PLAN.md** |
-| `/denetle` · `denetle.sh` | gap + debt + DENETIM (P1/P3/P5’te **otomatik**) |
+| `/denetle` · `denetle.sh` | gap + inject + debt + DENETIM (P1/P3/P5’te **otomatik**) |
 | `/doktor` · `doctor.sh --loop` | QA FAIL teşhis / safe apply |
 | `/web-baslat` → `/web-faz` → `/web-yukle` | P1 → P2 → P5 |
+| `/cevap` | After Action (DIAGNOSTIC) |
 
 Çıkış kodları: `0` OK · `1` FAIL · `2` HALT · `3` bekleme (LLM).
 
-Müşteri protokolü: [`docs/CUSTOMER-START.md`](docs/CUSTOMER-START.md)
+Müşteri protokolü: [`docs/CUSTOMER-START.md`](docs/CUSTOMER-START.md) · IDE el değiştirme: [`docs/IDE-HANDOFF.md`](docs/IDE-HANDOFF.md)
 
 ---
 
@@ -130,16 +131,19 @@ Müşteri protokolü: [`docs/CUSTOMER-START.md`](docs/CUSTOMER-START.md)
 webrail/                          # fabrika = UlasKasikci/repo
 ├── .cursor/ · .opencode/         # kurallar, ajanlar, komutlar, skills
 ├── .factory/
-│   ├── contracts/ · modules/     # şemalar + auth/kvkk/admin/seo paketleri
-│   ├── auto-hooks.json           # denetle/doctor/plan-sync zamanlayıcı
+│   ├── contracts/                # şemalar (decision, doctor, failure…)
+│   ├── modules/                  # auth-rbac · kvkk · admin · seo · payment · reviews
+│   ├── auto-hooks.json           # denetle/doctor/plan-sync/gap-inject
 │   ├── web-state-graph.json      # P1–P5 makinesi
 │   └── workspace-role*.json      # factory vs customer-app
 ├── scripts/web/                  # status · guard · doctor · denetle · gap-scan ·
-│                                 # plan-from-brief · plan-sync · debt-scan ·
-│                                 # orchestrate · qa-gate · package-yukleme …
-├── docs/                         # WEB-EDITION · V1.4-ROADMAP · templates/PLAN.md
+│                                 # gap-inject · plan-from-brief · plan-sync · debt-scan ·
+│                                 # classify-fail · adaptive-recover · reality-check ·
+│                                 # decide · module-apply · qa-gate · package-yukleme …
+├── docs/                         # WEB-EDITION · V1.4-ROADMAP · GAP-APPROVAL-MATRIX ·
+│                                 # templates/PLAN.md · releases/v1.4.x
 ├── tests/fixtures/
-├── CLAUDE.md · antigravity.yaml · .cursorrules
+├── CLAUDE.md · antigravity.yaml · .cursorrules · opencode.json
 └── (müşteri) WEBRAIL-CUSTOMER.md · RUN-STATUS.md · PLAN.md · Yukleme/
 ```
 
@@ -147,7 +151,7 @@ webrail/                          # fabrika = UlasKasikci/repo
 
 ## Güvenlik (değişmez)
 
-- SQL: PDO prepared only  
+- SQL: PDO prepared only · `query()` + tainted `$_GET` ara değişken = FAIL  
 - XSS: `htmlspecialchars(..., ENT_QUOTES, 'UTF-8')`  
 - CSRF: her POST (`guardPost` / `Csrf::*`)  
 - Parola: Argon2id veya Bcrypt (≥12)  
@@ -191,7 +195,7 @@ Release: [v1.2](https://github.com/UlasKasikci/repo/releases/tag/v1.2) · [v1.3]
 1. Remote: `https://github.com/UlasKasikci/repo` — müşteri ağacından buraya push **yasak**  
 2. Önkoşul: `preflight.sh` READY · `self-test.sh` **87/87** · `guard.sh git-push` ALLOW  
 3. Push: kullanıcı komutu + `WEBRAIL_ALLOW_GIT_PUSH=1`  
-4. Doküman kanıttan türer (K5)
+4. Doküman kanıttan türer (K5) — obsolete plan/MD istekleri bırakılmaz  
 
 ---
 

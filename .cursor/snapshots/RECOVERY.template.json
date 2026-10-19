@@ -1,10 +1,9 @@
 {
-  "schema": "factory-recovery-handoff-v1",
+  "schema": "webrail-recovery-handoff-v1",
   "created_at": "2026-01-01T00:00:00Z",
-  "reason": "gradle-log-recoverable-error",
-  "restored_files": ["gradle/libs.versions.toml"],
-  "cleanliness": "gradlew-help-ok",
-  "yapilacaklar_active_phase": "F3",
-  "agent_instruction": "Etkilenen build dosyaları checkpoint'e döndürüldü. Küçük batch ile yeniden yaz.",
-  "next_action": "./scripts/gradle-build-loop.sh"
+  "reason": "qa-fail-or-truncated-edit",
+  "phase": "P3",
+  "restored_files": [],
+  "agent_instruction": "FIX-BRIEF.md dışına çıkma; qa-report dump yasak.",
+  "next_action": "bash scripts/web/doctor.sh . --loop && bash scripts/web/qa-gate.sh ."
 }
