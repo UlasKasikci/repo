@@ -198,6 +198,45 @@ if [[ "$PHP_COUNT" -gt 0 ]]; then
     done
     i=$((i + 1))
   done
+  # v1.4.1: ara değişken taint — $q=$_GET['q']; $pdo->query("...$q...") (probe kaçışı)
+  export _QG_PHP_FILES="$(printf '%s\n' "${PHP_FILES[@]}")" _QG_PROJECT="$PROJECT"
+  while IFS= read -r _taint_line; do
+    [[ -z "$_taint_line" ]] && continue
+    err "$_taint_line"
+  done < <(python3 - <<'PY'
+import os, re
+from pathlib import Path
+root = Path(os.environ.get("_QG_PROJECT", ".")).resolve()
+files = [f for f in os.environ.get("_QG_PHP_FILES", "").splitlines() if f]
+# $q = $_GET['q'] ?? ''  ·  $q = (string) ($_GET['q'] ?? '')
+assign_re = re.compile(
+    r'\$([A-Za-z_][A-Za-z0-9_]*)\s*=[^;]*\$_(GET|POST|REQUEST|COOKIE)\b'
+)
+query_re = re.compile(r'(?:->query|mysqli?_query)\s*\(', re.I)
+for path in files:
+    try:
+        text = open(path, encoding="utf-8", errors="replace").read()
+    except OSError:
+        continue
+    tainted = {m.group(1) for m in assign_re.finditer(text)}
+    if not tainted:
+        continue
+    try:
+        rel = str(Path(path).resolve().relative_to(root))
+    except ValueError:
+        rel = path
+    for i, line in enumerate(text.splitlines(), 1):
+        if not query_re.search(line):
+            continue
+        for var in tainted:
+            if re.search(r'\$' + re.escape(var) + r'\b', line):
+                print(
+                    f"güvenlik: ara değişkenli SQL birleştirme (taint ${var} ← superglobal) "
+                    f"→ query(): {rel}:{i}"
+                )
+                break
+PY
+)
 fi
 check_end security_grep
 
@@ -216,7 +255,8 @@ check_begin
 if [[ "$PHP_COUNT" -gt 0 ]]; then
   # v1.2 F2: global + OOP desenleri tek regex; her dosya için ilk eşleşen
   # doğrulama satırı raporlanır (debug: hangi satır sayıldı).
-  CSRF_CALL_RE='(csrf[_-]?verify|verify[_-]?csrf|check[_-]?csrf|Csrf::verify|Csrf::requireValid|Csrf::check|csrf->verify)[[:space:]]*\('
+  # v1.4.1: guardPost() = auth-rbac wrapper → Csrf::requireValid (probe false-FAIL kapandı)
+  CSRF_CALL_RE='(csrf[_-]?verify|verify[_-]?csrf|check[_-]?csrf|Csrf::verify|Csrf::requireValid|Csrf::check|csrf->verify|guardPost)[[:space:]]*\('
   for f in "${PHP_FILES[@]}"; do
     grep -qE '\$_(POST|REQUEST)' "$f" || continue
     if ! grep -qiE "$CSRF_CALL_RE" "$f"; then

@@ -122,7 +122,7 @@ TOTAL_STEPS="$(grep -c '^step "' "$0")"
 echo "SELF-TEST header: $TOTAL_STEPS senaryo"
 
 TMP="$(mktemp -d)"
-trap 'rm -rf "$TMP"' EXIT
+trap 'rm -rf "$TMP" 2>/dev/null || true' EXIT
 
 step "0) bash -n söz dizimi + python söz dizimi"
 for s in state.sh qa-gate.sh package-yukleme.sh self-test.sh orchestrate.sh sql-dump.sh lighthouse-verify.sh bootstrap-project.sh smoke-test.sh frontmatter-check.sh mode.sh decide.sh measure.sh preflight.sh run-status.sh webrail.sh status.sh module-apply.sh p2-checklist.sh guard.sh doctor.sh phase-log.sh plan-from-brief.sh gap-scan.sh denetle.sh plan-sync.sh debt-scan.sh classify-fail.sh reality-check.sh adaptive-recover.sh gap-inject.sh orphan-commands.sh; do
@@ -2441,7 +2441,7 @@ fi
 [[ -f "$B56/NOTLARIM.md" ]] || die "B.2: özel dosya silinmiş (ezilme) — korunmalıydı"
 git -C "$B56" ls-files | grep -q ".factory/.bootstrap-manifest" \
   || die "B.2: .bootstrap-manifest tracked değil"
-rm -rf "$B56"
+rm -rf "$B56" 2>/dev/null || true
 echo "    özel dosya: commit dışı + disk'te korundu · manifest tracked ✓"
 
 step "57) C: P1 → P2 advance kapısı — domain-report yok → DUR (Tur 2-16)"
@@ -2786,8 +2786,8 @@ step "77) guard git-push DENY + customer-app fabrika remote RED + anayasa kilidi
 G77="$TMP/guard77"
 mkdir -p "$G77/.factory"
 bash "$ROOT/scripts/web/mode.sh" init "$G77" >/dev/null
-# varsayılan (fabrika rolü yok / customer yok) → yine DENY (allow env yok)
-rc="$(run_rc bash "$ROOT/scripts/web/guard.sh" git-push "$G77")"
+# varsayılan → DENY (oturumda WEBRAIL_ALLOW_GIT_PUSH=1 kalmış olsa bile -u ile temizle)
+rc="$(run_rc env -u WEBRAIL_ALLOW_GIT_PUSH bash "$ROOT/scripts/web/guard.sh" git-push "$G77")"
 [[ "$rc" == "1" ]] || die "git-push varsayılan DENY=1 beklenir, gelen $rc"
 # customer-app + sahte fabrika remote
 printf '%s\n' '{"schema_version":1,"role":"customer-app","git_push_policy":"forbidden-unless-user-explicit"}' \
@@ -3140,6 +3140,37 @@ bash "$ROOT/scripts/web/module-apply.sh" "$DEC" --module payment --force >/dev/n
 [[ -f "$DEC/SQL/migrations/schema/004_payment.sql" ]] || die "payment SQL kopyalanmadı"
 rm -rf "$DEC"
 echo "    payment/reviews · decide filtre · orphan-commands · module-apply ✓"
+
+step "85) v1.4.1: guardPost() CSRF deseni PASS (auth-rbac false-FAIL kapandı)"
+A85="$TMP/a85-guardpost"
+cp -R "$FIX" "$A85"
+cp "$ROOT/tests/fixtures/good_csrf_guardpost.php" "$A85/good_csrf_guardpost.php"
+a85_rc="$(run_rc bash "$QA" "$A85")"
+[[ "$a85_rc" == "0" ]] || die "guardPost fixture ile PASS (0) beklenir, gelen $a85_rc"
+python3 - "$A85/qa-report.json" <<'PY' || die "guardPost security_policy PASS değil"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["checks"]["security_policy"] == "PASS", r["checks"]
+PY
+rm -rf "$A85"
+echo "    guardPost() → security_policy PASS ✓"
+
+step "86) v1.4.1: ara değişken SQLi taint → security_grep FAIL"
+A86="$TMP/a86-sqli-taint"
+cp -R "$FIX" "$A86"
+cp "$ROOT/tests/fixtures/bad_sqli_taint.php" "$A86/bad_sqli_taint.php"
+a86_rc="$(run_rc bash "$QA" "$A86")"
+[[ "$a86_rc" == "1" ]] || die "SQLi taint FAIL (1) beklenir, gelen $a86_rc"
+python3 - "$A86/qa-report.json" <<'PY' || die "security_grep FAIL kanıtı yok"
+import json, sys
+r = json.load(open(sys.argv[1], encoding="utf-8"))
+assert r["result"] == "FAIL", r["result"]
+assert r["checks"]["security_grep"] == "FAIL", r["checks"]
+errs = r.get("errors") or []
+assert any("ara değişkenli SQL" in str(e) for e in errs), errs
+PY
+rm -rf "$A86"
+echo "    taint \$q←\$_GET → query() FAIL ✓"
 
 echo
 echo "SELF-TEST: PASS — tüm senaryolar yeşil"
